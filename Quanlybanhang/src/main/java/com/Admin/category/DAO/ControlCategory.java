@@ -39,15 +39,16 @@ public class ControlCategory {
 
     public boolean updateCategory(DTOCategory cate) {
         String sql = "UPDATE Category SET Category_Name = ?, Sup_ID = ? WHERE Category_ID = ?";
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cate.getCategoryName());
             ps.setString(2, cate.getSupID());
             ps.setString(3, cate.getCategoryID());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Update category failed: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
     public boolean deleteCategory(String cateID) {
@@ -155,25 +156,30 @@ public class ControlCategory {
 
     
     public void loadCategoryToTable(DefaultTableModel model) {
-        ControlCategory control = new ControlCategory();
-        List<DTOCategory> categoryList = control.getAllCategories();
-
-        // Xóa dữ liệu cũ trong model
         model.setRowCount(0);
-
-        // Thêm dữ liệu từ danh sách vào bảng
-        for (DTOCategory cate : categoryList) {
-            Object[] rowData = {
-                cate.getCategoryID(),
-                cate.getCategoryName(),
-                cate.getSupID(),
-                cate.getSupName(),
-                cate.getAddress(),
-                cate.getContact()
-            };
-            model.addRow(rowData);
+        String sql = """
+        SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact 
+        FROM Category c
+        JOIN Supplier s ON c.Sup_ID = s.Sup_ID
+    """;
+    
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+            model.addRow(new Object[]{
+                rs.getString("Category_ID"),
+                rs.getString("Category_Name"),
+                rs.getString("Sup_ID"),
+                rs.getString("Sup_Name"), 
+                rs.getString("Address"),
+                rs.getString("Contact")
+            });
         }
+    } catch (SQLException e) {
+        System.err.println("Load category table failed: " + e.getMessage());
     }
+}
 
     public DTOCategory getCategoryByID(String categoryID) {
         DTOCategory cate = null;

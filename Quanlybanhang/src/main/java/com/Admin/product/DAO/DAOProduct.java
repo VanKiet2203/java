@@ -115,9 +115,8 @@ public class DAOProduct {
     public List<DTOCategory> getAllCategoriesWithSupplier() {
         List<DTOCategory> list = new ArrayList<>();
         String sql = """
-            SELECT c.Category_ID, c.Category_Name, c.Sup_ID,
-                   s.Sup_Name, s.Address, s.Contact
-            FROM Category c
+            SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact
+            FROM Category c 
             JOIN Supplier s ON c.Sup_ID = s.Sup_ID
         """;
 

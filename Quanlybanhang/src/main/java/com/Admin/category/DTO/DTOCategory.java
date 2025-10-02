@@ -8,16 +8,20 @@ public class DTOCategory {
     private String address;
     private String contact;
 
-    public DTOCategory() {
-    }
+    // Constructors
+    public DTOCategory() {}
 
-    public DTOCategory(String categoryID, String categoryName, String supID) {
+    public DTOCategory(String categoryID, String categoryName, String supID, 
+                      String supName, String address, String contact) {
         this.categoryID = categoryID;
         this.categoryName = categoryName;
-        this.supID = supID;
+        this.supID = supID; 
+        this.supName = supName;
+        this.address = address;
+        this.contact = contact;
     }
 
-
+    // Getters and setters
     public String getCategoryID() {
         return categoryID;
     }
@@ -64,17 +68,5 @@ public class DTOCategory {
 
     public void setContact(String contact) {
         this.contact = contact;
-    }
-    
-    @Override
-    public String toString() {
-        return "DTO_Category{" +
-               "categoryID='" + categoryID + '\'' +
-               ", categoryName='" + categoryName + '\'' +
-               ", supID='" + supID + '\'' +
-               ", supName='" + supName + '\'' +
-               ", address='" + address + '\'' +
-               ", contact='" + contact + '\'' +
-               '}';
     }
 }

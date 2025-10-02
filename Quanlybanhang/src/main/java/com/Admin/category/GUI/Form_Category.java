@@ -134,10 +134,7 @@ public class Form_Category extends JPanel {
                     model.addRow(new Object[]{
                         cate.getCategoryID(),
                         cate.getCategoryName(),
-                        cate.getSupID(),
-                        cate.getSupName(),
-                        cate.getAddress(),
-                        cate.getContact()
+                        cate.getSupID()
                     });
                 }
          });
@@ -230,7 +227,10 @@ public class Form_Category extends JPanel {
                 return;
             }
 
-            DTOCategory category = new DTOCategory(categoryID, categoryName, brandID);
+            DTOCategory category = new DTOCategory();
+            category.setCategoryID(categoryID);
+            category.setCategoryName(categoryName);
+            category.setSupID(brandID);
 
             boolean success = busCategory.addCategory(category);
             if (success) {
@@ -262,7 +262,10 @@ public class Form_Category extends JPanel {
                 return;
             }
 
-            DTOCategory category = new DTOCategory(categoryID, categoryName, supplierID);
+            DTOCategory category = new DTOCategory();
+            category.setCategoryID(categoryID);
+            category.setCategoryName(categoryName);
+            category.setSupID(supplierID);
 
             boolean success = busCategory.updateCategory(category);
 
@@ -399,8 +402,7 @@ public class Form_Category extends JPanel {
 
                         // 1️⃣ Tên cột
              String[] columnNames = {
-                 "Category.ID", "Category Name", "Brand.ID", "Brand Name", 
-                 "Address", "Contact"
+                 "Category.ID", "Category Name", "Brand.ID"
              };
 
              // 2️⃣ Tạo model
@@ -446,23 +448,10 @@ public class Form_Category extends JPanel {
                  public void mouseClicked(MouseEvent e) {
                      int selectedRow = tableCate.getSelectedRow();
                      if (selectedRow != -1) {
-                         String categoryID = tableCate.getValueAt(selectedRow, 0).toString();
-
-                         // Lấy dữ liệu từ BUS
-                         DTOCategory cate = busCategory.getCategoryID(categoryID);
-
-                         if (cate != null) {
-                             txtCateID.setText(cate.getCategoryID());
-                             txtCateName.setText(cate.getCategoryName());
-                             cmbBrandID.setSelectedItem(cate.getSupID());
-                         }
+                         txtCateID.setText(tableCate.getValueAt(selectedRow, 0).toString());
+                         txtCateName.setText(tableCate.getValueAt(selectedRow, 1).toString());
+                         cmbBrandID.setSelectedItem(tableCate.getValueAt(selectedRow, 2).toString());
                      }
-
-                     // Làm mới bảng nếu cần
-                     SwingUtilities.invokeLater(() -> {
-                         DefaultTableModel model = (DefaultTableModel) tableCate.getModel();
-                         model.fireTableDataChanged();
-                     });
                  }
              });
 
@@ -572,4 +561,31 @@ public class Form_Category extends JPanel {
    }
 
 
+private void showCategoryDetails(DTOCategory category) {
+    if (category != null) {
+        txtCateID.setText(category.getCategoryID());
+        txtCateName.setText(category.getCategoryName());
+        cmbBrandID.setSelectedItem(category.getSupID());
+    }
+}
+
+private void updateCategory() {
+    try {
+        DTOCategory category = new DTOCategory();
+        category.setCategoryID(txtCateID.getText().trim());
+        category.setCategoryName(txtCateName.getText().trim());
+        category.setSupID(cmbBrandID.getSelectedItem() != null ? cmbBrandID.getSelectedItem().toString().trim() : "");
+        
+        if (busCategory.updateCategory(category)) {
+            CustomDialog.showSuccess("Category updated successfully!");
+            DefaultTableModel model = (DefaultTableModel) tableCate.getModel();
+            model.setRowCount(0); // Clear old data
+            busCategory.loadCategoryToTable(model); // Reload data from database
+        } else {
+            CustomDialog.showError("Failed to update category!");
+        }
+    } catch (Exception e) {
+        CustomDialog.showError("Error: " + e.getMessage());
+    }
+}
 }

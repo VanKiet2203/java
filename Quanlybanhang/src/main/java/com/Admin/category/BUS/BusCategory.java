@@ -8,63 +8,96 @@ import javax.swing.table.DefaultTableModel;
 import java.util.List;
 
 public class BusCategory {
-    private ControlCategory dao;
+    private ControlCategory controlCategory;
 
     public BusCategory() {
-        dao = new ControlCategory();
+        controlCategory = new ControlCategory();
     }
 
     // Thêm danh mục
     public boolean addCategory(DTOCategory category) {
-        if (dao.isDuplicateID(category.getCategoryID())) {
-            System.out.println("Category ID đã tồn tại.");
-            return false;
+        // Validate
+        if (category.getCategoryID() == null || category.getCategoryID().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category ID cannot be empty");
         }
-        return dao.insertCategory(category);
+        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category Name cannot be empty");
+        }
+        if (category.getSupID() == null || category.getSupID().trim().isEmpty()) {
+            throw new IllegalArgumentException("Supplier ID cannot be empty");
+        }
+        // call insertCategory from DAO (ControlCategory.java defines insertCategory)
+        return controlCategory.insertCategory(category);
     }
 
     // Cập nhật danh mục
     public boolean updateCategory(DTOCategory category) {
-        return dao.updateCategory(category);
+        // Validate
+        if (category.getCategoryID() == null || category.getCategoryID().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category ID cannot be empty");
+        }
+        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Category Name cannot be empty");
+        }
+        if (category.getSupID() == null || category.getSupID().trim().isEmpty()) {
+            throw new IllegalArgumentException("Supplier ID cannot be empty");
+        }
+
+        return controlCategory.updateCategory(category);
     }
 
     // Xóa danh mục
     public boolean deleteCategory(String categoryID) {
-        return dao.deleteCategory(categoryID);
+        return controlCategory.deleteCategory(categoryID);
     }
 
     // Lấy danh sách tất cả danh mục
     public List<DTOCategory> getAllCategories() {
-        return dao.getAllCategories();
+        return controlCategory.getAllCategories();
     }
 
     public List<DTOCategory> searchCategory(String keyword, String selectedItem) {
-        return dao.searchCategories(keyword, selectedItem);
+        // Delegate search to DAO. ControlCategory.searchCategories handles mapping/SQL.
+        return controlCategory.searchCategories(keyword, selectedItem);
+    }
+
+    // Helper method to map selected item to column name
+    private String mapSearchColumn(String selectedItem) {
+        switch (selectedItem) {
+            case "Category ID":
+                return "c.Category_ID";
+            case "Category Name":
+                return "c.Category_Name";
+            case "Supplier ID":
+                return "c.Sup_ID";
+            default:
+                throw new IllegalArgumentException("Invalid search column: " + selectedItem);
+        }
     }
 
     // Kiểm tra trùng mã
     public boolean isDuplicateID(String categoryID) {
-        return dao.isDuplicateID(categoryID);
+        return controlCategory.isDuplicateID(categoryID);
     }
 
    // Trong lớp BUS (Business logic layer)
     public void loadCategoryToTable(DefaultTableModel model) {
-        dao.loadCategoryToTable(model);
+        controlCategory.loadCategoryToTable(model);
     }
     
     public List<String> getAllSupplierIDs() {
-       return dao.getAllSupplierIDs();
+       return controlCategory.getAllSupplierIDs();
 }
     public DTOCategory getCategoryID(String categoryID) {
-      return dao.getCategoryByID(categoryID);
+      return controlCategory.getCategoryByID(categoryID);
 }
     public void refreshTable(DefaultTableModel model){
-       dao.loadCategoryToTable(model);
+       controlCategory.loadCategoryToTable(model);
 }
     public void importFile(File file){
-     dao.importFile(file);
+     controlCategory.importFile(file);
  }
     public void exportFile(JTable table){
-        dao.exportFile(table);
+        controlCategory.exportFile(table);
     }
 }

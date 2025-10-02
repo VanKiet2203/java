@@ -33,21 +33,15 @@ public class DAOProduct_Stock {
         try {
             conn = DatabaseConnection.connect(); // kết nối CSDL
             
-         String sql = "SELECT " +
-             "p.Product_ID, " +
-             "p.Product_Name, " +
-             "p.Price, " +
-             "ps.Quantity_Stock, " +
-             "c.Category_ID, " +
-             "c.Category_Name, " +
-             "s.Sup_ID, " +
-             "s.Sup_Name, " +
-             "s.Contact " +
-             "FROM Product p " +
-             "INNER JOIN Product_Stock ps ON p.Product_ID = ps.Product_ID " +
-             "INNER JOIN Category c ON p.Category_ID = c.Category_ID " +
-             "INNER JOIN Supplier s ON c.Sup_ID = s.Sup_ID";
-
+         String sql = """
+        SELECT p.Product_ID, p.Product_Name, p.Price, ps.Quantity_Stock,
+               c.Category_ID, c.Category_Name,
+               s.Sup_ID, s.Sup_Name, s.Contact
+        FROM Product p
+        INNER JOIN Product_Stock ps ON p.Product_ID = ps.Product_ID
+        INNER JOIN Category c ON p.Category_ID = c.Category_ID  
+        INNER JOIN Supplier s ON c.Sup_ID = s.Sup_ID
+    """;
                          
             ps = conn.prepareStatement(sql);
             rs = ps.executeQuery();
