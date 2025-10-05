@@ -42,6 +42,7 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
     private BusAccount_cus busAccount;
     private CustomDialog cs;
     private static int mouseX, mouseY; // Biến lưu vị trí chuột
+    private static String currentUserEmail = null; // Lưu email của user hiện tại
 
     public PanelLoginandRegister_User() {
         initComponents();
@@ -52,183 +53,160 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
       
     }
     private void initRegister() {
-        // Đặt layout của panel là null (không sử dụng layout manager)
         register.setLayout(null);
-
-        // Tạo label "Create Account" và căn giữa
+    
+        // Offset chỉnh căn lề ngang
+        int labelOffsetX = -20; // dịch label sang trái
+        int fieldOffsetX = 30;  // dịch field sang phải
+    
         JLabel label_title = new JLabel("Register Account");
         label_title.setFont(new Font("Times new roman", Font.BOLD, 30));
         label_title.setForeground(new Color(7, 164, 121));
-
-        // Đặt tọa độ và kích thước cho label
-        label_title.setBounds(160, 30, 280, 40); 
+        label_title.setBounds(160, 30, 280, 40);
         register.add(label_title);
-        
-        // Tạo label "Create Account" và căn giữa
+    
+        // ID Card
         JLabel lbl_idcard = new JLabel("ID Card");
         lbl_idcard.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lbl_idcard.setForeground(Color.BLACK);
-
-        // Đặt tọa độ và kích thước cho label
-        lbl_idcard.setBounds(60, 100, 200, 30); 
+        lbl_idcard.setBounds(60 + labelOffsetX, 100, 200, 30);
         register.add(lbl_idcard);
-        
-        //   Tạo MyTextField cho ID Card
+    
         txtIDCard = new MyTextField();
         txtIDCard.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
         txtIDCard.setHint("Enter your ID Card");
         txtIDCard.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtIDCard.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\ID_card.jpg");
-
-       // Đặt tọa độ và kích thước cho MyTextField
-        txtIDCard.setBounds(160, 100, 200, 35);
+        txtIDCard.setBounds((519 - 280) / 2 + fieldOffsetX, 100, 280, 35);
         register.add(txtIDCard);
-        
-        //Label Full Name
+    
+        // Full Name
         JLabel lbl_fullname = new JLabel("Full Name");
         lbl_fullname.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lbl_fullname.setForeground(Color.BLACK);
-
-        // Đặt tọa độ và kích thước cho label
-        lbl_fullname.setBounds(60, 170, 200, 35); 
+        lbl_fullname.setBounds(60 + labelOffsetX, 170, 200, 35);
         register.add(lbl_fullname);
-        
-         // Tạo MyTextField cho tên đăng nhập (email)
-        txtFullName= new MyTextField();
+    
+        txtFullName = new MyTextField();
         txtFullName.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
         txtFullName.setHint("Enter your full name");
         txtFullName.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtFullName.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\mail.png");
-        // Đặt tọa độ và kích thước cho MyTextField
-        txtFullName.setBounds(160, 170, 220, 35);
+        txtFullName.setBounds((519 - 280) / 2 + fieldOffsetX, 170, 280, 35);
         register.add(txtFullName);
-
-        // Tạo label "Gender"
-       JLabel lblGender = new JLabel("Gender");
-       lblGender.setFont(new Font("goudy old style", Font.PLAIN, 20));
-       lblGender.setForeground(Color.BLACK);
-       lblGender.setBounds(60, 240, 100, 30); // Đặt vị trí bên trái MyTextField
-       register.add(lblGender);
-       
-        // Tạo RadioButton "Male"
+    
+        // Gender
+        JLabel lblGender = new JLabel("Gender");
+        lblGender.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblGender.setForeground(Color.BLACK);
+        lblGender.setBounds(60 + labelOffsetX, 240, 100, 30);
+        register.add(lblGender);
+    
         rdoMale = new JRadioButton("Male");
         rdoMale.setFont(new Font("Arial", Font.PLAIN, 16));
-        rdoMale.setBounds(160, 240, 70, 30);
+        rdoMale.setBounds(160 + fieldOffsetX, 240, 70, 30);
         rdoMale.setBackground(Color.WHITE);
         register.add(rdoMale);
-//
-//        // Tạo RadioButton "Female"
+    
         rdoFemale = new JRadioButton("Female");
         rdoFemale.setFont(new Font("Arial", Font.PLAIN, 16));
-        rdoFemale.setBounds(250, 240, 80, 30);
+        rdoFemale.setBounds(250 + fieldOffsetX, 240, 80, 30);
         rdoFemale.setBackground(Color.WHITE);
         register.add(rdoFemale);
-
-        // Nhóm hai RadioButton vào một ButtonGroup để đảm bảo chỉ có thể chọn một
+    
         genderGroup = new ButtonGroup();
         genderGroup.add(rdoMale);
         genderGroup.add(rdoFemale);
-        
-        // Tạo label "DOB"
-       JLabel lblDOB = new JLabel("Date of Birth");
-       lblDOB.setFont(new Font("goudy old style", Font.PLAIN, 20));
-       lblDOB.setForeground(Color.BLACK);
-       lblDOB.setBounds(60,300, 120, 30); // Đặt vị trí bên trái MyTextField
-       register.add(lblDOB);
-
-                // Tạo JDateChooser
-         dateOfBirth = new JDateChooser();
-         dateOfBirth.setFont(new Font("Times New Roman", Font.PLAIN, 18));
-         dateOfBirth.setDateFormatString("dd/MM/yyyy");  // Định dạng ngày theo kiểu dd/MM/yyyy
-         dateOfBirth.setBounds(180, 295, 180, 35);
-         dateOfBirth.setBackground(Color.WHITE);
-
-         // Thêm JDateChooser vào panel register (thay vì add(dateChooser))
-         register.add(dateOfBirth);
-         
-              // Tạo label "Email"
-       JLabel lblEmail = new JLabel("Email");
-       lblEmail.setFont(new Font("goudy old style", Font.PLAIN, 20));
-       lblEmail.setForeground(Color.BLACK);
-       lblEmail.setBounds(60,363, 120, 30); // Đặt vị trí bên trái MyTextField
-       register.add(lblEmail);
-
-      // Tạo MyTextField cho tên đăng nhập (email)
+    
+        // Date of Birth
+        JLabel lblDOB = new JLabel("Date of Birth");
+        lblDOB.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblDOB.setForeground(Color.BLACK);
+        lblDOB.setBounds(60 + labelOffsetX, 300, 120, 30);
+        register.add(lblDOB);
+    
+        dateOfBirth = new JDateChooser();
+        dateOfBirth.setFont(new Font("Times New Roman", Font.PLAIN, 18));
+        dateOfBirth.setDateFormatString("dd/MM/yyyy");
+        dateOfBirth.setBounds((519 - 280) / 2 + fieldOffsetX, 295, 280, 35);
+        dateOfBirth.setBackground(Color.WHITE);
+        dateOfBirth.setOpaque(true);
+        dateOfBirth.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
+        register.add(dateOfBirth);
+    
+        // Email
+        JLabel lblEmail = new JLabel("Email");
+        lblEmail.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblEmail.setForeground(Color.BLACK);
+        lblEmail.setBounds(60 + labelOffsetX, 363, 120, 30);
+        register.add(lblEmail);
+    
         txtEmail = new MyTextField();
         txtEmail.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
         txtEmail.setHint("Enter your Email");
         txtEmail.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtEmail.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\mail.png");
-
-            // Đặt tọa độ và kích thước cho MyTextField
-        txtEmail.setBounds(150, 358, 250, 35);
+        txtEmail.setBounds((519 - 280) / 2 + fieldOffsetX, 358, 280, 35);
         register.add(txtEmail);
-        
-           // Tạo label "Contact"
-       JLabel lblContact = new JLabel("Contact");
-       lblContact.setFont(new Font("goudy old style", Font.PLAIN, 20));
-       lblContact.setForeground(Color.BLACK);
-       lblContact.setBounds(60,425, 120, 30); // Đặt vị trí bên trái MyTextField
-       register.add(lblContact);
-       
-       // Tạo MyTextField cho Contact 
+    
+        // Contact
+        JLabel lblContact = new JLabel("Contact");
+        lblContact.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblContact.setForeground(Color.BLACK);
+        lblContact.setBounds(60 + labelOffsetX, 425, 120, 30);
+        register.add(lblContact);
+    
         txtContact = new MyTextField();
         txtContact.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
         txtContact.setHint("Enter your contact");
         txtContact.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtContact.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\contact.png");
-           // Đặt tọa độ và kích thước cho MyTextField
-        txtContact.setBounds(150, 423, 230, 35);
+        txtContact.setBounds((519 - 280) / 2 + fieldOffsetX, 423, 280, 35);
         register.add(txtContact);
-        
-            // Tạo label "Address"
-      JLabel lblAddress = new JLabel("Address");
-      lblAddress.setFont(new Font("goudy old style", Font.PLAIN, 20));
-      lblAddress.setForeground(Color.BLACK);
-      lblAddress.setBounds(60, 500, 120, 30); // Đặt vị trí bên trái JTextField
-      register.add(lblAddress);
-
-            // Tạo JTextArea giống CTkTextbox (hỗ trợ nhiều dòng)
+    
+        // Address
+        JLabel lblAddress = new JLabel("Address");
+        lblAddress.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblAddress.setForeground(Color.BLACK);
+        lblAddress.setBounds(60 + labelOffsetX, 500, 120, 30);
+        register.add(lblAddress);
+    
         txtAddress = new JTextArea();
         txtAddress.setFont(new Font("Times new roman", Font.PLAIN, 16));
         txtAddress.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
-        txtAddress.setLineWrap(true); // Xuống dòng tự động khi hết chiều rộng
-        txtAddress.setWrapStyleWord(true); // Xuống dòng theo từ (không cắt từ)
-
-        // Đặt JScrollPane để có thể cuộn nếu nội dung dài
+        txtAddress.setLineWrap(true);
+        txtAddress.setWrapStyleWord(true);
+    
         JScrollPane scrollAddress = new JScrollPane(txtAddress);
-        scrollAddress.setBounds(150, 480, 280, 80); // Điều chỉnh kích thước để hiển thị nhiều dòng
+        scrollAddress.setBounds((519 - 280) / 2 + fieldOffsetX, 480, 280, 80);
         register.add(scrollAddress);
-        
-       // Tạo label "Password"
-      JLabel lblpass = new JLabel("Password");
-      lblpass.setFont(new Font("goudy old style", Font.PLAIN, 20));
-      lblpass.setForeground(Color.BLACK);
-      lblpass.setBounds(60, 585, 120, 30); // Đặt vị trí bên trái JTextField
-      register.add(lblpass);
-     
-            // Tạo đối tượng MyTextField
-     txtPassword = new MyTextField();
-     txtPassword.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-     txtPassword.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\pass.png");
-     txtPassword.setHint("Enter password");
-     txtPassword.setEnabled(true);
-
-     // Màu viền và độ dày viền
-     Color borderColor = new Color(7, 164, 121);
-     int borderThickness = 2;
-
-     // Gọi phương thức tạo password field có nút ẩn/hiện và truyền màu viền động
-     JPanel passwordPanel = txtPassword.createPasswordFieldWithEyeButton(
-         "Enter password",
-         "src\\main\\resources\\Icons\\User_icon\\hidepass.png",
-         "src\\main\\resources\\Icons\\User_icon\\showpass.png",
-         borderColor,
-         borderThickness
-     );
+    
+        // Password
+        JLabel lblpass = new JLabel("Password");
+        lblpass.setFont(new Font("goudy old style", Font.PLAIN, 20));
+        lblpass.setForeground(Color.BLACK);
+        lblpass.setBounds(60 + labelOffsetX, 585, 120, 30);
+        register.add(lblpass);
+    
+        txtPassword = new MyTextField();
+        txtPassword.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+        txtPassword.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\pass.png");
+        txtPassword.setHint("Enter password");
+        txtPassword.setEnabled(true);
+    
+        Color borderColor = new Color(7, 164, 121);
+        int borderThickness = 2;
+    
+        JPanel passwordPanel = txtPassword.createPasswordFieldWithEyeButton(
+            "Enter password",
+            "src\\main\\resources\\Icons\\User_icon\\hidepass.png",
+            "src\\main\\resources\\Icons\\User_icon\\showpass.png",
+            borderColor,
+            borderThickness
+        );
 
      // Cập nhật vị trí
-     passwordPanel.setBounds(155, 585, 230, 35);
+     passwordPanel.setBounds((519 - 280) / 2 + fieldOffsetX, 585, 280, 35);
 
      // Thêm vào giao diện
      register.add(passwordPanel);
@@ -238,12 +216,25 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         signup.setBackgroundColor(new Color(0, 150, 136)); // Màu nền
         signup.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
         signup.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        signup.setBounds(200, 650, 200, 35);
+        // Center SIGN UP button on register
+        signup.setBounds((519 - 200) / 2, 650, 200, 35);
         signup.setFont(new Font("Times New Roman", Font.BOLD, 18));
         signup.setForeground(Color.WHITE);
 
         // Thêm vào panel
         register.add(signup);
+
+        // Nút Back to Sign In
+        MyButton backToSignIn = new MyButton("Back to Sign In", 20);
+        // Give Back to Sign In a filled blue theme and center it
+        backToSignIn.setBackgroundColor(new Color(66, 133, 244));
+        backToSignIn.setPressedColor(new Color(52, 103, 189));
+        backToSignIn.setHoverColor(new Color(92, 153, 255));
+        backToSignIn.setForeground(Color.WHITE);
+        backToSignIn.setBounds((519 - 200) / 2, 690, 200, 35);
+        backToSignIn.setFont(new Font("Times New Roman", Font.BOLD, 18));
+        register.add(backToSignIn);
+        backToSignIn.addActionListener(ev -> showRegister(true));
 
         // Xử lý sự kiện khi nhấn nút
         signup.addActionListener(new ActionListener() {
@@ -266,7 +257,10 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
                 String password = txtPassword.getPasswordText().trim();
                 String status = "Inactive";
                 DTOAccount_cus DTOAccount= new DTOAccount_cus(idCard, fullName, gender, sqlDob, email, contact, address, password, status);
-                busAccount.registerCustomer(DTOAccount);
+                boolean ok = busAccount.registerCustomer(DTOAccount);
+                if (ok) {
+                    showRegister(true);
+                }
 
             }
         });
@@ -359,14 +353,29 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         signin.setBackgroundColor(new Color(0, 150, 136)); // Màu nền
         signin.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
         signin.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        signin.setBounds(130, 480, 230, 35);
+        // Center SIGN IN button horizontally
+        signin.setBounds((519 - 230) / 2, 480, 230, 35);
         signin.setFont(new Font("Times New Roman", Font.BOLD, 18));
         signin.setForeground(Color.WHITE);
 
         // Khi nhấn vào nút
         signin.addActionListener((e) -> {
+            // Kiểm tra null trước khi truy cập
+            if (txtEmailLogin == null) {
+                System.out.println("🔍 ERROR - txtEmailLogin is null!");
+                return;
+            }
+            if (txtPasswordLogin == null) {
+                System.out.println("🔍 ERROR - txtPasswordLogin is null!");
+                return;
+            }
+            
             String email = txtEmailLogin.getText().strip();
             String password = txtPasswordLogin.getPasswordText().strip();
+            
+            // Debug: Kiểm tra email và password
+            System.out.println("🔍 DEBUG - Email from login: " + email);
+            System.out.println("🔍 DEBUG - Password length: " + password.length());
 
            busAccount = new BusAccount_cus();  // ✅ Tạo BUS mới
 
@@ -375,19 +384,42 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
                 String fullName = busAccount.getName();  // ✅ Lấy tên từ BUS
                 CustomDialog.showSuccess("Welcome " + fullName + "!");
                 
+                // Lưu email vào static variable
+                currentUserEmail = email;
+                System.out.println("🔍 DEBUG - Login successful, email saved: " + currentUserEmail);
+                
                 JFrame Login_User = (JFrame) SwingUtilities.getWindowAncestor(signin);
                 Login_User.setVisible(false); // hoặc dispose nếu không cần
                 
-                Dashboard_user dashboard= new Dashboard_user();
+                Dashboard_user dashboard = new Dashboard_user(email);
                 dashboard.setVisible(true);
+            } else {
+                System.out.println("🔍 DEBUG - Login failed, account is null");
             }
             // Nếu account == null thì đã có CustomDialog lỗi bên trong BUS rồi
         });
         
         login.add(signin);
- 
+
+        // Add a SIGN UP button below SIGN IN to switch directly to Register
+        MyButton signupBelow = new MyButton("SIGN UP", 20);
+        // Style SIGN UP button under login with a distinct colored theme and center it
+        signupBelow.setBackgroundColor(new Color(255, 136, 0));
+        signupBelow.setPressedColor(new Color(214, 115, 0));
+        signupBelow.setHoverColor(new Color(255, 160, 51));
+        signupBelow.setForeground(Color.WHITE);
+        signupBelow.setBounds((519 - 230) / 2, 520, 230, 35);
+        signupBelow.setFont(new Font("Times New Roman", Font.BOLD, 18));
+        signupBelow.addActionListener(ev -> showRegister(false));
+        login.add(signupBelow);
+
     }
         
+    // Method để lấy email của user hiện tại
+    public static String getCurrentUserEmail() {
+        return currentUserEmail;
+    }
+    
     public void showRegister(boolean show){
         if(show){
             login.setVisible(true);

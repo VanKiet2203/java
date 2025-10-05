@@ -19,7 +19,7 @@ public class ControlRegister {
     }
 
     // 🟢 Hàm đăng ký khách hàng
-    public void registerAd(String idCard, String fullName, String gender,
+    public boolean registerAd(String idCard, String fullName, String gender,
                                  String contact, String email, String password) {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
@@ -32,22 +32,22 @@ public class ControlRegister {
         if (idCard.isEmpty() || fullName.isEmpty() || gender.isEmpty() ||
             email.isEmpty() || contact.isEmpty() || password.isEmpty()) {
             CustomDialog.showError("Please fill in all required fields!");
-            return;
+            return false;
         }
 
         if (!email.matches("^[\\w.-]+@[\\w-]+\\.[a-z]{2,4}$")) {
             CustomDialog.showError("Invalid email format!");
-            return;
+            return false;
         }
 
         if (!contact.matches("^0\\d{9}$")) {
             CustomDialog.showError("Phone number must be 10 digits and start with 0!");
-            return;
+            return false;
         }
 
         if (conn == null) {
             CustomDialog.showError("Database connection failed!");
-            return;
+            return false;
         }
 
         try {
@@ -57,7 +57,7 @@ public class ControlRegister {
                 ResultSet rs = checkStmt.executeQuery();
                 if (rs.next() && rs.getInt(1) > 0) {
                     CustomDialog.showError("ID Card already exists! Please enter a different ID.");
-                    return;
+                    return false;
                 }
             }
 
@@ -79,12 +79,15 @@ public class ControlRegister {
                         idCard, fullName, gender, email, contact, hashedPassword
                     );
                     CustomDialog.showSuccess("Registration successful!");
+                    return true;
                 }
             }
 
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(null, "Lỗi khi đăng ký: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
+            return false;
         }
+        return false;
     }
 }

@@ -11,7 +11,6 @@ import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.Admin.dashboard_admin.BUS.BusProfile_ad;
 import com.Admin.login.GUI.Login;
-import com.Admin.login.GUI.PanelLoginandRegister;
 import com.Admin.home.GUI.Form_Home;
 import com.Admin.category.GUI.Form_Category;
 import com.Admin.order.GUI.Form_Order;
@@ -22,10 +21,7 @@ import com.Admin.export.GUI.Form_Export;
 import com.Admin.stock.GUI.Form_Stock;
 import com.Admin.insurance.GUI.Form_Insurance;
 import com.Admin.statistics.GUI.Form_Statistics;
-import com.Admin.message.Form_Message;
-import java.io.File;
-import java.io.IOException;
-import javax.imageio.ImageIO;
+ 
 
 public class Dashboard_ad extends JFrame {
     private JPanel bg, contentPanel;
@@ -34,15 +30,15 @@ public class Dashboard_ad extends JFrame {
     private MyPanel panelTitle;
     private Menu menu;
     private CardLayout cardLayout;
-    private Set<JLabel> hoveredLabels = new HashSet<>();
+    
     private boolean isFullScreen = true;
     private JLabel selectedLabel = null;
     private final Color hoverColor = new Color(173, 216, 230, 200);
     private final Color transparentColor = new Color(0, 0, 0, 0);
     public static String adminID, adminName;
-    private BusProfile_ad busProfile;
+    
     public Dashboard_ad(String adminID) {
-        this.adminID = adminID;
+        Dashboard_ad.adminID = adminID;
         initComponents();
         addKeyListener(new KeyAdapter() {
             @Override
@@ -67,19 +63,13 @@ public class Dashboard_ad extends JFrame {
     panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
 
     // --- Icon và text cho tiêu đề trung tâm ---
-    ImageIcon titleIcon = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\Title_icon.png");
-    Image img = titleIcon.getImage();
-    Image resizedImg = img.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-    titleIcon = new ImageIcon(resizedImg);
+    ImageIcon titleIcon = loadIconResource("/Icons/Admin_icon/Title_icon.png", 40, 40);
     title = new JLabel("Electric Bicycle Sales", titleIcon, JLabel.CENTER);
     title.setFont(new Font("Times New Roman", Font.BOLD, 20));
     title.setForeground(Color.WHITE);
 
     // --- Icon và text cho nút exit ở bên trái ---
-    ImageIcon exit_icon = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\exit_full_screen.png");
-    Image img_exit = exit_icon.getImage();
-    Image resizedImg_exit = img_exit.getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-    exit_icon = new ImageIcon(resizedImg_exit);
+    ImageIcon exit_icon = loadIconResource("/Icons/Admin_icon/exit_full_screen.png", 20, 20);
     title_exit = new JLabel("", exit_icon, JLabel.LEFT);
     title_exit.setFont(new Font("Times New Roman", Font.BOLD, 18));
     title_exit.setForeground(Color.WHITE);
@@ -289,6 +279,15 @@ public class Dashboard_ad extends JFrame {
     }
 
     
+    private ImageIcon loadIconResource(String resourcePath, int width, int height) {
+        java.net.URL resource = getClass().getResource(resourcePath);
+        if (resource == null) return null;
+        ImageIcon icon = new ImageIcon(resource);
+        Image img = icon.getImage();
+        Image resized = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new ImageIcon(resized);
+    }
+
       public static void main(String args[]) {
          try {
               UIManager.setLookAndFeel(new FlatLightLaf());

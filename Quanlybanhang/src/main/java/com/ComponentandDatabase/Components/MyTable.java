@@ -5,6 +5,10 @@ import javax.swing.table.*;
 import java.awt.*;
 
 public class MyTable extends JTable {
+    private boolean hasAlternatingRows = true;
+    private Color alternatingColor = new Color(248, 249, 250);
+    private boolean hasHoverEffect = true;
+    private int hoveredRow = -1;
 
     public MyTable(DefaultTableModel model, Color backgroundColor, Color foregroundColor,
                    Color selectionBackgroundColor, Color selectionForegroundColor,
@@ -37,10 +41,32 @@ public class MyTable extends JTable {
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        // Căn giữa nội dung bảng
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        setDefaultRenderer(Object.class, centerRenderer);
+        // Custom renderer với alternating rows và hover effect
+        setDefaultRenderer(Object.class, new ModernTableCellRenderer());
+        
+        // Thêm mouse listener cho hover effect
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                if (hasHoverEffect) {
+                    int row = rowAtPoint(e.getPoint());
+                    if (row != hoveredRow) {
+                        hoveredRow = row;
+                        repaint();
+                    }
+                }
+            }
+        });
+        
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (hasHoverEffect) {
+                    hoveredRow = -1;
+                    repaint();
+                }
+            }
+        });
 
         // ✅ Tùy chỉnh JTableHeader để loại bỏ hover hoàn toàn
         JTableHeader header = new JTableHeader(getColumnModel()) {
@@ -108,5 +134,57 @@ public class MyTable extends JTable {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         return scrollPane;
+    }
+    
+    // Modern UI methods
+    public void setAlternatingRows(boolean hasAlternatingRows, Color alternatingColor) {
+        this.hasAlternatingRows = hasAlternatingRows;
+        this.alternatingColor = alternatingColor;
+        repaint();
+    }
+    
+    public void setHoverEffect(boolean hasHoverEffect) {
+        this.hasHoverEffect = hasHoverEffect;
+        if (!hasHoverEffect) {
+            hoveredRow = -1;
+        }
+        repaint();
+    }
+    
+    // Custom cell renderer với modern effects
+    private class ModernTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                     boolean isSelected, boolean hasFocus,
+                                                     int row, int column) {
+            Component comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            // Alternating row colors
+            if (hasAlternatingRows && !isSelected) {
+                if (row % 2 == 0) {
+                    comp.setBackground(alternatingColor);
+                } else {
+                    comp.setBackground(Color.WHITE);
+                }
+            }
+            
+            // Hover effect
+            if (hasHoverEffect && row == hoveredRow && !isSelected) {
+                comp.setBackground(new Color(230, 244, 255));
+            }
+            
+            // Selection effect
+            if (isSelected) {
+                comp.setBackground(new Color(0, 123, 255));
+                comp.setForeground(Color.WHITE);
+            } else {
+                comp.setForeground(Color.BLACK);
+            }
+            
+            // Center alignment
+            ((JLabel) comp).setHorizontalAlignment(SwingConstants.CENTER);
+            
+            return comp;
+        }
     }
 }

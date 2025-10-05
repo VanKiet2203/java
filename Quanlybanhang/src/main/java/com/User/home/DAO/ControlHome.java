@@ -4,7 +4,6 @@ import com.ComponentandDatabase.Components.CustomDialog;
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
 import com.User.home.DTO.productDTO;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -16,24 +15,22 @@ public class ControlHome {
 
         String sql = """
             SELECT 
-                p.Product_ID, 
-                p.Product_Name, 
-                p.Motor, 
-                p.Battery_Capacity, 
-                p.Range_Per_Charge, 
-                p.Ride_Mode, 
-                p.Price, 
-                p.Quantity, 
-                p.Warranty_Period, 
+                p.Product_ID,
+                p.Product_Name,
+                p.Color,
+                p.Battery_Capacity,
+                p.Speed,
+                p.Price,
+                p.Quantity,
                 CASE 
-                    WHEN p.Quantity = 0 THEN 'Unavailable' 
-                    ELSE p.Status 
-                END AS Status, 
-                c.Category_ID, 
+                    WHEN p.Quantity = 0 THEN 'Unavailable'
+                    ELSE 'Available'
+                END AS Status,
+                c.Category_ID,
                 p.Image
             FROM 
                 Product p
-            JOIN Category c ON p.Category_ID = c.Category_ID
+            LEFT JOIN Category c ON p.Category_ID = c.Category_ID
             """ + (condition != null && !condition.trim().isEmpty() ? " WHERE " + condition : "");
 
         try (
@@ -47,13 +44,13 @@ public class ControlHome {
                 productDTO product = new productDTO(
                     rs.getString("Product_ID"),
                     rs.getString("Product_Name"),
-                    rs.getString("Motor"),
-                    rs.getString("Battery_Capacity"),
-                    rs.getString("Range_Per_Charge"),
-                    rs.getString("Ride_Mode"),
+                    rs.getString("Color"),                 // map to cpu
+                    rs.getString("Battery_Capacity"),      // map to ram
+                    rs.getString("Speed"),                 // map to graphicsCard
+                    "",                                     // operatingSystem not in schema
                     rs.getBigDecimal("Price"),
                     rs.getInt("Quantity"),
-                    rs.getString("Warranty_Period"),
+                    "",                                     // warrantyPeriod not in schema
                     rs.getString("Status"),
                     rs.getString("Category_ID"),
                     rs.getString("Image")
@@ -69,10 +66,21 @@ public class ControlHome {
     
     public productDTO getProductById(String productId) {
         String sql = """
-            SELECT p.Product_ID, p.Product_Name, 
-                   p.Motor, p.Battery_Capacity, p.Range_Per_Charge, 
-                   p.Ride_Mode, p.Price, p.Quantity, p.Warranty_Period, 
-                   p.Status, p.Category_ID, p.Image, s.Sup_ID
+            SELECT 
+                p.Product_ID,
+                p.Product_Name,
+                p.Color,
+                p.Battery_Capacity,
+                p.Speed,
+                p.Price,
+                p.Quantity,
+                CASE 
+                    WHEN p.Quantity = 0 THEN 'Unavailable'
+                    ELSE 'Available'
+                END AS Status,
+                p.Category_ID,
+                p.Image,
+                s.Sup_ID
             FROM Product p
             JOIN Category c ON p.Category_ID = c.Category_ID
             JOIN Supplier s ON c.Sup_ID = s.Sup_ID
@@ -89,21 +97,20 @@ public class ControlHome {
                     productDTO product = new productDTO();
                     product.setProductID(rs.getString("Product_ID"));
                     product.setProductName(rs.getString("Product_Name"));
-                    product.setCpu(rs.getString("Motor"));
+                    product.setCpu(rs.getString("Color"));
                     product.setRam(rs.getString("Battery_Capacity"));
-                    product.setGraphicsCard(rs.getString("Range_Per_Charge"));
-                    product.setOperatingSystem(rs.getString("Ride_Mode"));
+                    product.setGraphicsCard(rs.getString("Speed"));
+                    product.setOperatingSystem("");
                     product.setPrice(rs.getBigDecimal("Price"));
                     product.setQuantity(rs.getInt("Quantity"));
-                    product.setWarrantyPeriod(rs.getString("Warranty_Period"));
+                    product.setWarrantyPeriod("");
                     product.setStatus(rs.getString("Status"));
                     product.setCategoryID(rs.getString("Category_ID"));
                     product.setImage(rs.getString("Image"));
 
-                    // Lấy Brand từ Supplier và gán vào một biến tạm
-                    String brand = rs.getString("Sup_ID");
+                    // Lấy Brand từ Supplier nếu cần (hiện không sử dụng)
+                    rs.getString("Sup_ID");
 
-                   
                     return product;
                 }
             }

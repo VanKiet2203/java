@@ -77,19 +77,34 @@ public class CustomDialog {
         }
 
         SwingUtilities.invokeLater(() -> {
-            int width = 300;
-            int height = 160;
+            int width = 350;
+            int height = 180;
 
             JDialog dialog = new JDialog((Frame) null, title, true);
             dialog.setUndecorated(true);
             dialog.setSize(width, height);
             dialog.setLayout(null);
             dialog.getContentPane().setBackground(Color.WHITE);
+            
+            // Modern shadow effect - removed setDropShadow as it's not available in standard JDialog
 
-            // **Tiêu đề hộp thoại**
-            JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            titlePanel.setBackground(titleColor);
-            titlePanel.setBounds(0, 0, width, 40);
+            // **Tiêu đề hộp thoại với gradient**
+            JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT)) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    // Gradient background
+                    GradientPaint gradient = new GradientPaint(0, 0, titleColor, 0, getHeight(), 
+                        new Color(titleColor.getRed(), titleColor.getGreen(), titleColor.getBlue(), 200));
+                    g2.setPaint(gradient);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    
+                    g2.dispose();
+                }
+            };
+            titlePanel.setBounds(0, 0, width, 50);
 
             JLabel iconLabel = new JLabel(icon);
             JLabel titleLabel = new JLabel(" " + title);
@@ -125,22 +140,42 @@ public class CustomDialog {
 
             JScrollPane scrollPane = new JScrollPane(messageLabel);
             scrollPane.setBorder(null);
-            scrollPane.setBounds(20, 60, width - 40, 40);
+            scrollPane.setBounds(20, 70, width - 40, 50);
 
             // **Panel chứa button**
             JPanel buttonPanel = new JPanel();
             buttonPanel.setLayout(null);
             buttonPanel.setBackground(Color.WHITE);
-            buttonPanel.setBounds(0, height - 50, width, 40);
+            buttonPanel.setBounds(0, height - 60, width, 50);
 
-            // **Button "OK"**
-            JButton closeButton = new JButton("OK");
-            closeButton.setBackground(titleColor);
+            // **Button "OK" với modern style**
+            JButton closeButton = new JButton("OK") {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    // Gradient background
+                    GradientPaint gradient = new GradientPaint(0, 0, titleColor, 0, getHeight(), 
+                        new Color(titleColor.getRed(), titleColor.getGreen(), titleColor.getBlue(), 180));
+                    g2.setPaint(gradient);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                    
+                    // Border
+                    g2.setColor(new Color(255, 255, 255, 50));
+                    g2.setStroke(new BasicStroke(1f));
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                    
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
             closeButton.setForeground(Color.WHITE);
-            closeButton.setFont(new Font("Arial", Font.BOLD, 14));
+            closeButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
             closeButton.setFocusPainted(false);
-            closeButton.setUI(new javax.swing.plaf.basic.BasicButtonUI());
-            closeButton.setBounds((width - 80) / 2, 5, 80, 30);
+            closeButton.setBorderPainted(false);
+            closeButton.setContentAreaFilled(false);
+            closeButton.setBounds((width - 100) / 2, 10, 100, 35);
             closeButton.addActionListener(e -> dialog.dispose());
 //            closeButton.repaint();
 //            closeButton.revalidate();
@@ -154,8 +189,11 @@ public class CustomDialog {
             dialog.add(scrollPane);
             dialog.add(buttonPanel);
 
-            // **Bo góc hộp thoại**
-            dialog.setShape(new java.awt.geom.RoundRectangle2D.Float(0, 0, width, height, 20, 20));
+            // **Bo góc hộp thoại với shadow**
+            dialog.setShape(new java.awt.geom.RoundRectangle2D.Float(0, 0, width, height, 25, 25));
+            
+            // Thêm shadow effect cho dialog
+            dialog.getRootPane().putClientProperty("Window.shadow", true);
 
             // **Hiển thị hộp thoại**
             dialog.setLocationRelativeTo(null);

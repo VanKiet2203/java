@@ -28,9 +28,9 @@ public class BusAccount_ad {
         return controlLogin.getAdminName();
     }
     
-    public void registerAd(String idCard, String fullName, String gender,
+    public boolean registerAd(String idCard, String fullName, String gender,
                                  String contact, String email, String password){
-        controlRegister.registerAd(idCard, fullName, gender, contact, email, password);
+        return controlRegister.registerAd(idCard, fullName, gender, contact, email, password);
     }
    
     public String sentOTP(String admin_id){

@@ -53,7 +53,9 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
     private void initRegister() {
         // Đặt layout của panel là null (không sử dụng layout manager)
         register.setLayout(null);
-
+        // Offset chỉnh căn lề ngang
+        int labelOffsetX = -20; // dịch label sang trái
+        int fieldOffsetX = 30;  // dịch field sang phải
         // Tạo label "Create Account" và căn giữa
         JLabel label_title = new JLabel("Register Account");
         label_title.setFont(new Font("Times new roman", Font.BOLD, 30));
@@ -69,7 +71,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         lbl_idcard.setForeground(Color.BLACK);
 
         // Đặt tọa độ và kích thước cho label
-        lbl_idcard.setBounds(60, 100, 200, 30); 
+        lbl_idcard.setBounds(60 + labelOffsetX, 100, 200, 30); 
         register.add(lbl_idcard);
         
         //   Tạo MyTextField cho ID Card
@@ -79,8 +81,8 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         txtIDCard.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtIDCard.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\ID_card.jpg");
 
-       // Đặt tọa độ và kích thước cho MyTextField
-        txtIDCard.setBounds(160, 100, 200, 35);
+        // Align fields with consistent width centered
+        txtIDCard.setBounds((519 - 280) / 2 + fieldOffsetX, 100, 280, 35);
         register.add(txtIDCard);
         
         //Label Full Name
@@ -89,7 +91,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         lbl_fullname.setForeground(Color.BLACK);
 
         // Đặt tọa độ và kích thước cho label
-        lbl_fullname.setBounds(60, 170, 200, 35); 
+        lbl_fullname.setBounds(60 + labelOffsetX, 170, 200, 35); 
         register.add(lbl_fullname);
         
          // Tạo MyTextField cho tên đăng nhập (email)
@@ -99,27 +101,27 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         txtFullName.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtFullName.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\full name.png");
         // Đặt tọa độ và kích thước cho MyTextField
-        txtFullName.setBounds(160, 170, 220, 35);
+        txtFullName.setBounds((519 - 280) / 2 + fieldOffsetX, 170, 280, 35);
         register.add(txtFullName);
 
         // Tạo label "Gender"
        JLabel lblGender = new JLabel("Gender");
        lblGender.setFont(new Font("goudy old style", Font.PLAIN, 20));
        lblGender.setForeground(Color.BLACK);
-       lblGender.setBounds(60, 240, 100, 30); // Đặt vị trí bên trái MyTextField
+       lblGender.setBounds(60 + labelOffsetX, 240, 100, 30);
        register.add(lblGender);
        
         // Tạo RadioButton "Male"
         rdoMale = new JRadioButton("Male");
         rdoMale.setFont(new Font("Arial", Font.PLAIN, 16));
-        rdoMale.setBounds(160, 240, 70, 30);
+        rdoMale.setBounds(160 + fieldOffsetX, 240, 70, 30);
         rdoMale.setBackground(Color.WHITE);
         register.add(rdoMale);
 //
 //        // Tạo RadioButton "Female"
         rdoFemale = new JRadioButton("Female");
         rdoFemale.setFont(new Font("Arial", Font.PLAIN, 16));
-        rdoFemale.setBounds(250, 240, 80, 30);
+        rdoFemale.setBounds(250 + fieldOffsetX, 240, 80, 30);
         rdoFemale.setBackground(Color.WHITE);
         register.add(rdoFemale);
 
@@ -133,7 +135,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
        JLabel lblEmail = new JLabel("Email");
        lblEmail.setFont(new Font("goudy old style", Font.PLAIN, 20));
        lblEmail.setForeground(Color.BLACK);
-       lblEmail.setBounds(60,300, 120, 30); // Đặt vị trí bên trái MyTextField
+       lblEmail.setBounds(60 + labelOffsetX,300, 120, 30);
        register.add(lblEmail);
 
       // Tạo MyTextField cho tên đăng nhập (email)
@@ -144,14 +146,14 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         txtEmail.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\mail.png");
 
             // Đặt tọa độ và kích thước cho MyTextField
-        txtEmail.setBounds(150, 300, 250, 35);
+        txtEmail.setBounds((519 - 280) / 2 + fieldOffsetX, 300, 280, 35);
         register.add(txtEmail);
         
            // Tạo label "Contact"
        JLabel lblContact = new JLabel("Contact");
        lblContact.setFont(new Font("goudy old style", Font.PLAIN, 20));
        lblContact.setForeground(Color.BLACK);
-       lblContact.setBounds(60,380, 120, 30); // Đặt vị trí bên trái MyTextField
+       lblContact.setBounds(60 + labelOffsetX,380, 120, 30);
        register.add(lblContact);
        
        // Tạo MyTextField cho Contact 
@@ -161,7 +163,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         txtContact.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtContact.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\contact.png");
            // Đặt tọa độ và kích thước cho MyTextField
-        txtContact.setBounds(150, 380, 230, 35);
+        txtContact.setBounds((519 - 280) / 2 + fieldOffsetX, 380, 280, 35);
         register.add(txtContact);
         
 //            // Tạo label "Address"
@@ -187,7 +189,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
       JLabel lblpass = new JLabel("Password");
       lblpass.setFont(new Font("goudy old style", Font.PLAIN, 20));
       lblpass.setForeground(Color.BLACK);
-      lblpass.setBounds(60, 480, 120, 30); // Đặt vị trí bên trái JTextField
+      lblpass.setBounds(60 + labelOffsetX, 480, 120, 30);
       register.add(lblpass);
      
             // Tạo đối tượng MyTextField
@@ -211,7 +213,7 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
      );
 
      // Cập nhật vị trí
-     passwordPanel.setBounds(155, 475, 230, 35);
+     passwordPanel.setBounds((519 - 280) / 2 + fieldOffsetX, 475, 280, 35);
 
      // Thêm vào giao diện
      register.add(passwordPanel);
@@ -221,19 +223,31 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         signup.setBackgroundColor(new Color(0, 150, 136)); // Màu nền
         signup.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
         signup.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        signup.setBounds(180, 540, 200, 35);
+        // Center SIGN UP on register
+        signup.setBounds((519 - 200) / 2 + labelOffsetX, 540, 200, 35);
         signup.setFont(new Font("Times New Roman", Font.BOLD, 18));
         signup.setForeground(Color.WHITE);
 
         // Thêm vào panel
         register.add(signup);
 
+        // Nút Back to Sign In
+        MyButton backToSignIn = new MyButton("Back to Sign In", 20);
+        backToSignIn.setBackgroundColor(new Color(66, 133, 244));
+        backToSignIn.setPressedColor(new Color(52, 103, 189));
+        backToSignIn.setHoverColor(new Color(92, 153, 255));
+        backToSignIn.setForeground(Color.WHITE);
+        backToSignIn.setBounds((519 - 200) / 2 + labelOffsetX, 585, 200, 35);
+        backToSignIn.setFont(new Font("Times New Roman", Font.BOLD, 18));
+        register.add(backToSignIn);
+        backToSignIn.addActionListener(ev -> showRegister(true));
+
         // Xử lý sự kiện khi nhấn nút
         signup.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 busAccount= new BusAccount_ad();
-                busAccount.registerAd(
+                boolean ok = busAccount.registerAd(
                     txtIDCard.getText().trim(),
                     txtFullName.getText().trim(),
                     rdoMale.isSelected() ? "Male" : (rdoFemale.isSelected() ? "Female" : ""),
@@ -241,7 +255,9 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
                     txtEmail.getText().trim(),
                     txtPassword.getPasswordText().trim()
                 );
-
+                if (ok) {
+                    showRegister(true);
+                }
             }
         });
         
@@ -334,7 +350,8 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
         signin.setBackgroundColor(new Color(0, 150, 136)); // Màu nền
         signin.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
         signin.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        signin.setBounds(130, 440, 230, 35);
+        // Center SIGN IN button
+        signin.setBounds((519 - 230) / 2, 440, 230, 35);
         signin.setFont(new Font("Times New Roman", Font.BOLD, 18));
         signin.setForeground(Color.WHITE);
         
@@ -358,7 +375,18 @@ public class PanelLoginandRegister extends javax.swing.JLayeredPane {
 
 
         login.add(signin);
-        
+
+        // Add a SIGN UP button below SIGN IN to switch directly to Register
+        MyButton signupBelow = new MyButton("SIGN UP", 20);
+        signupBelow.setBackgroundColor(new Color(255, 136, 0));
+        signupBelow.setPressedColor(new Color(214, 115, 0));
+        signupBelow.setHoverColor(new Color(255, 160, 51));
+        signupBelow.setForeground(Color.WHITE);
+        signupBelow.setBounds((519 - 230) / 2, 485, 230, 35);
+        signupBelow.setFont(new Font("Times New Roman", Font.BOLD, 18));
+        signupBelow.addActionListener(ev -> showRegister(false));
+        login.add(signupBelow);
+
  
     }
         

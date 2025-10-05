@@ -17,6 +17,11 @@ public class MyCombobox<E> extends JComboBox<E> {
     private Font customFont = new Font("Arial", Font.PLAIN, 14);
     private int cornerRadius = 20;
     private int hoveredIndex = -1;
+    
+    // Modern UI properties
+    private boolean isFocused = false;
+    private Color focusColor = new Color(7, 164, 121);
+    private boolean hasShadow = false;
 
     public MyCombobox(E[] items) {
         super(items);
@@ -99,12 +104,14 @@ public class MyCombobox<E> extends JComboBox<E> {
         addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
-                borderColor = Color.decode("#3399FF");
+                isFocused = true;
+                borderColor = focusColor;
                 repaint();
             }
 
             @Override
             public void focusLost(FocusEvent e) {
+                isFocused = false;
                 borderColor = Color.GRAY;
                 repaint();
             }
@@ -122,6 +129,17 @@ public class MyCombobox<E> extends JComboBox<E> {
         this.borderColor = border;
         this.fontColor = font;
         setForeground(fontColor);
+        repaint();
+    }
+    
+    // Modern UI methods
+    public void setFocusColor(Color color) {
+        this.focusColor = color;
+        repaint();
+    }
+    
+    public void setShadow(boolean hasShadow) {
+        this.hasShadow = hasShadow;
         repaint();
     }
 
@@ -153,13 +171,24 @@ public class MyCombobox<E> extends JComboBox<E> {
         public void paint(Graphics g, JComponent c) {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // Vẽ shadow nếu được bật
+            if (hasShadow && !isFocused) {
+                g2.setColor(new Color(0, 0, 0, 20));
+                g2.fillRoundRect(2, 2, c.getWidth(), c.getHeight(), cornerRadius, cornerRadius);
+            }
 
             // Nền
             g2.setColor(backgroundColor);
             g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), cornerRadius, cornerRadius);
 
-            // Viền
-            g2.setColor(borderColor);
+            // Viền với hiệu ứng focus
+            Color currentBorderColor = isFocused ? focusColor : borderColor;
+            int borderThickness = isFocused ? 2 : 1;
+            
+            g2.setColor(currentBorderColor);
+            g2.setStroke(new BasicStroke(borderThickness));
             g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, cornerRadius, cornerRadius);
 
             // Gọi phần vẽ mặc định

@@ -10,21 +10,15 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.util.List;
 import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.io.File;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.JTableHeader;
 import javax.swing.table.DefaultTableModel;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.imageio.ImageIO;
 import javax.swing.SwingConstants;
 import java.awt.Dimension;
-import javax.swing.table.DefaultTableModel;
 import com.ComponentandDatabase.Components.MyTable;
 import com.ComponentandDatabase.Components.MyCombobox;
 import com.ComponentandDatabase.Components.MyTextField;
@@ -33,10 +27,10 @@ import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.category.BUS.BusCategory;
 import com.Admin.category.DTO.DTOCategory;
-
-import javax.swing.*;
-
-import java.awt.*;
+import javax.swing.BorderFactory;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 public class Form_Category extends JPanel {
     private JPanel panel, panelSearch;
@@ -456,45 +450,48 @@ public class Form_Category extends JPanel {
              });
 
             
-                // 1️⃣ Load ảnh gốc từ file
-         ImageIcon icon1 = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\Asus Gaming.jpg");
+            // 1️⃣ Load ảnh từ classpath và scale an toàn
+        ImageIcon icon1 = safeLoadAndScale("/Icons/Admin_icon/XDD004.png", 300, 300);
 
-         // 2️⃣ Scale ảnh bằng hàm chất lượng cao mà bạn đã viết
-         Image scaledImage = getHighQualityScaledImage(icon1.getImage(), 300, 300);
-         icon1 = new ImageIcon(scaledImage);
-
-         // 3️⃣ Gắn ảnh vào JLabel
-         lblimage1 = new JLabel(icon1);
+        // 3️⃣ Gắn ảnh vào JLabel (có thể null nếu không tìm thấy resource)
+        lblimage1 = new JLabel(icon1);
+        if (icon1 == null) {
+            lblimage1.setText("missing");
+            lblimage1.setHorizontalAlignment(SwingConstants.CENTER);
+            lblimage1.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+        }
          lblimage1.setBounds(100, 550, 300, 300); // vị trí và kích thước label
 
          // 4️⃣ Thêm vào panel để hiển thị
          panel.add(lblimage1);
 
          
-                 // 1️⃣ Load ảnh gốc từ file
-         ImageIcon icon2 = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\Asus Gaming Rog.png");
+                // 1️⃣ Load ảnh từ classpath và scale an toàn
+        ImageIcon icon2 = safeLoadAndScale("/Icons/Admin_icon/XDD005.png", 300, 300);
 
-         // 2️⃣ Scale ảnh bằng hàm chất lượng cao mà bạn đã viết
-         Image scaledImage2 = getHighQualityScaledImage(icon2.getImage(), 300, 300);
-         icon2 = new ImageIcon(scaledImage2);
-
-         // 3️⃣ Gắn ảnh vào JLabel
-         lblimage2 = new JLabel(icon2);
+        // 3️⃣ Gắn ảnh vào JLabel (có thể null nếu không tìm thấy resource)
+        lblimage2 = new JLabel(icon2);
+        if (icon2 == null) {
+            lblimage2.setText("missing");
+            lblimage2.setHorizontalAlignment(SwingConstants.CENTER);
+            lblimage2.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+        }
          lblimage2.setBounds(500, 530, 400, 300); // vị trí và kích thước label
 
          // 4️⃣ Thêm vào panel để hiển thị
          panel.add(lblimage2);
          
          
-                  // 1️⃣ Load ảnh gốc từ file
-         ImageIcon icon3 = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\Asus Gaming Rog2.png");
+                 // 1️⃣ Load ảnh từ classpath và scale an toàn
+        ImageIcon icon3 = safeLoadAndScale("/Icons/Admin_icon/JS50.png", 300, 300);
 
-         // 2️⃣ Scale ảnh bằng hàm chất lượng cao mà bạn đã viết
-         Image scaledImage3 = getHighQualityScaledImage(icon3.getImage(), 300, 300);
-         icon3 = new ImageIcon(scaledImage3);
-
-         // 3️⃣ Gắn ảnh vào JLabel
-         lblimage3 = new JLabel(icon3);
+        // 3️⃣ Gắn ảnh vào JLabel (có thể null nếu không tìm thấy resource)
+        lblimage3 = new JLabel(icon3);
+        if (icon3 == null) {
+            lblimage3.setText("missing");
+            lblimage3.setHorizontalAlignment(SwingConstants.CENTER);
+            lblimage3.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+        }
          lblimage3.setBounds(950, 550, 400, 300); // vị trí và kích thước label
 
          // 4️⃣ Thêm vào panel để hiển thị
@@ -509,7 +506,7 @@ public class Form_Category extends JPanel {
                
    }
     public static BufferedImage getHighQualityScaledImage(Image srcImg, int targetWidth, int targetHeight) {
-       BufferedImage img = toBufferedImage(srcImg);
+      BufferedImage img = toBufferedImage(srcImg);
        int currentWidth = img.getWidth();
        int currentHeight = img.getHeight();
        int type = BufferedImage.TYPE_INT_ARGB;
@@ -545,10 +542,13 @@ public class Form_Category extends JPanel {
    }
 
     public static BufferedImage toBufferedImage(Image img) {
-       if (img instanceof BufferedImage) return (BufferedImage) img;
+      if (img == null) {
+          throw new IllegalArgumentException("Ảnh không hợp lệ hoặc chưa được load.");
+      }
+      if (img instanceof BufferedImage) return (BufferedImage) img;
 
-       int width = img.getWidth(null);
-       int height = img.getHeight(null);
+      int width = img.getWidth(null);
+      int height = img.getHeight(null);
        if (width < 0 || height < 0) {
            throw new IllegalArgumentException("Ảnh không hợp lệ hoặc chưa được load.");
        }
@@ -558,6 +558,26 @@ public class Form_Category extends JPanel {
        bGr.drawImage(img, 0, 0, null);
        bGr.dispose();
        return bimage;
+   }
+
+   private ImageIcon safeLoadAndScale(String resourcePath, int width, int height) {
+       try {
+           java.net.URL resource = getClass().getResource(resourcePath);
+           if (resource == null) {
+               System.err.println("Resource not found: " + resourcePath);
+               return null;
+           }
+           BufferedImage original = ImageIO.read(resource);
+           if (original == null) {
+               System.err.println("Failed to read image: " + resourcePath);
+               return null;
+           }
+           Image scaled = getHighQualityScaledImage(original, width, height);
+           return new ImageIcon(scaled);
+       } catch (Exception ex) {
+           System.err.println("Error loading image " + resourcePath + ": " + ex.getMessage());
+           return null;
+       }
    }
 
 

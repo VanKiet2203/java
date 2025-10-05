@@ -6,6 +6,8 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import javax.swing.JLabel;
+import javax.swing.ImageIcon;
+import javax.swing.Timer;
 import java.awt.Font;
 import java.text.DecimalFormat;
 import java.awt.event.ActionEvent;
@@ -20,9 +22,19 @@ public class PanelCover extends javax.swing.JPanel {
     private ActionListener event;
     private final DecimalFormat df= new DecimalFormat("##0.###");
     private MigLayout layout;
-    private JLabel titleHello, description, description1, description2;
+    private JLabel imageLabel;
+    private JLabel captionLabel;
+    private JLabel shadowLabel;
+    private JLabel sloganLabel;
     private MyButton signin;
     private boolean isSignUp = true; // Mặc định là Sign up
+    private Timer carouselTimer;
+    private int currentIndex = 0;
+    private final String[] imagePaths = new String[] {
+        "src\\main\\resources\\Icons\\Admin_icon\\XDD004.png",
+        "src\\main\\resources\\Icons\\Admin_icon\\XDD005.png",
+        "src\\main\\resources\\Icons\\Admin_icon\\JS50.png"
+    };
 
     public PanelCover() {
         setOpaque(false);
@@ -65,64 +77,76 @@ public class PanelCover extends javax.swing.JPanel {
     }
      
     private void init() {
-        titleHello= new JLabel("Hello Admin!");
-        titleHello.setFont(new Font("SansSerif", Font.BOLD, 30));
-        titleHello.setForeground(new Color(245, 245, 245));
-        titleHello.setBounds(200, 100, 280, 40);
-        add(titleHello);
-        
-//        title = new JLabel("Welcome Back!");
-//        title.setFont(new Font("SansSerif", Font.BOLD, 30));
-//        title.setForeground(new Color(245, 245, 245));
-//        title.setBounds(200, 150, 300, 40); // Đặt vị trí xuất hiện của title
-//        add(title);
-        
-        
-        description = new JLabel("<html>Please register an account as soon as possible<br>"
-                         + "<p style='margin-left:60px;'>if you haven't already done so!</p></html>");
-        description.setFont(new Font("SanSerif", Font.ITALIC, 20));
-        description.setForeground(new Color(245, 245, 245));
-        description.setBounds(100, 180, 700, 60); // Tăng chiều cao để hiển thị dòng thứ 2
-        add(description);
-        
-        
-        description1 = new JLabel("<html>Please enter the full your information when you<br>"
-                         + "<p style='margin-left:60px;'>are registering an account!</p></html>");
-        description1.setFont(new Font("SanSerif", Font.ITALIC, 20));
-        description1.setForeground(new Color(245, 245, 245));
-        description1.setBounds(100, 280, 700, 60); // Tăng chiều cao để hiển thị dòng thứ 2
-        add(description1);
-        
-        description2 = new JLabel("Login with your personal information");
-        description2.setFont(new Font("SansSerif", Font.BOLD|Font.ITALIC, 20));
-        description2.setForeground(new Color(245, 245, 245));
-        description2.setBounds(130, 380, 700, 60); // Đặt vị trí xuất hiện của title
-        add(description2);
-        
-        signin= new MyButton("Sign up", 20);  
-        signin.setBackgroundColor(Color.decode("#339900")); // Màu nền
-        signin.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
-        signin.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        signin.setBounds(250, 500, 150, 35);
-        signin.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        signin.setForeground(Color.WHITE);
-        add(signin);
-        signin.addActionListener(new ActionListener() {
+        imageLabel = new JLabel();
+        captionLabel = new JLabel("Admin Portal", JLabel.CENTER);
+        captionLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+        captionLabel.setForeground(Color.WHITE);
+
+        shadowLabel = new JLabel("Admin Portal", JLabel.CENTER);
+        shadowLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+        shadowLabel.setForeground(new Color(0, 0, 0, 150));
+
+        sloganLabel = new JLabel("Manage • Monitor • Maintain", JLabel.CENTER);
+        sloganLabel.setFont(new Font("SansSerif", Font.ITALIC, 14));
+        sloganLabel.setForeground(new Color(230, 230, 230));
+        // Center the image within the cover panel, and re-center on resize
+        int imgW = 420;
+        int imgH = 340;
+        imageLabel.setSize(imgW, imgH);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                
-                        // Chuyển đổi giữa Sign up và Sign in
-               if (isSignUp) {
-                   signin.setText("Sign in"); // Đổi thành Sign in
-               } else {
-                   signin.setText("Sign up"); // Đổi thành Sign up
-               }
-               isSignUp = !isSignUp; // Đảo trạng thái
-                
-                event.actionPerformed(e); 
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int x = (getWidth() - imageLabel.getWidth()) / 2;
+                int y = (getHeight() - imageLabel.getHeight()) / 2;
+                imageLabel.setLocation(x, y);
             }
         });
-        
+        // initial center
+        int x = (getWidth() - imgW) / 2;
+        int y = (getHeight() - imgH) / 2;
+        imageLabel.setLocation(x, y);
+        add(imageLabel);
+        add(shadowLabel);
+        add(captionLabel);
+        add(sloganLabel);
+
+        updateImage();
+        carouselTimer = new Timer(2500, e -> {
+            currentIndex = (currentIndex + 1) % imagePaths.length;
+            updateImage();
+        });
+        carouselTimer.start();
+
+        // Vị trí chữ dưới ảnh khi resize
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int textY = imageLabel.getY() + imageLabel.getHeight() + 10;
+                int maxY = getHeight() - 60;
+                textY = Math.min(textY, maxY);
+                shadowLabel.setBounds(3, textY + 3, getWidth(), 30);
+                captionLabel.setBounds(0, textY, getWidth(), 30);
+                sloganLabel.setBounds(0, textY + 25, getWidth(), 25);
+            }
+        });
+
+        // Thiết lập vị trí ban đầu cho chữ
+        int textY0 = imageLabel.getY() + imageLabel.getHeight() + 10;
+        int maxY0 = getHeight() - 60;
+        textY0 = Math.min(textY0, maxY0);
+        shadowLabel.setBounds(3, textY0 + 3, getWidth(), 30);
+        captionLabel.setBounds(0, textY0, getWidth(), 30);
+        sloganLabel.setBounds(0, textY0 + 25, getWidth(), 25);
+
+        // Ảnh dưới, chữ trên (z-order)
+        setComponentZOrder(imageLabel, getComponentCount() - 1);
+    }
+
+    private void updateImage() {
+        String path = imagePaths[currentIndex];
+        ImageIcon icon = new ImageIcon(path);
+        java.awt.Image scaled = icon.getImage().getScaledInstance(imageLabel.getWidth(), imageLabel.getHeight(), java.awt.Image.SCALE_SMOOTH);
+        imageLabel.setIcon(new ImageIcon(scaled));
     }
   
 }

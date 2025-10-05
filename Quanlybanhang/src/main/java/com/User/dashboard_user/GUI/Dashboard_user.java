@@ -29,7 +29,11 @@ public class Dashboard_user extends JFrame {
     public static String email, customerID;
 
     public Dashboard_user() {
-        initComponents();
+        this(null); // Gọi constructor với email = null
+    }
+    
+    public Dashboard_user(String userEmail) {
+        initComponents(userEmail);
         setSize(1570, 800); // KHÔNG full screen nữa
         setLocationRelativeTo(null); // Hiển thị giữa màn hình
         setResizable(true);
@@ -37,6 +41,10 @@ public class Dashboard_user extends JFrame {
     }
 
     private void initComponents() {
+        initComponents(null);
+    }
+    
+    private void initComponents(String userEmail) {
         // PANEL NỀN CHÍNH
         bg = new JPanel(new BorderLayout());
 
@@ -98,9 +106,25 @@ public class Dashboard_user extends JFrame {
 
         bg.add(wrapper, BorderLayout.CENTER);
      
-        email= PanelLoginandRegister_User.txtEmailLogin.getText().strip();
-        busProfile= new BUSProfile_cus();
-        customerID= busProfile.getCustomerID(email);
+        // Sử dụng email được truyền vào hoặc lấy từ static method
+        if (userEmail != null && !userEmail.isEmpty()) {
+            email = userEmail;
+            System.out.println("🔍 DEBUG - Dashboard received email: " + email);
+        } else {
+            // Lấy email từ static method
+            String savedEmail = PanelLoginandRegister_User.getCurrentUserEmail();
+            if (savedEmail != null && !savedEmail.isEmpty()) {
+                email = savedEmail;
+                System.out.println("🔍 DEBUG - Dashboard got email from static method: " + email);
+            } else {
+                // Fallback nếu không có email
+                email = "default@email.com";
+                System.out.println("🔍 DEBUG - Dashboard using fallback email: " + email);
+            }
+        }
+        busProfile = new BUSProfile_cus();
+        customerID = busProfile.getCustomerID(email);
+        System.out.println("🔍 DEBUG - Customer ID: " + customerID);
         // THÊM FORM
         
         Form_Cart cartForm = new Form_Cart(customerID);

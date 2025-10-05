@@ -19,17 +19,23 @@ public class MyTextField extends JPanel {
     private String hint = "";
     private Font hintFont = new Font("SansSerif", Font.ITALIC, 14);
     private int textOffsetX = 8;
+    
+    // Modern UI properties
+    private boolean isFocused = false;
+    private Color focusColor = new Color(7, 164, 121);
+    private Color borderColor = new Color(200, 200, 200);
+    private boolean hasFloatingLabel = false;
+    private String floatingLabelText = "";
+    private JLabel floatingLabel;
 
     public MyTextField() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
         setOpaque(true);  // Đảm bảo JPanel không trong suốt
-        setPreferredSize(new Dimension(250, 40));
+        setPreferredSize(new Dimension(250, 50));
 
-        // Viền ngoài
-        Border outerBorder = BorderFactory.createLineBorder(new Color(7, 164, 121), 2);
-        Border innerBorder = new EmptyBorder(5, 5, 5, 5);
-        setBorder(BorderFactory.createCompoundBorder(outerBorder, innerBorder));
+        // Modern border với rounded corners
+        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
 
         // Label icon bên trái
         prefixIconLabel = new JLabel();
@@ -39,21 +45,37 @@ public class MyTextField extends JPanel {
         // TextField
         textField = createTextField();
         add(textField, BorderLayout.CENTER);
+        
+        // Thêm focus listener
+        textField.addFocusListener(new java.awt.event.FocusListener() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                isFocused = true;
+                repaint();
+            }
+            
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                isFocused = false;
+                repaint();
+            }
+        });
     }
 
     private JTextField createTextField() {
         JTextField tf = new JTextField() {
             @Override
             protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
                 // Đặt màu nền trắng trước khi vẽ
-                g.setColor(Color.WHITE);
-                g.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
                 
                 super.paintComponent(g);
 
                 if (getText().isEmpty() && hint != null) {
-                    Graphics2D g2 = (Graphics2D) g;
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     g2.setColor(Color.GRAY);
                     g2.setFont(hintFont);
 
@@ -64,10 +86,10 @@ public class MyTextField extends JPanel {
             }
         };
         tf.setBorder(null);
-        tf.setOpaque(true);
-        tf.setBackground(getBackground()); // Lấy màu nền của JPanel
-        tf.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-        //tf.setMargin(new Insets(5, 5, 5, 5));
+        tf.setOpaque(false);
+        tf.setBackground(new Color(0, 0, 0, 0)); // Transparent
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        tf.setMargin(new Insets(8, 8, 8, 8));
         return tf;
     }
 
@@ -189,10 +211,64 @@ public class MyTextField extends JPanel {
     textField.setBackground(locked ? new Color(240, 240, 240) : Color.WHITE);
 }
 
- public void setTextAlignment(int alignment) {
+    public void setTextAlignment(int alignment) {
     textField.setHorizontalAlignment(alignment);  // Căn chỉnh văn bản
     textField.setMargin(new Insets(0, 0, 0, 0)); // Đảm bảo không có margin (padding)
 }
+
+    // Modern UI methods
+    public void setFocusColor(Color color) {
+        this.focusColor = color;
+        repaint();
+    }
+    
+    public void setBorderColor(Color color) {
+        this.borderColor = color;
+        repaint();
+    }
+    
+    public void setFloatingLabel(String labelText) {
+        this.hasFloatingLabel = true;
+        this.floatingLabelText = labelText;
+        if (floatingLabel == null) {
+            floatingLabel = new JLabel(labelText);
+            floatingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            floatingLabel.setForeground(Color.GRAY);
+            add(floatingLabel, BorderLayout.NORTH);
+        } else {
+            floatingLabel.setText(labelText);
+        }
+        revalidate();
+        repaint();
+    }
+    
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        
+        // Vẽ nền
+        g2.setColor(Color.WHITE);
+        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+        
+        // Vẽ border với hiệu ứng focus
+        Color currentBorderColor = isFocused ? focusColor : borderColor;
+        int borderThickness = isFocused ? 2 : 1;
+        
+        g2.setColor(currentBorderColor);
+        g2.setStroke(new BasicStroke(borderThickness));
+        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+        
+        // Vẽ shadow nhẹ
+        if (isFocused) {
+            g2.setColor(new Color(0, 0, 0, 10));
+            g2.fillRoundRect(2, 2, getWidth(), getHeight(), 12, 12);
+        }
+        
+        g2.dispose();
+        super.paintComponent(g);
+    }
 
 
 

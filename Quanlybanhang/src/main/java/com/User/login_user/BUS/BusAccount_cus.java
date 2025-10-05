@@ -19,8 +19,8 @@ public class BusAccount_cus {
         daoLogin = new ControlLogin_cus(DatabaseConnection.connect());
     }
 
-    public void registerCustomer(DTOAccount_cus customerDTO) {
-        dao.registerCustomer(customerDTO);
+    public boolean registerCustomer(DTOAccount_cus customerDTO) {
+        return dao.registerCustomer(customerDTO);
     }
 
     public String getName() {

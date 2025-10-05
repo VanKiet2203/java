@@ -15,7 +15,7 @@ public class ControlRegister_User {
     private Connection conn;
     private DatabaseConnection db = new DatabaseConnection();
     
-    public void registerCustomer(DTOAccount_cus customerDTO) {
+    public boolean registerCustomer(DTOAccount_cus customerDTO) {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception e) {
@@ -30,29 +30,29 @@ public class ControlRegister_User {
             customerDTO.getContact().isEmpty() || customerDTO.getAddress().isEmpty() || 
             customerDTO.getPassword().isEmpty()) {
             cs.showError("Please fill in all required fields!");
-            return;
+            return false;
         }
 
         if (customerDTO.getDateOfBirth() == null) {
             cs.showError("Please select a date of birth!");
-            return;
+            return false;
         }
 
         java.sql.Date dob = new java.sql.Date(customerDTO.getDateOfBirth().getTime());
 
         if (!customerDTO.getEmail().matches("^[\\w.-]+@[\\w-]+\\.[a-z]{2,4}$")) {
             cs.showError("Invalid email format!");
-            return;
+            return false;
         }
 
         if (!customerDTO.getContact().matches("^0\\d{9}$")) {
             cs.showError("Phone number must be 10 digits and start with 0!");
-            return;
+            return false;
         }
 
         if (conn == null) {
             cs.showError("Database connection failed!");
-            return;
+            return false;
         }
 
         try {
@@ -63,7 +63,7 @@ public class ControlRegister_User {
                 ResultSet rs = checkStmt.executeQuery();
                 if (rs.next() && rs.getInt(1) > 0) {
                     cs.showError("ID Card already exists! Please enter a different ID.");
-                    return;
+                    return false;
                 }
             }
 
@@ -87,12 +87,15 @@ public class ControlRegister_User {
                 int rowsInserted = pstmt.executeUpdate();
                 if (rowsInserted > 0) {
                     cs.showSuccess("Registration successful!");
+                    return true;
                 }
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(null, "Lỗi khi đăng ký: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
+            return false;
         }
+        return false;
     }
 
 }

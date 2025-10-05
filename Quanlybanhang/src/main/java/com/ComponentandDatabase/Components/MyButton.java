@@ -10,6 +10,10 @@ public class MyButton extends JButton {
     private Color pressedColor = new Color(5, 130, 95);
     private Color hoverColor = new Color(10, 190, 140);
     private boolean isHovering = false;
+    private boolean hasShadow = true;
+    private boolean hasGradient = false;
+    private Color gradientStart = new Color(7, 164, 121);
+    private Color gradientEnd = new Color(5, 130, 95);
 
     // Constructor
     public MyButton(String text, int radius) {
@@ -62,6 +66,20 @@ public class MyButton extends JButton {
         this.hoverColor = color;
     }
 
+    // Set shadow effect
+    public void setShadow(boolean hasShadow) {
+        this.hasShadow = hasShadow;
+        repaint();
+    }
+
+    // Set gradient effect
+    public void setGradient(boolean hasGradient, Color start, Color end) {
+        this.hasGradient = hasGradient;
+        this.gradientStart = start;
+        this.gradientEnd = end;
+        repaint();
+    }
+
  // Set icon cho button với khả năng chỉnh vị trí
     public void setButtonIcon(String iconPath, int width, int height, int iconTextGap, int horizontalPos, int verticalPos) {
         ImageIcon icon = new ImageIcon(new ImageIcon(iconPath).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH));
@@ -76,18 +94,43 @@ public class MyButton extends JButton {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        // Vẽ shadow nếu được bật
+        if (hasShadow && !getModel().isPressed()) {
+            g2.setColor(new Color(0, 0, 0, 30));
+            g2.fillRoundRect(2, 2, getWidth(), getHeight(), radius, radius);
+        }
 
         // Xác định màu dựa trên trạng thái
+        Color currentColor;
         if (getModel().isPressed()) {
-            g2.setColor(pressedColor); // Khi nhấn
+            currentColor = pressedColor;
         } else if (isHovering) {
-            g2.setColor(hoverColor); // Khi hover
+            currentColor = hoverColor;
         } else {
-            g2.setColor(backgroundColor); // Bình thường
+            currentColor = backgroundColor;
+        }
+
+        // Vẽ button với gradient hoặc màu đơn
+        if (hasGradient) {
+            GradientPaint gradient = new GradientPaint(
+                0, 0, gradientStart,
+                0, getHeight(), gradientEnd
+            );
+            g2.setPaint(gradient);
+        } else {
+            g2.setColor(currentColor);
         }
 
         // Vẽ button với góc bo tròn
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        
+        // Vẽ border tinh tế
+        g2.setColor(new Color(255, 255, 255, 50));
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
+        
         g2.dispose();
 
         super.paintComponent(g);
