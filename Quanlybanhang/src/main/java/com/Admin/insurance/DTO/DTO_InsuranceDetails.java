@@ -9,7 +9,6 @@ public class DTO_InsuranceDetails {
     private String adminId;
     private String customerId;
     private String productId;
-    private String iMeiNo;
     private String description;
     private LocalDate dateInsurance;
     private LocalTime timeInsurance;
@@ -18,13 +17,12 @@ public class DTO_InsuranceDetails {
     }
 
     public DTO_InsuranceDetails(String insuranceNo, String adminId, String customerId,
-                                String productId, String iMeiNo, String description,
+                                String productId, String description,
                                 LocalDate dateInsurance, LocalTime timeInsurance) {
         this.insuranceNo = insuranceNo;
         this.adminId = adminId;
         this.customerId = customerId;
         this.productId = productId;
-        this.iMeiNo = iMeiNo;
         this.description = description;
         this.dateInsurance = dateInsurance;
         this.timeInsurance = timeInsurance;
@@ -62,14 +60,6 @@ public class DTO_InsuranceDetails {
         this.productId = productId;
     }
 
-    public String getiMeiNo() {
-        return iMeiNo;
-    }
-
-    public void setiMeiNo(String iMeiNo) {
-        this.iMeiNo = iMeiNo;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -101,7 +91,6 @@ public class DTO_InsuranceDetails {
                 ", adminId='" + adminId + '\'' +
                 ", customerId='" + customerId + '\'' +
                 ", productId='" + productId + '\'' +
-                ", iMeiNo='" + iMeiNo + '\'' +
                 ", description='" + description + '\'' +
                 ", dateInsurance=" + dateInsurance +
                 ", timeInsurance=" + timeInsurance +

@@ -161,7 +161,7 @@ public class DAOProduct {
         }
     }
      
-     public void saveProduct(DTOProduct product) {
+    public void saveProduct(DTOProduct product) {
     // Kiểm tra xem Product_ID đã tồn tại chưa
     if (isProductIDExists(product.getProductId())) {
         CustomDialog.showError("Product ID already exists! Please use another one.");
@@ -170,8 +170,8 @@ public class DAOProduct {
 
     // Nếu Product_ID không tồn tại, thực hiện lưu sản phẩm
     String sql = "INSERT INTO Product(Product_ID, Product_Name, Color, Speed, " +
-                "Battery_Capacity, Quantity, Category_ID, Image, Price) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -183,8 +183,12 @@ public class DAOProduct {
         stmt.setString(5, product.getBatteryCapacity());
         stmt.setInt(6, product.getQuantity());
         stmt.setString(7, product.getCategoryId());
-        stmt.setString(8, product.getImage());
-        stmt.setDouble(9, product.getPrice());
+        stmt.setString(8, product.getSupId());
+        stmt.setString(9, product.getImage());
+        stmt.setBigDecimal(10, product.getPrice());
+        stmt.setBigDecimal(11, product.getListPriceBefore());
+        stmt.setBigDecimal(12, product.getListPriceAfter());
+        stmt.setString(13, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
 
         stmt.executeUpdate();
         CustomDialog.showSuccess("Product saved successfully!");
@@ -209,6 +213,9 @@ public class DAOProduct {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
+                java.math.BigDecimal price = rs.getBigDecimal("Price");
+                double priceVal = price != null ? price.doubleValue() : 0.0;
+
                 Object[] row = new Object[]{
                     rs.getString("Product_ID"),
                     rs.getString("Product_Name"), 
@@ -216,7 +223,7 @@ public class DAOProduct {
                     rs.getString("Speed"),
                     rs.getString("Battery_Capacity"),
                     rs.getInt("Quantity"),
-                    rs.getDouble("Price"),
+                    priceVal,
                     rs.getString("Category_ID"),
                     rs.getString("Category_Name")
                 };
@@ -224,12 +231,15 @@ public class DAOProduct {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            CustomDialog.showError("Error loading products!");
+            CustomDialog.showError("Error loading products: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Unexpected error loading products: " + e.getMessage());
         }
     }
     public DTOProduct getProductById(String productId) {
     String sql = "SELECT Product_ID, Product_Name, Color, Speed, " +
-                "Battery_Capacity, Quantity, Category_ID, Image, Price " +
+                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID " +
                 "FROM Product WHERE Product_ID = ?";
 
     try (Connection conn = getConnection();
@@ -239,7 +249,7 @@ public class DAOProduct {
         ResultSet rs = stmt.executeQuery();
 
         if (rs.next()) {
-            return new DTOProduct(
+            DTOProduct product = new DTOProduct(
                 rs.getString("Product_ID"),
                 rs.getString("Product_Name"),
                 rs.getString("Color"),
@@ -247,9 +257,19 @@ public class DAOProduct {
                 rs.getString("Battery_Capacity"),
                 rs.getInt("Quantity"),
                 rs.getString("Category_ID"),
+                rs.getString("Sup_ID"),
                 rs.getString("Image"),
-                rs.getDouble("Price")
+                rs.getBigDecimal("Price"),
+                rs.getBigDecimal("List_Price_Before"),
+                rs.getBigDecimal("List_Price_After")
             );
+            // Set Warehouse_Item_ID if available
+            String warehouseItemId = rs.getString("Warehouse_Item_ID");
+            if (warehouseItemId != null) {
+                // Assuming DTOProduct has a method to set warehouse item ID
+                // product.setWarehouseItemId(warehouseItemId);
+            }
+            return product;
         }
     } catch (SQLException e) {
         e.printStackTrace();
@@ -258,8 +278,8 @@ public class DAOProduct {
 }
     public boolean updateProduct(DTOProduct product) {
         String sql = "UPDATE Product SET Product_Name = ?, Color = ?, Speed = ?, " +
-                    "Battery_Capacity = ?, Quantity = ?, Category_ID = ?, " +
-                    "Image = ?, Price = ? WHERE Product_ID = ?";
+                    "Battery_Capacity = ?, Quantity = ?, Category_ID = ?, Sup_ID = ?, " +
+                    "Image = ?, Price = ?, List_Price_Before = ?, List_Price_After = ?, Warehouse_Item_ID = ? WHERE Product_ID = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -270,9 +290,13 @@ public class DAOProduct {
             stmt.setString(4, product.getBatteryCapacity());
             stmt.setInt(5, product.getQuantity());
             stmt.setString(6, product.getCategoryId());
-            stmt.setString(7, product.getImage());
-            stmt.setDouble(8, product.getPrice());
-            stmt.setString(9, product.getProductId());
+            stmt.setString(7, product.getSupId());
+            stmt.setString(8, product.getImage());
+            stmt.setBigDecimal(9, product.getPrice());
+            stmt.setBigDecimal(10, product.getListPriceBefore());
+            stmt.setBigDecimal(11, product.getListPriceAfter());
+            stmt.setString(12, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
+            stmt.setString(13, product.getProductId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -322,7 +346,7 @@ public class DAOProduct {
     }
 
     private boolean hasRelatedRecords(String productId) {
-        String sql = "SELECT 1 FROM Order_Details WHERE Product_ID = ? LIMIT 1";
+        String sql = "SELECT 1 FROM Orders_Details WHERE Product_ID = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -347,9 +371,8 @@ public class DAOProduct {
                 p.Quantity, 
                 CASE 
                     WHEN p.Quantity = 0 THEN 'Unavailable' 
-                    ELSE p.Status 
+                    ELSE 'Available' 
                 END AS Status, 
-                p.Spoiled_Quantity AS Broken_Quantity, 
                 c.Category_ID, 
                 c.Category_Name, 
                 s.Sup_ID AS Brand_ID, 
@@ -369,7 +392,7 @@ public class DAOProduct {
             case "Product Name" -> sql += "p.Product_Name LIKE ?";
             case "Brand.ID" -> sql += "s.Sup_ID LIKE ?";
             case "Available" -> {
-                sql += "p.Status = 'Available'";
+                sql += "p.Quantity > 0";
                 needParameter = false;
             }
             case "Unavailable" -> {
@@ -395,7 +418,6 @@ public class DAOProduct {
                         rs.getBigDecimal("Price"),
                         rs.getInt("Quantity"),
                         rs.getString("Status"),
-                        rs.getInt("Broken_Quantity"),
                         rs.getString("Category_ID"),
                         rs.getString("Category_Name"),
                         rs.getString("Brand_ID"),
@@ -424,8 +446,8 @@ public class DAOProduct {
 
             // Header
             String[] headers = {
-                "Product ID", "Product Name", "CPU", "RAM", "Graphics Card", "Operating System",
-                "Price", "Quantity", "Warranty Period", "Status", "Spoiled Quantity", "Category ID", "Image"
+                "Product ID", "Product Name", "Color", "Speed", "Battery Capacity",
+                "Price", "Quantity", "Category ID", "Image"
             };
 
             XSSFRow headerRow = sheet.createRow(0);
@@ -440,17 +462,16 @@ public class DAOProduct {
 
                 row.createCell(0).setCellValue(rs.getString("Product_ID"));
                 row.createCell(1).setCellValue(rs.getString("Product_Name"));
-                row.createCell(2).setCellValue(rs.getString("CPU"));
-                row.createCell(3).setCellValue(rs.getString("RAM"));
-                row.createCell(4).setCellValue(rs.getString("Graphics_Card"));
-                row.createCell(5).setCellValue(rs.getString("Operating_System"));
-                row.createCell(6).setCellValue(rs.getBigDecimal("Price").toString());
-                row.createCell(7).setCellValue(rs.getInt("Quantity"));
-                row.createCell(8).setCellValue(rs.getString("Warranty_Period"));
-                row.createCell(9).setCellValue(rs.getString("Status"));
-                row.createCell(10).setCellValue(rs.getInt("Spoiled_Quantity"));
-                row.createCell(11).setCellValue(rs.getString("Category_ID"));
-                row.createCell(12).setCellValue(rs.getString("Image"));
+                row.createCell(2).setCellValue(rs.getString("Color"));
+                row.createCell(3).setCellValue(rs.getString("Speed"));
+                row.createCell(4).setCellValue(rs.getString("Battery_Capacity"));
+                row.createCell(5).setCellValue(rs.getBigDecimal("Price").toString());
+                row.createCell(6).setCellValue(rs.getBigDecimal("List_Price_Before").toString());
+                row.createCell(7).setCellValue(rs.getBigDecimal("List_Price_After").toString());
+                row.createCell(8).setCellValue(rs.getInt("Quantity"));
+                row.createCell(9).setCellValue(rs.getString("Category_ID"));
+                row.createCell(10).setCellValue(rs.getString("Sup_ID"));
+                row.createCell(11).setCellValue(rs.getString("Image"));
             }
 
             // Autosize columns
@@ -473,8 +494,8 @@ public class DAOProduct {
     }
     public boolean addProduct(DTOProduct product) {
         String sql = "INSERT INTO Product(Product_ID, Product_Name, Color, Speed, " +
-                    "Battery_Capacity, Quantity, Category_ID, Image, Price) " +
-                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) " +
+                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, product.getProductId());
@@ -484,13 +505,57 @@ public class DAOProduct {
             ps.setString(5, product.getBatteryCapacity());
             ps.setInt(6, product.getQuantity());
             ps.setString(7, product.getCategoryId());
-            ps.setString(8, product.getImage());
-            ps.setDouble(9, product.getPrice());
+            ps.setString(8, product.getSupId());
+            ps.setString(9, product.getImage());
+            ps.setBigDecimal(10, product.getPrice());
+            ps.setBigDecimal(11, product.getListPriceBefore());
+            ps.setBigDecimal(12, product.getListPriceAfter());
+            ps.setString(13, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Lấy thông tin sản phẩm từ kho (Product_Stock) để tạo Product
+    public DTOProduct getProductFromWarehouse(String warehouseItemId) {
+        String sql = """
+            SELECT ps.Warehouse_Item_ID, ps.Product_Name, ps.Category_ID, ps.Sup_ID, 
+                   ps.Quantity_Stock, ps.Unit_Price_Import, ps.Created_Date, ps.Created_Time
+            FROM Product_Stock ps
+            WHERE ps.Warehouse_Item_ID = ?
+        """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, warehouseItemId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                // Tạo DTOProduct từ dữ liệu kho
+                DTOProduct product = new DTOProduct();
+                product.setProductId(rs.getString("Warehouse_Item_ID"));
+                product.setProductName(rs.getString("Product_Name"));
+                product.setCategoryId(rs.getString("Category_ID"));
+                product.setSupId(rs.getString("Sup_ID"));
+                product.setQuantity(rs.getInt("Quantity_Stock"));
+                // Color, Speed, Battery_Capacity không có trong kho mới - set null
+                product.setColor(null);
+                product.setSpeed(null);
+                product.setBatteryCapacity(null);
+                // Giá bán để null để admin nhập
+                product.setPrice(null);
+                product.setListPriceBefore(null);
+                product.setListPriceAfter(null);
+                
+                return product;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     // Cập nhật các phương thức khác như update, delete, select tương tự

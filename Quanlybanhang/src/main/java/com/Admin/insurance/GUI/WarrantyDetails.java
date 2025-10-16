@@ -116,7 +116,7 @@ public class WarrantyDetails extends javax.swing.JFrame {
         
          // Tạo danh sách item cho JComboBox
                         // Tạo danh sách item cho JComboBox
-        String[] items = {"Invoice.No", "Admin.ID", "Customer.ID", "IMEI.No", "Date"};
+        String[] items = {"Invoice.No", "Admin.ID", "Customer.ID", "Date"};
         cmbSearch = new MyCombobox<>(items);
         cmbSearch.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
             //cmbSearch.setMaximumRowCount(5); // Giới hạn dòng dropdown nếu dài
@@ -190,7 +190,6 @@ public class WarrantyDetails extends javax.swing.JFrame {
                     detail.getAdminId(),
                     detail.getCustomerId(),
                     detail.getProductId(),
-                    detail.getiMeiNo(),
                     detail.getDescription(),
                     formattedDate,
                     formattedTime
@@ -233,7 +232,6 @@ public class WarrantyDetails extends javax.swing.JFrame {
                 detail.getAdminId(),
                 detail.getCustomerId(),
                 detail.getProductId(),
-                detail.getiMeiNo(),
                 detail.getDescription(),
                 formattedDate,
                 formattedTime

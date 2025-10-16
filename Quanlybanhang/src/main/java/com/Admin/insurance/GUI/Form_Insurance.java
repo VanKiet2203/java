@@ -29,14 +29,15 @@ import java.awt.*;
 import java.io.File;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 public class Form_Insurance extends JPanel {
     private JPanel panel, panelSearch, billBody;
     private MyPanel panelBill, panelTitle;
-    private JLabel lblAdminID, lblAdminName, lblInvoice, lblIMEI, lblProductID, lblProductName, lblCateID, lblBrand
+    private JLabel lblAdminID, lblAdminName, lblInvoice, lblProductID, lblProductName, lblCateID, lblBrand
         ,lblWarranty, lblDescription, lblStartDate, lblEndDate;
     private MyButton bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport;
-    private MyTextField txtAdminID, txtAdminName, txtProductID, txtProductName, txtCateID, txtBrand, txtWarranty, txtIMEI; 
+    private MyTextField txtAdminID, txtAdminName, txtProductID, txtProductName, txtCateID, txtBrand, txtWarranty; 
     private JTextArea txtDescription;
     private JDateChooser startDate, endDate;
     private BUS_ProductInfo busProductInfo;
@@ -59,30 +60,28 @@ public class Form_Insurance extends JPanel {
         panel = new JPanel();
         panel.setLayout(null);
         panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE); // Màu xanh dương
+        panel.setBackground(Color.WHITE);
         add(panel);
 
+        // Title
+        JLabel lblTitle = new JLabel("QUẢN LÝ BẢO HÀNH");
+        lblTitle.setFont(FONT_TITLE_LARGE);
+        lblTitle.setForeground(PRIMARY_COLOR);
+        lblTitle.setBounds(20, 10, 400, 40);
+        panel.add(lblTitle);
          
-        bntRefresh = new MyButton("Refresh", 20);
-        bntRefresh.setBackgroundColor(Color.WHITE); // Màu nền
-        bntRefresh.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-        bntRefresh.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-        bntRefresh.setBounds(10, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-        bntRefresh.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntRefresh.setForeground(Color.BLACK);
+        bntRefresh = new MyButton("Làm mới", 20);
+        styleInfoButton(bntRefresh);
+        bntRefresh.setBounds(10, 60, 140, 35);
         bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntRefresh.addActionListener((e) -> {
             Refresh();
         });
         panel.add(bntRefresh);
         
-        bntExportFile = new MyButton("Export File", 0);
-        bntExportFile.setBackgroundColor(Color.WHITE); // Màu nền
-        bntExportFile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-        bntExportFile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-        bntExportFile.setBounds(190, 40, 170, 35); // Tăng chiều rộng để icon không bị che mất
-        bntExportFile.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntExportFile.setForeground(Color.BLACK);
+        bntExportFile = new MyButton("Excel", 0);
+        styleInfoButton(bntExportFile);
+        bntExportFile.setBounds(160, 60, 130, 35);
         bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 40, 40, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntExportFile.addActionListener(e -> {
             busWarranty= new BUS_Warranty();
@@ -115,14 +114,10 @@ public class Form_Insurance extends JPanel {
         
         panel.add(bntExportFile);
         
-        bntDetails = new MyButton("Bill Details", 0);
-        bntDetails.setBackgroundColor(Color.WHITE); // Màu nền
-        bntDetails.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-        bntDetails.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-        bntDetails.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntDetails.setForeground(Color.BLACK);
+        bntDetails = new MyButton("Chi tiết", 20);
+        styleInfoButton(bntDetails);
         bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-        bntDetails.setBounds(350,100, 150, 35);
+        bntDetails.setBounds(300, 60, 140, 35);
         bntDetails.addActionListener((e) -> {
             WarrantyDetails details= new WarrantyDetails();
             details.setVisible(true);
@@ -194,11 +189,7 @@ public class Form_Insurance extends JPanel {
         lblWarranty.setBounds(510, 340, 150, 35);
         panel.add(lblWarranty);
         
-        lblIMEI= new JLabel("IMEI.No");
-        lblIMEI.setFont(new Font("Arial", Font.BOLD, 18));
-        lblIMEI.setForeground(Color.BLACK);
-        lblIMEI.setBounds(80, 420, 130, 35);
-        panel.add(lblIMEI);
+        // IMEI UI removed
         
         lblDescription= new JLabel("Description");
         lblDescription.setFont(new Font("Arial", Font.BOLD, 18));
@@ -269,17 +260,17 @@ public class Form_Insurance extends JPanel {
         panelBill.setLayout(new BorderLayout());
         panelBill.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1)); // Chỉ 1 viền chính
         panelBill.setBackground(Color.WHITE);
-        panelBill.setBounds(820, 20, 450, 680);
+        panelBill.setBounds(820, 100, 450, 680);
         panel.add(panelBill);
 
-       // Tạo panel title "Bill For Order" (không thêm border riêng)
+       // Tạo panel title "Bill For Insurance" (không thêm border riêng)
        JPanel paneltitle = new JPanel();
        paneltitle.setBackground(Color.RED);
        paneltitle.setPreferredSize(new Dimension(450, 30)); // Fixed height
-       JLabel lblTitle = new JLabel("BILL FOR INSURANCE", JLabel.CENTER);
-       lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
-       lblTitle.setForeground(Color.WHITE);
-       paneltitle.add(lblTitle);
+       JLabel lblBillTitle = new JLabel("BILL FOR INSURANCE", JLabel.CENTER);
+       lblBillTitle.setFont(new Font("Arial", Font.BOLD, 16));
+       lblBillTitle.setForeground(Color.WHITE);
+       paneltitle.add(lblBillTitle);
        panelBill.add(paneltitle, BorderLayout.NORTH);
 
        // Tạo panel content chính với scroll (không border)
@@ -304,12 +295,7 @@ public class Form_Insurance extends JPanel {
       
        panel.add(panelBill);
        
-        txtIMEI = new MyTextField();
-        txtIMEI.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-        txtIMEI.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-        txtIMEI.setBackgroundColor(Color.decode("#F0FFFF"));
-        txtIMEI.setBounds(200, 420, 300, 35);
-        panel.add(txtIMEI);
+        // IMEI UI removed
        
         txtDescription = new JTextArea();
         txtDescription.setFont(new Font("Times New Roman", Font.PLAIN, 16));
@@ -338,31 +324,22 @@ public class Form_Insurance extends JPanel {
         panel.add(endDate);
        
           
-        bntAddBill = new MyButton("Add Bill", 20);
-        bntAddBill.setBackgroundColor(Color.decode("#2196F3")); // Xanh dương chính
-        bntAddBill.setHoverColor(Color.decode("#42A5F5"));       // Hover sáng hơn
-        bntAddBill.setPressedColor(Color.decode("#1976D2"));     // Nhấn đậm hơn
-        bntAddBill.setFont(new Font("Times New Roman", Font.BOLD, 16));
-        bntAddBill.setForeground(Color.WHITE);
+        bntAddBill = new MyButton("Thêm Bill", 20);
+        stylePrimaryButton(bntAddBill);
         bntAddBill.setBounds(610, 732, 110, 35);
         bntAddBill.addActionListener((e) -> {
             if (!validateFields()) {
                 return; // Nếu dữ liệu không hợp lệ, dừng lại
             }
 
-            String IMEI = txtIMEI.getText().strip();
-            loadProductInfo(IMEI);
-            createWarrantyBill(IMEI);
+            // IMEI logic removed
         });
 
         panel.add(bntAddBill);
         
-        bntExport = new MyButton("Generate/Save Bill", 20);
-        bntExport.setBackgroundColor(Color.decode("#009688")); // Xanh dương chính
-        bntExport.setHoverColor(Color.decode("#00695C"));       // Hover sáng hơn
-        bntExport.setPressedColor(Color.decode("#00796B")); 
-        bntExport.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        bntExport.setForeground(Color.WHITE);
+        bntExport = new MyButton("💾 Lưu Bill", 20);
+        stylePrimaryButton(bntExport);
+        bntExport.setFont(FONT_BUTTON_LARGE);
         bntExport.setBounds(950, 720, 200, 60);
         bntExport.addActionListener((e) -> {
             // Kiểm tra các trường nhập liệu trước khi xuất
@@ -383,26 +360,21 @@ public class Form_Insurance extends JPanel {
                 busProductInfo = new BUS_ProductInfo();
                 busWarranty = new BUS_Warranty();
 
-                String imei = txtIMEI.getText().strip();
                 String adminID = txtAdminID.getText().strip();
                 String adminName = txtAdminName.getText().strip();
-                String productID = busProductInfo.getProductID(imei); // Gọi phương thức chính xác
-                String customerID = busCustomerInfo.getCustomerIDByIMEI(imei); // Tránh dư thừa
+                String productID = txtProductID.getText().strip();
+                String customerID = null; // optional in DB
                 Date startDateValue = startDate.getDate();
                 Date endDateValue = endDate.getDate();
                 String description = txtDescription.getText();
 
                 // Kiểm tra khách hàng
-                DTO_CustomerInfo customer = busCustomerInfo.getCustomerInfoByIMEI(imei);
-                if (customer == null) {
-                    CustomDialog.showError("Customer information not found for this IMEI!");
-                    return;
-                }
+                DTO_CustomerInfo customer = null; // optional
 
-                // Kiểm tra sản phẩm
-                DTOProductInfo productInfo = busProductInfo.getProductInfoByIMEI(imei);
-                if (productInfo == null) {
-                    CustomDialog.showError("Product information not found for this IMEI!");
+                // Kiểm tra sản phẩm (simple: must have Product ID text)
+                DTOProductInfo productInfo = null;
+                if (productID.isEmpty()) {
+                    CustomDialog.showError("Please select a product ID!");
                     return;
                 }
 
@@ -417,6 +389,7 @@ public class Form_Insurance extends JPanel {
                     warrantyNo,  // Sử dụng biến toàn cục thay vì tạo mới
                     adminID,
                     customerID,
+                    description, // Thêm describleCustomer
                     startDateValue.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
                     endDateValue.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
                 );
@@ -427,7 +400,6 @@ public class Form_Insurance extends JPanel {
                     adminID,
                     customerID,
                     productID,
-                    imei,
                     description,
                     LocalDate.now(), 
                     java.time.LocalTime.now()
@@ -449,7 +421,6 @@ public class Form_Insurance extends JPanel {
                     panelBill, 
                     adminID, 
                     adminName, 
-                    imei, 
                     customer, 
                     productInfo, 
                     startDateValue, 
@@ -479,7 +450,6 @@ public class Form_Insurance extends JPanel {
         txtCateID.setText(null);
         txtWarranty.setText(null);
         txtDescription.setText(null);
-        txtIMEI.setText(null);
         txtBrand.setText(null);
         billBody.removeAll();
         billBody.revalidate();
@@ -489,17 +459,9 @@ public class Form_Insurance extends JPanel {
     
     private void loadProductInfo(String imei) {
         busProductInfo = new BUS_ProductInfo(); // Khởi tạo BUS
-        DTOProductInfo productInfo = busProductInfo.getProductInfoByIMEI(imei); // Lấy thông tin sản phẩm theo IMEI
+// [REMOVED IMEI]         DTOProductInfo productInfo = busProductInfo.getProductInfoByIMEI(imei); // Lấy thông tin sản phẩm theo IMEI
 
-        if (productInfo != null) {
-            txtProductID.setText(productInfo.getProductId());
-            txtProductName.setText(productInfo.getProductName());
-            txtCateID.setText(productInfo.getCategoryId());
-            txtBrand.setText(productInfo.getBrand());
-            txtWarranty.setText(productInfo.getWarrantyPeriod());
-        } else {
-            CustomDialog.showError("No products with this IMEI !");
-        }
+        // IMEI lookup removed
     }
     private JLabel createSeparator() {
            JLabel separator = new JLabel("===================================================");
@@ -541,8 +503,7 @@ public class Form_Insurance extends JPanel {
             billBody.setBackground(Color.WHITE);
 
             // ===== 0. Warranty Invoice No =====
-            String customerID = busCustomerInfo.getCustomerIDByIMEI(imei);
-             warrantyNo = String.format("%010d", new Random().nextInt(1_000_000_000)) + "-" + customerID;
+            warrantyNo = String.format("%010d", new Random().nextInt(1_000_000_000));
 
             lblInvoice = new JLabel("WARRANTY INVOICE No: " + warrantyNo, SwingConstants.CENTER);
             lblInvoice.setFont(new Font("Arial", Font.BOLD, 16));
@@ -561,30 +522,12 @@ public class Form_Insurance extends JPanel {
             addSeparatorWithSpace();
 
             // ===== 2. Customer Information =====
-            DTO_CustomerInfo customer = busCustomerInfo.getCustomerInfoByIMEI(imei);
-            if (customer != null) {
-                JPanel customerPanel = createSectionPanel("CUSTOMER INFORMATION");
-                addInfoRow(customerPanel, "Customer ID:", customer.getCustomerID());
-                addInfoRow(customerPanel, "Customer Name:", customer.getFullName());
-                addInfoRow(customerPanel, "Address:", customer.getAddress());
-                addInfoRow(customerPanel, "Contact:", customer.getContact());
-                billBody.add(customerPanel);
-                addSeparatorWithSpace();
-            }
+// [REMOVED IMEI]             DTO_CustomerInfo customer = busCustomerInfo.getCustomerInfoByIMEI(imei);
+            // Customer section optional; removed IMEI-based retrieval
 
             // ===== 3. Product Information =====
-            DTOProductInfo productInfo = busProductInfo.getProductInfoByIMEI(imei);
-            if (productInfo != null) {
-                JPanel productPanel = createSectionPanel("PRODUCT INFORMATION");
-                addInfoRow(productPanel, "IMEI Number:", imei);
-                addInfoRow(productPanel, "Product ID:", productInfo.getProductId());
-                addInfoRow(productPanel, "Product Name:", productInfo.getProductName());
-                addInfoRow(productPanel, "Category:", productInfo.getCategoryId());
-                addInfoRow(productPanel, "Brand:", productInfo.getBrand());
-                addInfoRow(productPanel, "Original Warranty:", productInfo.getWarrantyPeriod());
-                billBody.add(productPanel);
-                addSeparatorWithSpace();
-            }
+// [REMOVED IMEI]             DTOProductInfo productInfo = busProductInfo.getProductInfoByIMEI(imei);
+            // Product section removed (no IMEI lookup in this form)
 
             // ===== 4. Warranty Details =====
             JPanel warrantyPanel = createSectionPanel("WARRANTY DETAILS");
@@ -709,27 +652,38 @@ public class Form_Insurance extends JPanel {
          }
     
      private boolean validateFields() {
-        if (txtIMEI.getText().strip().isEmpty()) {
-            CustomDialog.showError("Please enter the IMEI number!");
-            return false;
-        }
-
         if (txtDescription.getText().strip().isEmpty()) {
             CustomDialog.showError("Please enter a warranty description!");
             return false;
         }
-
         if (startDate.getDate() == null) {
             CustomDialog.showError("Please select a start date for the warranty!");
             return false;
         }
-
         if (endDate.getDate() == null) {
             CustomDialog.showError("Please select an end date for the warranty!");
             return false;
         }
-
-        return true; // Trả về `true` nếu tất cả các trường hợp hợp lệ
-    }
+         return true; // Trả về `true` nếu tất cả các trường hợp hợp lệ
+     }
    
+     // ============================================
+     // HELPER METHODS FOR UI STYLING
+     // ============================================
+
+     private void stylePrimaryButton(MyButton btn) {
+         btn.setBackgroundColor(PRIMARY_COLOR);
+         btn.setHoverColor(PRIMARY_HOVER);
+         btn.setPressedColor(PRIMARY_HOVER.darker());
+         btn.setFont(FONT_BUTTON_MEDIUM);
+         btn.setForeground(Color.WHITE);
+     }
+
+     private void styleInfoButton(MyButton btn) {
+         btn.setBackgroundColor(INFO_COLOR);
+         btn.setHoverColor(INFO_HOVER);
+         btn.setPressedColor(INFO_HOVER.darker());
+         btn.setFont(FONT_BUTTON_MEDIUM);
+         btn.setForeground(Color.WHITE);
+     }
 }

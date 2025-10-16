@@ -113,6 +113,11 @@ public class BusProduct {
     public void exportFile(String path){
         daoProduct.exportProductToExcel(path);
     }
+    
+    // Lấy thông tin sản phẩm từ kho (Product_Stock) để tạo Product
+    public DTOProduct getProductFromWarehouse(String warehouseItemId) {
+        return daoProduct.getProductFromWarehouse(warehouseItemId);
+    }
 }
 
 

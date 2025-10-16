@@ -18,12 +18,11 @@ import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.export.GUI.Bill_ExportDetails;
 import com.Admin.product.GUI.NewProduct;
 import com.Admin.product.GUI.EditProduct;
-import com.Admin.product.GUI.IMEIProduct;
 
 
 public class Menu extends JPanel {
     
-    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblExport, lblStatistics, lblExit, lblMenu, lblImport, lblStock, lblInsurance;
+    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblExport, lblStatistics, lblExit, lblMenu, lblInventory, lblInsurance, lblPromotion;
     private JPanel menuPanel; // Panel chứa tất cả label
     private JLabel lastHoveredLabel = null; // Lưu label được hover trước đó
     private boolean isMenuExpanded = false;
@@ -77,12 +76,12 @@ public class Menu extends JPanel {
         lblOrder = createLabel("Order", "order.png", 225);
         lblCategory = createLabel("Category", "category.png", 275);
         lblProduct= createLabel("Product", "product.png", 330);
-        lblImport= createLabel("Import", "import.png", 390);
+        lblInventory= createLabel("Inventory", "import.png", 390);
         lblExport= createLabel("Export", "export.png", 450);
-        lblStock= createLabel("Stock", "stock.png", 505);
-        lblInsurance= createLabel("Insurance", "insurance.png", 560);
+        lblInsurance= createLabel("Insurance", "insurance.png", 510);
+        lblPromotion= createLabel("Promotion", "pie_chart.png", 565);
         lblStatistics= createLabel("Statistics", "statistics.png", 625);
-        lblExit= createLabel("Exit", "exit.png", 700);
+        lblExit= createLabel("Exit", "exit.png", 690);
         
         
         // Thêm hiệu ứng hover
@@ -92,10 +91,10 @@ public class Menu extends JPanel {
         addHoverEffectForExit(lblOrder);
         addHoverEffectForExit(lblCategory);
         addHoverEffectForExit(lblProduct);
-        addHoverEffectForExit(lblImport);
+        addHoverEffectForExit(lblInventory);
         addHoverEffectForExit(lblExport);
-        addHoverEffectForExit(lblStock);
         addHoverEffectForExit(lblInsurance);
+        addHoverEffectForExit(lblPromotion);
         addHoverEffectForExit(lblStatistics);
       
         addHoverEffectForExit(lblExit);
@@ -108,10 +107,10 @@ public class Menu extends JPanel {
         menuPanel.add(lblOrder);
         menuPanel.add(lblCategory);
         menuPanel.add(lblProduct);
-        menuPanel.add(lblImport);
+        menuPanel.add(lblInventory);
         menuPanel.add(lblExport);
-        menuPanel.add(lblStock);
         menuPanel.add(lblInsurance);
+        menuPanel.add(lblPromotion);
         menuPanel.add(lblStatistics);
         menuPanel.add(lblExit);
         menuPanel.add(lblMenu);
@@ -167,10 +166,10 @@ public class Menu extends JPanel {
             }
         });
         
-        lblImport.addMouseListener(new MouseAdapter() {
+        lblInventory.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                switchForm("Import");
+                switchForm("Inventory");
             }
         });
         
@@ -181,18 +180,17 @@ public class Menu extends JPanel {
             }
         });
         
-        
-        lblStock.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                switchForm("Stock");
-            }
-        });
-        
         lblInsurance.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 switchForm("Insurance");
+            }
+        });
+        
+        lblPromotion.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                switchForm("Promotion");
             }
         });
         
@@ -222,10 +220,7 @@ public class Menu extends JPanel {
                     if (window instanceof EditProduct) {
                         window.dispose();
                     }
-                    if (window instanceof IMEIProduct) {
-                        window.dispose();
-                    }
-                    
+                    // IMEIProduct removed
                 }
             boolean confirm = cs.showOptionPane(
                     "Exit",
@@ -368,9 +363,8 @@ public class Menu extends JPanel {
         lblOrder.setVisible(isVisible);
         lblCategory.setVisible(isVisible);
         lblProduct.setVisible(isVisible);
-        lblImport.setVisible(isVisible);
+        lblInventory.setVisible(isVisible);
         lblExport.setVisible(isVisible);
-        lblStock.setVisible(isVisible);
         lblInsurance.setVisible(isVisible);
         lblStatistics.setVisible(isVisible);
         lblExit.setVisible(isVisible);

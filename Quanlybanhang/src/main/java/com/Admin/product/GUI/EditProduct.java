@@ -1,7 +1,5 @@
 package com.Admin.product.GUI;
-import com.ComponentandDatabase.Components.MyCombobox;
 import com.ComponentandDatabase.Components.MyPanel;
-import com.ComponentandDatabase.Components.MyTextField;
 import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.CustomDialog;
 import java.awt.event.ActionEvent;
@@ -11,132 +9,157 @@ import com.Admin.product.BUS.BusProduct;
 import com.Admin.product.DTO.DTOProduct;
 import java.util.List;
 import java.util.Map;
-import java.awt.BorderLayout;
 import javax.imageio.ImageIO;
 import java.util.LinkedHashMap;
 import java.math.BigDecimal;
 import com.Admin.category.DTO.DTOCategory;
-import com.Admin.product.BUS.BusProduct;
-import com.Admin.product.DTO.DTOProduct;
-import java.awt.BorderLayout;
 import java.awt.Color;
-import javax.imageio.IIOImage;
 import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import net.miginfocom.swing.MigLayout;  // Layout manager chính
-import net.miginfocom.layout.*;         // (Tùy chọn) Nếu cần các constraint nâng cao
-import javax.swing.JPopupMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JButton;
+         // (Tùy chọn) Nếu cần các constraint nâng cao
 import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.JComponent;
-import javax.swing.JFormattedTextField;
-import java.awt.Cursor;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.Dimension;
 import java.awt.Font;
-import javax.swing.GroupLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import javax.swing.JDialog;
+import javax.swing.JTable;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.JMenuItem;
+import javax.swing.JMenu;
+import javax.swing.JTextField;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 public class EditProduct extends javax.swing.JFrame {
      private int mouseX, mouseY;
-     public JLabel lblTitle, lblProductID, lblProductName, lblCPU, lblRam, 
-             lblCard, lblOprerate, lblPrice, lblQuantity, lblwaranty, lblSpoiled, lblCate ;
-     public MyPanel panelTitle;
-     public MyTextField txtProductID, txtProductName, txtCPU, txtRam, txtCard, txtPrice, txtwaranty;
-     public MyCombobox cmbOperate;
-     public MyButton bntupload, bntUpdate;
-     public Form_Product product;
      private DTOProduct updatedProduct;
-     public JPanel panelUpload;
-     public JSpinner spinnerQuantity, spinderBrokenQuantity;
-     public JMenu menu;
-     public String image;
      private String currentImagePath = null; 
-      private BusProduct busProduct;
+     private BusProduct busProduct;
+     
 
     public EditProduct() {
         initComponents();
-      
-       setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
-            // Thêm đoạn này vào đây:
-      bg.addMouseListener(new java.awt.event.MouseAdapter() {
-          public void mousePressed(java.awt.event.MouseEvent evt) {
-              mouseX = evt.getX();
-              mouseY = evt.getY();
-          }
-      });
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
+        
+        // Thêm mouse listener để di chuyển cửa sổ
+        mainPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                mouseX = evt.getX();
+                mouseY = evt.getY();
+            }
+        });
 
-    bg.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-        public void mouseDragged(java.awt.event.MouseEvent evt) {
-            int x = evt.getXOnScreen();
-            int y = evt.getYOnScreen();
-            setLocation(x - mouseX, y - mouseY);
-        }
-    });
+        mainPanel.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                int x = evt.getXOnScreen();
+                int y = evt.getYOnScreen();
+                setLocation(x - mouseX, y - mouseY);
+            }
+        });
         init();
     }
         public void init() {
                 // Thiết lập MigLayout cho panel chính với khả năng co giãn
-          bg.setLayout(new MigLayout("insets 0, fill", "[grow]", "[40!][grow]"));
+          mainPanel.setLayout(new MigLayout("insets 0, fill", "[grow]", "[40!][90!][grow]"));
 
           // 1. Panel tiêu đề (tự động co giãn theo chiều ngang)
           panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
           panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
 
-          lblTitle = new JLabel("Edit Products", JLabel.CENTER);
+          lblTitle = new JLabel("Edit Product Information", JLabel.CENTER);
           lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
           lblTitle.setForeground(Color.WHITE);
 
           panelTitle.add(lblTitle, "grow, push, align center");
-          bg.add(panelTitle, "growx, h 40!, wrap");
+          mainPanel.add(panelTitle, "growx, h 40!, wrap");
           
-                    // ===== KHỞI TẠO PANEL UPLOAD =====
+          // Panel hướng dẫn
+          JPanel instructionPanel = new JPanel(new MigLayout("insets 10, fill"));
+          instructionPanel.setBackground(Color.decode("#FFF3E0"));
+          instructionPanel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9800"), 1));
+          
+          JLabel lblInstruction = new JLabel("<html><b>📝 Edit Instructions:</b><br>" +
+                  "• <b>Product ID:</b> Cannot be changed (locked)<br>" +
+                  "• <b>Basic Info:</b> Product Name, Category, Stock (from warehouse)<br>" +
+                  "• <b>Product Details:</b> Color, Speed, Battery, Selling Price (editable)<br>" +
+                  "• <b>Image:</b> Upload new product image if needed</html>");
+          lblInstruction.setFont(new Font("Arial", Font.PLAIN, 12));
+          lblInstruction.setForeground(Color.decode("#E65100"));
+          instructionPanel.add(lblInstruction, "growx");
+          
+          mainPanel.add(instructionPanel, "growx, h 90!, wrap");
+          
+          // Panel chính với 2 cột: Image Upload + Product Details
+          JPanel contentPanel = new JPanel(new MigLayout("fill, insets 0", "[250!][grow]", "[grow]"));
+          contentPanel.setBackground(Color.WHITE);
+          
+          // Panel bên trái: Image Upload
+          JPanel imagePanel = createImageUploadPanel();
+          contentPanel.add(imagePanel, "growy");
+          
+          // Panel bên phải: Product Details
+          JPanel productPanel = createProductEditPanel();
+          contentPanel.add(productPanel, "grow");
+          
+          mainPanel.add(contentPanel, "grow, pushy");
+    }
+    
+    /**
+     * Tạo panel upload ảnh
+     */
+    private JPanel createImageUploadPanel() {
+        JPanel panel = new JPanel(new MigLayout("fill, insets 15, wrap 1", "[grow]", "[][grow][]"));
+        panel.setBackground(Color.decode("#F5F5F5"));
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY, 2), 
+                "Product Image", 0, 0, new Font("Arial", Font.BOLD, 14), Color.decode("#1976D2")));
+        
+        // Label hướng dẫn
+        JLabel lblStep1 = new JLabel("<html><b>Current product image:</b></html>");
+        lblStep1.setFont(new Font("Arial", Font.PLAIN, 12));
+        lblStep1.setForeground(Color.decode("#424242"));
+        panel.add(lblStep1, "growx, wrap");
+        
+        // Panel hiển thị ảnh
            panelUpload = new JPanel(new MigLayout("insets 0, gap 0, fill"));
            panelUpload.setBackground(Color.WHITE);
-           panelUpload.setVisible(false);
-           panelUpload.setPreferredSize(new Dimension(230, 230));
-
-           JLabel lblUploadImage = new JLabel("Upload Image Here");
-           lblUploadImage.setFont(new Font("Arial", Font.PLAIN, 16));
+        panelUpload.setVisible(true);
+        panelUpload.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        
+        JLabel lblUploadImage = new JLabel("No Image");
+        lblUploadImage.setFont(new Font("Arial", Font.PLAIN, 14));
+        lblUploadImage.setForeground(Color.GRAY);
+        lblUploadImage.setHorizontalAlignment(JLabel.CENTER);
            panelUpload.add(lblUploadImage, "pos 0.5al 0.5al");
 
-           bg.add(panelUpload, "pos 10 110, w 230!, h 230!");  // Điều chỉnh đúng kích thước panel
+        panel.add(panelUpload, "grow, wrap");
 
-                        // ===== NÚT UPLOAD ẢNH =====
-              bntupload = new MyButton("Upload", 0);
+        // Nút Upload
+        bntupload = new MyButton("Upload New Image", 20);
               bntupload.setBackgroundColor(Color.WHITE);
               bntupload.setPressedColor(Color.decode("#D3D3D3"));
               bntupload.setHoverColor(Color.decode("#EEEEEE"));
-              bntupload.setFont(new Font("sansserif", Font.BOLD, 18));
+        bntupload.setFont(new Font("Arial", Font.BOLD, 12));
               bntupload.setForeground(Color.BLACK);
               bntupload.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\upload_image.png", 
-                                     50, 50, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-
+                                30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
               
+        // Thêm action listener cho upload (giữ nguyên logic cũ)
            bntupload.addActionListener(e -> {
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setDialogTitle("Choose an image");
@@ -173,154 +196,107 @@ public class EditProduct extends javax.swing.JFrame {
                 }
             });
 
-
-        bg.add(bntupload, "pos 10 110, w 230!, h 230!"); // Đặt nút ở dưới panel ảnh
-
-
-
-          // 3. Các thành phần khác - giữ nguyên vị trí như code gốc
-
-          // Product.ID
-          lblProductID = new JLabel("Product.ID");
-          lblProductID.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblProductID.setForeground(Color.BLACK);
-          bg.add(lblProductID, "pos 255 60, w 150!, h 50!");
-
-          txtProductID = new MyTextField();
-          txtProductID.setLocked(true);
-          txtProductID.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtProductID.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtProductID.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtProductID, "pos 360 68, w 130!, h 32!");
-
-          // Product Name
-          lblProductName = new JLabel("Product Name");
-          lblProductName.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblProductName.setForeground(Color.BLACK);
-          bg.add(lblProductName, "pos 255 160, w 150!, h 50!");
-
-          txtProductName = new MyTextField();
-          txtProductName.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtProductName.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtProductName.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtProductName, "pos 390 168, w 200!, h 32!");
-
-         // Động cơ
-         lblCPU = new JLabel("Động cơ");
-          lblCPU.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblCPU.setForeground(Color.BLACK);
-          bg.add(lblCPU, "pos 255 255, w 130!, h 50!");
-
-          txtCPU = new MyTextField();
-          txtCPU.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtCPU.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtCPU.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtCPU, "pos 390 263, w 180!, h 32!");
-
-         // Dung lượng pin
-         lblRam = new JLabel("Dung lượng pin");
-          lblRam.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblRam.setForeground(Color.BLACK);
-          bg.add(lblRam, "pos 255 360, w 180!, h 50!");
-
-          txtRam = new MyTextField();
-          txtRam.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtRam.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtRam.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtRam, "pos 350 365, w 150!, h 32!");
-
-         // Quãng đường/Động cơ phụ
-         lblCard = new JLabel("Quãng đường (1 lần sạc)");
-          lblCard.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblCard.setForeground(Color.BLACK);
-          bg.add(lblCard, "pos 700 60, w 180!, h 50!");
-
-          txtCard = new MyTextField();
-          txtCard.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtCard.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtCard.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtCard, "pos 830 68, w 150!, h 32!");
-
-         // Chế độ vận hành
-         lblOprerate = new JLabel("Chế độ vận hành");
-          lblOprerate.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblOprerate.setForeground(Color.BLACK);
-          bg.add(lblOprerate, "pos 700 160, w 180!, h 50!");
-
-         String[] items = {"Eco", "Normal", "Sport"};
-          cmbOperate = new MyCombobox<>(items);
-          cmbOperate.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
-          cmbOperate.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-          bg.add(cmbOperate, "pos 850 170, w 130!, h 35!");
-
-          // Price
-          lblPrice = new JLabel("Price");
-          lblPrice.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblPrice.setForeground(Color.BLACK);
-          bg.add(lblPrice, "pos 700 263, w 130!, h 50!");
-
-          txtPrice = new MyTextField();
-          txtPrice.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtPrice.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtPrice.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtPrice, "pos 800 270, w 180!, h 32!");
-
-          // Quantity
-          lblQuantity = new JLabel("Quantity");
-          lblQuantity.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblQuantity.setForeground(Color.BLACK);
-          bg.add(lblQuantity, "pos 700 365, w 130!, h 50!");
-
-          SpinnerNumberModel quantityModel = new SpinnerNumberModel(1, 0, 1000, 1);
-          spinnerQuantity = new JSpinner(quantityModel);
-          JComponent editor = spinnerQuantity.getEditor();
-          JFormattedTextField textField = ((JSpinner.DefaultEditor) editor).getTextField();
-          textField.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-          textField.setBackground(Color.WHITE);
-          bg.add(spinnerQuantity, "pos 810 375, w 60!, h 30!");
-
-          // Warranty Period
-          lblwaranty = new JLabel("Warranty Period");
-          lblwaranty.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblwaranty.setForeground(Color.BLACK);
-          bg.add(lblwaranty, "pos 1080 60, w 140!, h 50!");
-
-          txtwaranty = new MyTextField();
-          txtwaranty.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtwaranty.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtwaranty.setBackgroundColor(Color.decode("#F0FFFF"));
-          bg.add(txtwaranty, "pos 1250 68, w 150!, h 32!");
-
-          // Broken Quantity
-          lblSpoiled = new JLabel("Broken Quantity");
-          lblSpoiled.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblSpoiled.setForeground(Color.BLACK);
-          bg.add(lblSpoiled, "pos 1080 160, w 140!, h 50!");
-
-          SpinnerNumberModel brokenquantityModel = new SpinnerNumberModel(0, 0, 1000, 1);
-          spinderBrokenQuantity = new JSpinner(brokenquantityModel);
-          JComponent editorbroken = spinderBrokenQuantity.getEditor();
-          JFormattedTextField brokentextField = ((JSpinner.DefaultEditor) editorbroken).getTextField();
-          brokentextField.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-          brokentextField.setBackground(Color.WHITE);
-          bg.add(spinderBrokenQuantity, "pos 1250 170, w 60!, h 30!");
-
-          // Category.ID
-          lblCate = new JLabel("Category.ID");
-          lblCate.setFont(new Font("sansserif", Font.PLAIN, 18));
-          lblCate.setForeground(Color.BLACK);
-          bg.add(lblCate, "pos 1080 263, w 130!, h 50!");
-
-                    // Tạo Menu Bar và Menu chính
+        panel.add(bntupload, "growx, h 40!");
+        
+        return panel;
+    }
+    
+    /**
+     * Tạo panel chi tiết sản phẩm để edit
+     */
+    private JPanel createProductEditPanel() {
+        JPanel panel = new JPanel(new MigLayout("fill, insets 15, wrap 2", "[right][grow]", "[][][][][][][][][]"));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY, 2), 
+                "Product Information", 0, 0, new Font("Arial", Font.BOLD, 14), Color.decode("#1976D2")));
+        
+        // Product ID (read-only)
+        JLabel lblProductID = new JLabel("Product ID:");
+        lblProductID.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblProductID);
+        
+        txtProductID = new JTextField();
+        txtProductID.setEditable(false);
+        txtProductID.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtProductID.setFont(new Font("Arial", Font.PLAIN, 12));
+        txtProductID.setBackground(Color.decode("#F0F0F0"));
+        panel.add(txtProductID, "growx, wrap");
+        
+        // Product Name (editable)
+        JLabel lblProductName = new JLabel("Product Name:");
+        lblProductName.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblProductName);
+        
+        txtProductName = new JTextField();
+        txtProductName.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtProductName.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(txtProductName, "growx, wrap");
+        
+        // Color (editable)
+        JLabel lblColor = new JLabel("Color:");
+        lblColor.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblColor);
+        
+        txtColor = new JTextField();
+        txtColor.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtColor.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(txtColor, "growx, wrap");
+        
+        // Speed (editable)
+        JLabel lblSpeed = new JLabel("Speed:");
+        lblSpeed.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblSpeed);
+        
+        txtSpeed = new JTextField();
+        txtSpeed.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtSpeed.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(txtSpeed, "growx, wrap");
+        
+        // Battery Capacity (editable)
+        JLabel lblBattery = new JLabel("Battery Capacity:");
+        lblBattery.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblBattery);
+        
+        txtBattery = new JTextField();
+        txtBattery.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtBattery.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(txtBattery, "growx, wrap");
+        
+        // Price (editable)
+        JLabel lblPrice = new JLabel("Selling Price:");
+        lblPrice.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblPrice);
+        
+        txtPrice = new JTextField();
+        txtPrice.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        txtPrice.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(txtPrice, "growx, wrap");
+        
+        // Quantity (read-only, from warehouse)
+        JLabel lblQuantity = new JLabel("Stock Quantity:");
+        lblQuantity.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblQuantity);
+        
+        spinnerQuantity = new JSpinner(new SpinnerNumberModel(1, 0, 1000000, 1));
+        spinnerQuantity.setEnabled(false);
+        panel.add(spinnerQuantity, "growx, wrap");
+        
+        // Category (editable)
+        JLabel lblCategory = new JLabel("Category:");
+        lblCategory.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblCategory);
+        
+        JPanel categoryPanel = new JPanel(new MigLayout("fill, insets 0"));
+        categoryPanel.setBackground(Color.WHITE);
+        
+        // Menu chọn category
             JMenuBar menuBar = new JMenuBar();
-            menu = new JMenu("Choose");
-            menu.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+        menu = new JMenu("Choose Category");
+        menu.setFont(new Font("Arial", Font.PLAIN, 12));
 
-            // Lấy dữ liệu từ BUS
+        try {
             busProduct = new BusProduct();
             List<DTOCategory> listCategory = busProduct.getAllCategoriesWithSupplier();
-
-            // Map để nhóm Category theo Supplier
             Map<String, JMenu> supplierMenuMap = new LinkedHashMap<>();
 
             for (DTOCategory dto : listCategory) {
@@ -328,46 +304,64 @@ public class EditProduct extends javax.swing.JFrame {
                 String supplierName = dto.getSupName();
                 String categoryID = dto.getCategoryID();
 
-                // Nếu Supplier chưa tồn tại trong menu, tạo mới
                 if (!supplierMenuMap.containsKey(supplierID)) {
                     JMenu supplierMenu = new JMenu(supplierID);
-                    supplierMenu.setFont(new Font("Times New Roman", Font.PLAIN, 14));
+                    supplierMenu.setFont(new Font("Arial", Font.PLAIN, 11));
                     supplierMenuMap.put(supplierID, supplierMenu);
                     menu.add(supplierMenu);
                 }
 
-                // Thêm Category như là Detail vào Supplier Menu
                 JMenuItem categoryItem = new JMenuItem(categoryID);
                 supplierMenuMap.get(supplierID).add(categoryItem);
 
-                // ✅ Gắn sự kiện: Khi chọn category -> đổi tên menu thành tên category
                 categoryItem.addActionListener(e -> {
                     menu.setText(categoryID);
                 });
             }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            CustomDialog.showError("Không tải được danh mục: " + ex.getMessage());
+            }
 
-            // Thêm menu chính vào menu bar
             menuBar.add(menu);
-
-            // Thêm menu bar vào giao diện
-            bg.add(menuBar, "pos 1220 270, w 120!, h 30!");
-
-                    // 3. Nút Save - sử dụng MigLayout
-          bntUpdate = new MyButton("Update", 20);
-          bntUpdate.setBackgroundColor(Color.decode("#00CC33")); // Màu nền
-          bntUpdate.setPressedColor(Color.decode("#33CC33")); // Màu khi nhấn
-          bntUpdate.setHoverColor(Color.decode("#00EE00")); // Màu khi rê chuột vào
-          bntUpdate.setFont(new Font("Times New Roman", Font.BOLD, 16));
+        categoryPanel.add(menuBar, "growx");
+        panel.add(categoryPanel, "growx, wrap");
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new MigLayout("insets 0, gap 10", "[grow][grow]", "[]"));
+        buttonPanel.setBackground(Color.WHITE);
+        
+        bntUpdate = new MyButton("Update Product", 20);
+        bntUpdate.setBackgroundColor(Color.decode("#4CAF50"));
+        bntUpdate.setPressedColor(Color.decode("#45a049"));
+        bntUpdate.setHoverColor(Color.decode("#66bb6a"));
+        bntUpdate.setFont(new Font("Arial", Font.BOLD, 14));
           bntUpdate.setForeground(Color.WHITE); 
+        buttonPanel.add(bntUpdate, "growx");
           
+        // Thêm action listener cho update (giữ nguyên logic cũ)
        bntUpdate.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
+                // Logic update cũ (sẽ được giữ nguyên)
+                updateProduct();
+            }
+        });
+        
+        panel.add(buttonPanel, "span 2, growx, wrap");
+        
+        return panel;
+    }
+    
+    /**
+     * Logic update product (giữ nguyên từ code cũ)
+     */
+    private void updateProduct() {
             updatedProduct = null;
             try {
                 // Lấy thông tin sản phẩm hiện tại từ database
                 DTOProduct currentProduct = busProduct.getProductById(txtProductID.getText());
                 if (currentProduct == null) {
-                    new CustomDialog().showError("Không tìm thấy sản phẩm!");
+                CustomDialog.showError("Không tìm thấy sản phẩm!");
                     return;
                 }
 
@@ -380,11 +374,14 @@ public class EditProduct extends javax.swing.JFrame {
                     currentProduct.getProductName(),
                     currentProduct.getColor(),
                     currentProduct.getSpeed(),
-                    currentProduct.getBatteryCapacity(), 
+                    currentProduct.getBatteryCapacity(),
                     currentProduct.getQuantity(),
                     currentProduct.getCategoryId(),
+                    currentProduct.getSupId(),
                     currentProduct.getImage(),
-                    currentProduct.getPrice()
+                    currentProduct.getPrice(),
+                    currentProduct.getListPriceBefore(),
+                    currentProduct.getListPriceAfter()
                 );
 
                 // Cập nhật các trường thay đổi (nếu có)
@@ -392,22 +389,19 @@ public class EditProduct extends javax.swing.JFrame {
                     updatedProduct.setProductName(txtProductName.getText());
                 }
                 if (!txtPrice.getText().equals(String.valueOf(currentProduct.getPrice()))) {
-                    updatedProduct.setPrice(Double.parseDouble(txtPrice.getText()));
-                }
-                if ((int)spinnerQuantity.getValue() != currentProduct.getQuantity()) {
-                    updatedProduct.setQuantity((int) spinnerQuantity.getValue());
+                    updatedProduct.setPrice(new BigDecimal(txtPrice.getText()));
                 }
                 if (!menu.getText().equals(currentProduct.getCategoryId())) {
                     updatedProduct.setCategoryId(menu.getText());
                 }
-                if (!txtCPU.getText().equals(currentProduct.getColor())) {
-                    updatedProduct.setColor(txtCPU.getText());  // CPU field now stores Color
+                if (!txtColor.getText().equals(currentProduct.getColor())) {
+                updatedProduct.setColor(txtColor.getText());
                 }
-                if (!txtRam.getText().equals(currentProduct.getBatteryCapacity())) {
-                    updatedProduct.setBatteryCapacity(txtRam.getText()); // RAM field now stores Battery Capacity
+                if (!txtBattery.getText().equals(currentProduct.getBatteryCapacity())) {
+                updatedProduct.setBatteryCapacity(txtBattery.getText());
                 }
-                if (!txtCard.getText().equals(currentProduct.getSpeed())) {
-                    updatedProduct.setSpeed(txtCard.getText()); // Graphics Card field now stores Speed
+                if (!txtSpeed.getText().equals(currentProduct.getSpeed())) {
+                updatedProduct.setSpeed(txtSpeed.getText());
                 }
 
                 // Cập nhật ảnh mới nếu có
@@ -444,22 +438,10 @@ public class EditProduct extends javax.swing.JFrame {
              CustomDialog.showError("An error occurred while updating the product.");
         }
     }
-});
-
-          bg.add(bntUpdate, "w 100!, h 40!, span, align center, dock south, gapbottom 20");
-
-
-           // Xử lý thay đổi kích thước cho font tiêu đề
-           panelTitle.addComponentListener(new ComponentAdapter() {
-               @Override
-               public void componentResized(ComponentEvent e) {
-                   float fontSize = Math.min(20f, Math.max(12f, panelTitle.getWidth() / 20f));
-                   lblTitle.setFont(lblTitle.getFont().deriveFont(fontSize));
-               }
-           });
-      }
-   
-        
+    
+    /**
+     * Refresh product table after update
+     */
         private void refreshProductTable() {
            SwingUtilities.invokeLater(() -> {
                Form_Product productForm = getProductFormInstance();
@@ -493,17 +475,57 @@ public class EditProduct extends javax.swing.JFrame {
 
        // Hàm lấy instance Form_Product
        private Form_Product getProductFormInstance() {
-           // Thay thế bằng cách lấy instance thực tế của bạn
            return this.product != null ? this.product : new Form_Product();
-       }
-       
- 
+    }
+    
+    /**
+     * Browse warehouse items for editing (chỉ hiển thị, không cho chọn)
+     */
+    private void browseWarehouseItemsForEdit() {
+        // Tạo dialog để hiển thị danh sách warehouse items
+        JDialog browseDialog = new JDialog(this, "View Warehouse Items", true);
+        browseDialog.setSize(800, 600);
+        browseDialog.setLocationRelativeTo(this);
+        
+        // Tạo bảng hiển thị warehouse items
+        String[] columnNames = {"Warehouse ID", "Product Name", "Category", "Supplier", "Stock", "Import Price"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+        JTable table = new JTable(model);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        // Load dữ liệu warehouse
+        try {
+            // Sử dụng BUSInventory để lấy dữ liệu warehouse
+            com.Admin.inventory.BUS.BUSInventory busInventory = new com.Admin.inventory.BUS.BUSInventory();
+            busInventory.loadInventoryToTable(model);
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Error loading warehouse data: " + e.getMessage());
+            return;
+        }
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        browseDialog.add(scrollPane, BorderLayout.CENTER);
+        
+        // Panel nút
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        MyButton btnClose = new MyButton("Close", 20);
+        btnClose.setBackgroundColor(Color.decode("#f44336"));
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> browseDialog.dispose());
+        
+        buttonPanel.add(btnClose);
+        browseDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        browseDialog.setVisible(true);
+    }
+    
     public void showDetail(DTOProduct product) {
         txtProductID.setText(product.getProductId());
         txtProductName.setText(product.getProductName());
-        txtCPU.setText(product.getColor());  // Đổi từ CPU thành Color
-        txtCard.setText(product.getSpeed()); // Đổi từ Graphics Card thành Speed
-        txtRam.setText(product.getBatteryCapacity()); // Đổi từ RAM thành Battery
+        txtColor.setText(product.getColor());
+        txtBattery.setText(product.getBatteryCapacity());
+        txtSpeed.setText(product.getSpeed());
         txtPrice.setText(String.valueOf(product.getPrice()));
         spinnerQuantity.setValue(product.getQuantity());
         menu.setText(product.getCategoryId());
@@ -512,11 +534,8 @@ public class EditProduct extends javax.swing.JFrame {
         if (product.getImage() != null && !product.getImage().isEmpty()) {
             displayProductImage(product.getImage());
         }
-    }     
-       
-       
-       
-       
+    }
+    
     public void displayProductImage(String imagePath) {
         SwingUtilities.invokeLater(() -> {
             try {
@@ -576,110 +595,67 @@ public class EditProduct extends javax.swing.JFrame {
         });
     }
 
-       private void showDefaultPlaceholder() {
-            // Tạo ảnh placeholder đơn giản
-            BufferedImage placeholder = new BufferedImage(230, 230, BufferedImage.TYPE_INT_RGB);
-            Graphics2D g2d = placeholder.createGraphics();
-            g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillRect(0, 0, 230, 230);
-            g2d.setColor(Color.DARK_GRAY);
-            g2d.drawString("No Image", 80, 120);
-            g2d.dispose();
+    private void showDefaultPlaceholder() {
+        // Tạo ảnh placeholder đơn giản
+        BufferedImage placeholder = new BufferedImage(230, 230, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = placeholder.createGraphics();
+        g2d.setColor(Color.LIGHT_GRAY);
+        g2d.fillRect(0, 0, 230, 230);
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.drawString("No Image", 80, 120);
+        g2d.dispose();
 
-            updateImagePanel(new ImageIcon(placeholder));
-        }
+        updateImagePanel(new ImageIcon(placeholder));
+    }
 
-        private void updateImagePanel(ImageIcon icon) {
-            panelUpload.removeAll();
-            panelUpload.setLayout(new MigLayout("insets 0, gap 0, fill"));
+    private void updateImagePanel(ImageIcon icon) {
+        panelUpload.removeAll();
+        panelUpload.setLayout(new MigLayout("insets 0, gap 0, fill"));
 
-            JLabel imageLabel = new JLabel(icon);
-            imageLabel.setHorizontalAlignment(JLabel.CENTER);
-            imageLabel.setVerticalAlignment(JLabel.CENTER);
+        JLabel imageLabel = new JLabel(icon);
+        imageLabel.setHorizontalAlignment(JLabel.CENTER);
+        imageLabel.setVerticalAlignment(JLabel.CENTER);
 
-            panelUpload.add(imageLabel, "pos 0.5al 0.5al");
-            panelUpload.setVisible(true);
-            panelUpload.revalidate();
-            panelUpload.repaint();
-        }
-        
-        
-        
-       
-            @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
+        panelUpload.add(imageLabel, "pos 0.5al 0.5al");
+        panelUpload.setVisible(true);
+        panelUpload.revalidate();
+        panelUpload.repaint();
+    }
+    
     private void initComponents() {
-
-        jMenuItem1 = new javax.swing.JMenuItem();
-        bg = new javax.swing.JLayeredPane();
-
-        jMenuItem1.setText("jMenuItem1");
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        bg.setBackground(new java.awt.Color(255, 255, 255));
-        bg.setOpaque(true);
-
-        javax.swing.GroupLayout bgLayout = new javax.swing.GroupLayout(bg);
-        bg.setLayout(bgLayout);
-        bgLayout.setHorizontalGroup(
-            bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1414, Short.MAX_VALUE)
-        );
-        bgLayout.setVerticalGroup(
-            bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 483, Short.MAX_VALUE)
-        );
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(bg)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(bg)
-        );
-
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Edit Product");
+        setResizable(false);
+        
+        // Tạo main panel
+        mainPanel = new JPanel();
+        mainPanel.setBackground(Color.WHITE);
+        
+        // Thiết lập layout cho frame
+        setLayout(new BorderLayout());
+        add(mainPanel, BorderLayout.CENTER);
+        
         pack();
         setLocationRelativeTo(null);
-    }// </editor-fold>                        
-
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(EditProduct.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(EditProduct.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(EditProduct.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(EditProduct.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new EditProduct().setVisible(true);
-            }
-        });
     }
+    
     // Variables declaration - do not modify                     
-    private javax.swing.JLayeredPane bg;
-    private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JPanel mainPanel;
+    private javax.swing.JTextField txtProductID;
+    private javax.swing.JTextField txtProductName;
+    private javax.swing.JTextField txtPrice;
+    private javax.swing.JTextField txtColor;
+    private javax.swing.JTextField txtBattery;
+    private javax.swing.JTextField txtSpeed;
+    private javax.swing.JSpinner spinnerQuantity;
+    private javax.swing.JMenu menu;
+    private javax.swing.JPanel panelUpload;
+    private MyPanel panelTitle;
+    private javax.swing.JLabel lblTitle;
+    private MyButton bntupload;
+    private MyButton bntUpdate;
+    private String image;
+    private Form_Product product;
     // End of variables declaration                   
 }
 

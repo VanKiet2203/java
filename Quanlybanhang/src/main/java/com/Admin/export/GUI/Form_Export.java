@@ -12,16 +12,14 @@ import com.Admin.export.BUS.BUS_ExportBill;
 import com.Admin.export.DTO.DTO_Oderdetails;
 import com.Admin.export.DTO.DTO_BillExported;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
-import com.Admin.product.DTO.DTOIMEI;
 import com.User.order.GUI.OrderUpdateNotifier;
 import com.User.dashboard_user.DTO.DTOProfile_cus;
 import com.ComponentandDatabase.Components.CustomDialog;
-import javax.swing.border.LineBorder;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.Collections;
 import java.math.BigDecimal;  // Cho BigDecimal
 import java.util.ArrayList;
@@ -44,18 +42,22 @@ import java.util.Locale;
 import javax.swing.table.DefaultTableModel;
 
 public class Form_Export extends JPanel {
+    // TODO: Add a text field named txtPromotionCode; pass its value
+    // into DAO_ExportBill.insertBillExported(..., promotionCode)
+
     private JPanel panel, panelSearch,billBody;
     private MyPanel panelBill, panelTitle;
-    private JLabel lblAdminID, lblAdminName, lblIMEI, lblDiscount, lblInvoice;
+    private JLabel lblAdminID, lblAdminName, lblDiscount, lblInvoice;
     private MyButton bntSearch, bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport, bntPDF;
     private MyTextField txtSearch,txtSearchOrder, txtAdminID, txtAdminName;
-    private JTextArea txtIMEI;
+    // IMEI removed
     private MyCombobox<String> cmbSearch, cmbSearchOrder;
     private MyTable tableOrderDetails, tableBillExportDetail;
     public static String invoiceNo;
     public static String orderNo;
     private DefaultTableModel model;
     private JSpinner spinnerDiscount;
+    private MyTextField txtPromotionCode;
     private BUS_OrderDetail busOrderDetail;
     private BUS_ExportBill busExportBill;
     private DTOProfile_cus customer;
@@ -68,25 +70,25 @@ public class Form_Export extends JPanel {
     private void initComponents() {
         setLayout(null);
         setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
-        setBackground(Color.WHITE); // Kiểm tra hiển thị
+        setBackground(BG_WHITE); // Kiểm tra hiển thị
     }
 
     private void init() {
         panel = new JPanel();
         panel.setLayout(null);
         panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE); // Màu xanh dương
+        panel.setBackground(BG_WHITE); // Màu xanh dương
         add(panel);
         
       
           
           bntRefresh = new MyButton("Refresh", 20);
-          bntRefresh.setBackgroundColor(Color.WHITE); // Màu nền
-          bntRefresh.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-          bntRefresh.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
+          bntRefresh.setBackgroundColor(BG_WHITE); // Màu nền
+          bntRefresh.setPressedColor(INFO_COLOR); // Màu khi nhấn
+          bntRefresh.setHoverColor(INFO_HOVER); // Màu khi rê chuột vào
           bntRefresh.setBounds(10, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-          bntRefresh.setFont(new Font("sansserif", Font.BOLD, 16));
-          bntRefresh.setForeground(Color.BLACK);
+          bntRefresh.setFont(FONT_BUTTON_MEDIUM);
+          bntRefresh.setForeground(TEXT_PRIMARY);
           bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntRefresh.addActionListener((e) -> {
               Refresh();
@@ -96,12 +98,12 @@ public class Form_Export extends JPanel {
           
           
           bntExportFile = new MyButton("Export File", 0);
-          bntExportFile.setBackgroundColor(Color.WHITE); // Màu nền
-          bntExportFile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-          bntExportFile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
+          bntExportFile.setBackgroundColor(BG_WHITE); // Màu nền
+          bntExportFile.setPressedColor(INFO_COLOR); // Màu khi nhấn
+          bntExportFile.setHoverColor(INFO_HOVER); // Màu khi rê chuột vào
           bntExportFile.setBounds(190, 40, 170, 35); // Tăng chiều rộng để icon không bị che mất
-          bntExportFile.setFont(new Font("sansserif", Font.BOLD, 16));
-          bntExportFile.setForeground(Color.BLACK);
+          bntExportFile.setFont(FONT_BUTTON_MEDIUM);
+          bntExportFile.setForeground(TEXT_PRIMARY);
           bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 40, 40, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntExportFile.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
@@ -131,7 +133,20 @@ public class Form_Export extends JPanel {
         });
           
                   
-          panel.add(bntExportFile);
+          panel.add(bntExportFile); 
+          // Promotion Code input
+          JLabel lblPromo = new JLabel("Promotion Code");
+          lblPromo.setFont(new Font("Arial", Font.PLAIN, 16));
+          lblPromo.setForeground(Color.BLACK);
+          lblPromo.setBounds(820, 5, 140, 35);
+          panel.add(lblPromo);
+
+          txtPromotionCode = new MyTextField();
+          txtPromotionCode.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+          txtPromotionCode.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+          txtPromotionCode.setBackgroundColor(Color.WHITE);
+          txtPromotionCode.setBounds(800, 40, 160, 35);
+          panel.add(txtPromotionCode);
                 
           lblAdminID= new JLabel("Admin.ID");
           lblAdminID.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -316,7 +331,6 @@ public class Form_Export extends JPanel {
                     if (selectedRows.length > 0) {
                         // Kiểm tra cùng Order.No
                         String firstOrderNo = tableOrderDetails.getValueAt(selectedRows[0], 0).toString();
-                        List<DTOIMEI> allImeis = new ArrayList<>();
                         int totalQuantity = 0;
 
                         for (int row : selectedRows) {
@@ -329,17 +343,12 @@ public class Form_Export extends JPanel {
                             int quantity = Integer.parseInt(tableOrderDetails.getValueAt(row, 4).toString());
                             totalQuantity += quantity;
 
-                            // Lấy IMEI cho sản phẩm này với giới hạn số lượng
-                            List<DTOIMEI> productImeis = busOrderDetail.getIMEIByProductIDWithLimit(productID, quantity);
-                            allImeis.addAll(productImeis);
+                    // IMEI logic removed
                         }
-
-                        // Hiển thị tất cả IMEI
-                        displayIMEIs(allImeis, totalQuantity);
                     }
                 } catch (Exception ex) {
                     CustomDialog.showError(ex.getMessage());
-                    txtIMEI.setText("");
+                    // IMEI input removed
                 }
             }
         });
@@ -349,25 +358,9 @@ public class Form_Export extends JPanel {
         // 8️⃣ Thêm scrollPane vào panel
         panel.add(scrollPane);   
         
-        lblIMEI= new JLabel("IMEI");
-        lblIMEI.setFont(new Font("sansserif", Font.BOLD, 18));
-        lblIMEI.setForeground(Color.BLACK);
-        lblIMEI.setBounds(50,730, 100, 35);
-        panel.add(lblIMEI);
-
-        txtIMEI = new JTextArea();
-        txtIMEI.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-        txtIMEI.setLineWrap(true); // Tự động xuống dòng khi hết chiều rộng
-        txtIMEI.setWrapStyleWord(true); // Xuống dòng theo từ
-        txtIMEI.setBackground(Color.WHITE); // Nền trắng
-        txtIMEI.setBorder(new LineBorder(Color.GRAY)); // Viền đơn màu xám
-
-        JScrollPane scrollIMEI= new JScrollPane(txtIMEI);
-        scrollIMEI.setBorder(new LineBorder(Color.GRAY)); // Viền cho JScrollPane
-        scrollIMEI.setBounds(100, 710, 400, 88); // Thay đổi tọa độ và kích thước nếu cần
-        panel.add(scrollIMEI);
+        // IMEI UI removed
         
-        lblDiscount= new JLabel("Discount");
+        lblDiscount= new JLabel("Discount %");
         lblDiscount.setFont(new Font("sansserif", Font.BOLD, 18));
         lblDiscount.setForeground(Color.BLACK);
         lblDiscount.setBounds(520,730, 130, 35);
@@ -420,7 +413,7 @@ public class Form_Export extends JPanel {
                 // 2. Lấy thông tin chung
                 String customerID = orderItems.get(0)[1].toString();
                 double discount = ((Number) spinnerDiscount.getValue()).doubleValue();
-                String imeiNumbers = txtIMEI.getText().trim();
+                String imeiNumbers = ""; // IMEI removed
                 customer = busExportBill.getCustomerInfoSafe(customerID);
 
                 // 3. Xóa nội dung cũ trước khi tạo hóa đơn mới
@@ -527,44 +520,12 @@ public class Form_Export extends JPanel {
                tableOrderDetails.adjustColumnWidths();         // Căn chỉnh cột
           });     
         cmbSearchOrder.setSelectedIndex(0);
-        txtIMEI.setText(null);
+        // IMEI cleared removed
         billBody.removeAll();
         billBody.revalidate();
         billBody.repaint();
 
     }
-    
-    private void displayIMEIs(List<DTOIMEI> imeiList, int totalQuantity) {
-      try {
-          StringBuilder sb = new StringBuilder();
-
-          // Giới hạn số lượng IMEI theo totalQuantity
-          int displayCount = Math.min(totalQuantity, imeiList.size());
-
-          for (int i = 0; i < displayCount; i++) {
-              DTOIMEI imei = imeiList.get(i);
-              sb.append(imei.getImeiNo());
-              if (i < displayCount - 1) {
-                  sb.append(", ");
-              }
-          }
-
-          // Format IMEI: hiển thị hàng ngang, tự động xuống dòng khi hết chỗ
-          txtIMEI.setText(sb.toString());
-          txtIMEI.setLineWrap(true);
-          txtIMEI.setWrapStyleWord(false);
-
-          // Cảnh báo nếu số lượng IMEI không đủ
-          if (imeiList.size() < totalQuantity) {
-              CustomDialog.showError("Only " + imeiList.size() + " IMEIs available (required: " + totalQuantity + ")");
-          }
-      } catch (Exception ex) {
-          CustomDialog.showError(ex.getMessage());
-          txtIMEI.setText("");
-      }
-  }
-
-
     
     // Hàm tạo separator
     private JLabel createSeparator() {
@@ -753,27 +714,7 @@ public class Form_Export extends JPanel {
         billBody.add(createSeparator());
         billBody.add(Box.createVerticalStrut(15));
 
-        // ===== 5. IMEI Information =====
-        if (imeiNumbers != null && !imeiNumbers.trim().isEmpty()) {
-            JPanel imeiPanel = createSectionPanel("IMEI INFORMATION");
-
-            JTextArea imeiArea = new JTextArea(imeiNumbers);
-            imeiArea.setEditable(false);
-            imeiArea.setFont(new Font("Arial", Font.PLAIN, 12));
-            imeiArea.setBackground(Color.WHITE);
-            imeiArea.setLineWrap(true);
-            imeiArea.setWrapStyleWord(false);
-            imeiArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-            JScrollPane imeiScroll = new JScrollPane(imeiArea);
-            imeiScroll.setPreferredSize(new Dimension(600, 80));
-            imeiScroll.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-
-            imeiPanel.add(imeiScroll);
-            billBody.add(imeiPanel);
-            billBody.add(createSeparator());
-            billBody.add(Box.createVerticalStrut(15));
-        }
+        // IMEI section removed
 
         billBody.revalidate();
         billBody.repaint();
@@ -829,46 +770,13 @@ public class Form_Export extends JPanel {
     }
 
         // Hàm thêm phần IMEI vào hóa đơn
-    private void addImeiSectionToBill(String imeiNumbers) {
-        JPanel billBody = getBillBody();
-        if (billBody != null) {
-            // Tạo panel IMEI
-            JPanel imeiPanel = createSectionPanel("IMEI INFORMATION");
-            JTextArea imeiArea = new JTextArea(imeiNumbers);
-            imeiArea.setEditable(false);
-            imeiArea.setFont(new Font("Arial", Font.PLAIN, 12));
-            imeiArea.setBackground(Color.WHITE);
-            imeiPanel.add(new JScrollPane(imeiArea));
-
-            // Lấy tất cả components hiện có
-            Component[] components = billBody.getComponents();
-            billBody.removeAll();
-
-            // Thêm lại tất cả components trừ summaryPanel (thường là component cuối)
-            for (int i = 0; i < components.length - 1; i++) {
-                billBody.add(components[i]);
-            }
-
-            // Thêm IMEI panel và separator
-            billBody.add(imeiPanel);
-            billBody.add(createSeparator());
-            billBody.add(Box.createVerticalStrut(5));
-
-            // Thêm lại summaryPanel (component cuối)
-            billBody.add(components[components.length - 1]);
-
-            billBody.revalidate();
-            billBody.repaint();
-        }
- }
+    // IMEI helper removed
   
     private void confirmExport() throws Exception {
         // Lấy danh sách sản phẩm và IMEI
         List<Object[]> orderItems = getMultipleOrderInfo();
-        String imeiList = txtIMEI.getText().strip();
-        List<String> imeis = !imeiList.isEmpty() ? 
-            Arrays.asList(imeiList.split(",")) : 
-            Collections.emptyList();
+        String imeiList = ""; // IMEI removed
+        List<String> imeis = Collections.emptyList();
 
         if (orderItems.isEmpty()) {
             throw new Exception("No products to export!");
@@ -902,7 +810,7 @@ public class Form_Export extends JPanel {
             protected Void doInBackground() {
                 try {
                     // Gửi email
-                    SendEmail sendEmail = new SendEmail();
+            SendEmail sendEmail = new SendEmail();
                     sendEmail.sendInvoiceEmail(
                         customer, 
                         orderItems, 
@@ -915,7 +823,7 @@ public class Form_Export extends JPanel {
                         panelBill, txtAdminID.getText(), txtAdminName.getText(),
                         customer, busOrderDetail, orderItems,
                         ((Number) spinnerDiscount.getValue()).doubleValue(),
-                        imeiList
+                        txtPromotionCode.getText()
                     );
                     exporter.exportToPDF();
 
@@ -964,17 +872,11 @@ public class Form_Export extends JPanel {
             int quantity = ((Number) item[4]).intValue();
             BigDecimal unitPrice = (BigDecimal) item[3];
 
-            // Get IMEIs for current product
-            List<String> productImeis = new ArrayList<>();
-            for (int i = 0; i < quantity && imeiIndex < imeis.size(); i++) {
-                productImeis.add(imeis.get(imeiIndex++));
-            }
-
-            // Process each IMEI for this product
-            for (String imei : productImeis) {
+            // No IMEI handling; process per quantity
+            for (int i = 0; i < quantity; i++) {
                 processSingleImeiItem(
                     item,
-                    imei,
+                    null,
                     discountPercent,
                     unitPrice,
                     productID
@@ -1003,30 +905,29 @@ public class Form_Export extends JPanel {
             priceAfterDiscount
         );
 
-        if (!busExportBill.insertBillDetail(detail, Collections.singletonList(imei)) || 
+        if (!busExportBill.insertBillDetail(detail, Collections.emptyList()) || 
             !busExportBill.updateProductQuantity(detail)) {
-            throw new Exception("Không thể xử lý IMEI: " + imei);
+            throw new Exception("Không thể xử lý sản phẩm");
         }
     }
 
       private boolean requiresImei(String productId) {
-          return productId.startsWith("IMEI_REQUIRED_"); // Giả định: sản phẩm cần IMEI có ID bắt đầu bằng "IMEI_REQUIRED_"
+          return false;
       }
 
 
         private DTO_BillExportedDetail createExportDetail(
             String productID, String imei, BigDecimal unitPrice, int quantity,
-            BigDecimal discountValue, BigDecimal totalBefore, BigDecimal totalAfter
+            BigDecimal discountPercent, BigDecimal totalBefore, BigDecimal totalAfter
         ) {
             return new DTO_BillExportedDetail(
                 invoiceNo,
                 txtAdminID.getText(),
                 customer.getCustomerID(),
                 productID,
-                imei,
                 unitPrice,
                 quantity,
-                discountValue,
+                discountPercent,
                 totalBefore,
                 totalAfter,
                 new java.sql.Date(System.currentTimeMillis()),
@@ -1035,9 +936,6 @@ public class Form_Export extends JPanel {
         }
 
     private void cleanupAfterExport(List<String> imeis, String orderNo) {
-        // Xóa IMEI
-        imeis.forEach(imei -> busOrderDetail.deleteIMEI(imei.trim()));
-
         // Xóa order
         busOrderDetail.deleteOrder(orderNo);
         CustomDialog.showSuccess("Export bill and update database successfully!");

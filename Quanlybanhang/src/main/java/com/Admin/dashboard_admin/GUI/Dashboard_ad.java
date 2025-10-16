@@ -16,11 +16,11 @@ import com.Admin.category.GUI.Form_Category;
 import com.Admin.order.GUI.Form_Order;
 import com.Admin.customer.GUI.Form_Customer;
 import com.Admin.product.GUI.Form_Product;
-import com.Admin.importation.GUI.Form_Import;
 import com.Admin.export.GUI.Form_Export;
-import com.Admin.stock.GUI.Form_Stock;
+import com.Admin.inventory.GUI.Form_Inventory;
 import com.Admin.insurance.GUI.Form_Insurance;
 import com.Admin.statistics.GUI.Form_Statistics;
+import com.Admin.promotion.GUI.Form_Promotion;
  
 
 public class Dashboard_ad extends JFrame {
@@ -138,10 +138,10 @@ public class Dashboard_ad extends JFrame {
     contentPanel.add(new Form_Order(), "Order");
     contentPanel.add(new Form_Customer(), "Customer");
     contentPanel.add(new Form_Product(), "Product");
-    contentPanel.add(new Form_Import(), "Import");
+    contentPanel.add(new Form_Inventory(), "Inventory");
     contentPanel.add(new Form_Export(), "Export");
-    contentPanel.add(new Form_Stock(), "Stock");
     contentPanel.add(new Form_Insurance(), "Insurance");
+    contentPanel.add(new Form_Promotion(), "Promotion");
     contentPanel.add(new Form_Statistics(), "Statistics");
     contentPanel.revalidate();
     contentPanel.repaint();

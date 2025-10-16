@@ -15,7 +15,6 @@ import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.order.DTO.DTO_order;
 import com.Admin.order.BUS.BUS_order;
-import com.sun.java.accessibility.util.AWTEventMonitor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JFileChooser;
@@ -24,6 +23,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 public class Form_Order extends JPanel {
     private JPanel panel, panelSearch;;
@@ -51,96 +51,139 @@ public class Form_Order extends JPanel {
         panel = new JPanel();
         panel.setLayout(null);
         panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE); // Màu xanh dương
+        panel.setBackground(Color.WHITE);
         add(panel);
         
-     
-                 // Tạo panelSearch với màu nền trắng
-            panelSearch = new MyPanel(Color.WHITE);
-            panelSearch.setLayout(null);
-            panelSearch.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-            panelSearch.setBounds(750,20, 520, 60);
+        // Title
+        JLabel lblTitle = new JLabel("MANAGE ORDER");
+        lblTitle.setFont(FONT_TITLE_LARGE);
+        lblTitle.setForeground(PRIMARY_COLOR);
+        lblTitle.setBounds(20, 10, 400, 40);
+        panel.add(lblTitle);
+        
+        // Tạo panelSearch với màu nền trắng
+        panelSearch = new MyPanel(Color.WHITE);
+        panelSearch.setLayout(null);
+        panelSearch.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+            "Search",
+            0, 0,
+            FONT_TITLE_SMALL,
+            PRIMARY_COLOR
+        ));
+        panelSearch.setBounds(20, 60, 1490, 80);
             
   
-            // Tạo txtSearch
-            txtSearch = new MyTextField();
-            txtSearch.setHint("Enter the search key word...");
-            txtSearch.setBounds(160, 10, 230, 35); // Đặt vị trí và kích thước
-            txtSearch.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-            txtSearch.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-            txtSearch.setHintFont(new Font("Arial", Font.ITALIC, 14));
-            txtSearch.setBackgroundColor(Color.decode("#F5FFFA"));
-            panelSearch.add(txtSearch); // Thêm vào giao diện
+        // ComboBox search
+        String[] items = {"Order.No", "Customer.ID", "Date Order"};
+        cmbSearch = new MyCombobox<>(items);
+        cmbSearch.setBounds(20, 30, 150, 35);
+        cmbSearch.setCustomFont(FONT_CONTENT_MEDIUM);
+        cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
+        panelSearch.add(cmbSearch);
+        
+        // TextField search
+        txtSearch = new MyTextField();
+        txtSearch.setHint("Search something...");
+        txtSearch.setBounds(180, 30, 300, 35);
+        txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+        panelSearch.add(txtSearch);
             
-            // Tạo danh sách item cho JComboBox
-                        // Tạo danh sách item cho JComboBox
-           String[] items = {"Order.No", "Customer.ID", "Date Order"};
-           cmbSearch= new MyCombobox<>(items);
-           cmbSearch.setBounds(12, 10, 135,35);
-           cmbSearch.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
-           cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-           cmbSearch.repaint();
-           cmbSearch.revalidate();
+        // Button Search trong panelSearch
+        bntSearch = new MyButton("Search", 20);
+        bntSearch.setBackgroundColor(PRIMARY_COLOR);
+        bntSearch.setHoverColor(PRIMARY_HOVER);
+        bntSearch.setPressedColor(PRIMARY_HOVER.darker());
+        bntSearch.setFont(FONT_BUTTON_MEDIUM);
+        bntSearch.setForeground(Color.WHITE);
+        bntSearch.setBounds(500, 30, 120, 35);
+        bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntSearch.addActionListener(e -> {
+            String searchType = (String) cmbSearch.getSelectedItem();
+            String keyword = txtSearch.getText().trim();
+            String status = (String) cmbStatus.getSelectedItem();
 
-                    // 👉 Thêm đoạn invokeLater để đảm bảo cmbSearch được refresh UI
-           SwingUtilities.invokeLater(() -> {
-               
-             cmbSearch.repaint();
-             cmbSearch.revalidate();
-              //cmbSearch.updateUI(); // 👈 Bắt buộc để refresh lại giao diện
-           });
+            List<DTO_order> searchResults = busOrder.searchOrders(searchType, keyword, status);
+            loadOrderDataToTable(searchResults);
 
-            panelSearch.add(cmbSearch);
-            
-            bntSearch= new MyButton("Search", 20);
-            bntSearch.setBackgroundColor(Color.decode("#00CC33")); // Màu nền
-            bntSearch.setPressedColor(Color.decode("#33CC33")); // Màu khi nhấn
-            bntSearch.setHoverColor(Color.decode("#00EE00")); // Màu khi rê chuột vào
-            //bntSearch.setBounds(320, 10, 130, 35);
-            bntSearch.setFont(new Font("Times New Roman", Font.BOLD, 16));
-            bntSearch.setForeground(Color.WHITE);
-            bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-            bntSearch.setBounds(txtSearch.getX() + txtSearch.getWidth() + 10, 10, 110, 35);
-            bntSearch.addActionListener(e -> {
-                String searchType = (String) cmbSearch.getSelectedItem();
-                String keyword = txtSearch.getText().trim();
-                String status = (String) cmbStatus.getSelectedItem();
+            if (searchResults.isEmpty()) {
+                CustomDialog.showError("No orders found with the given criteria");
+            }
+        });
+        panelSearch.add(bntSearch);
+        
+        // Status dropdown - đặt ngang hàng với search box
+        lblStatus = new JLabel("Status");
+        lblStatus.setFont(new Font("Arial", Font.PLAIN, 16));
+        lblStatus.setForeground(Color.BLACK);
+        lblStatus.setBounds(650, 5, 100, 35);
+        panelSearch.add(lblStatus);
 
-                List<DTO_order> searchResults = busOrder.searchOrders(searchType, keyword, status);
-                loadOrderDataToTable(searchResults);
-
-                if (searchResults.isEmpty()) {
-                    CustomDialog.showError("No orders found with the given criteria");
-                }
-            });
-            panelSearch.add(bntSearch);
-            panel.add(panelSearch);
+        String[] items_status = {"Waiting", "Confirmed"};
+        cmbStatus = new MyCombobox<>(items_status);
+        cmbStatus.setBounds(650, 30, 110, 35);
+        cmbStatus.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
+        cmbStatus.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
+        panelSearch.add(cmbStatus);
+        
+        panel.add(panelSearch);
           
            
            
-          bntRefresh = new MyButton("Refresh", 20);
-          bntRefresh.setBackgroundColor(Color.WHITE); // Màu nền
-          bntRefresh.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-          bntRefresh.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-          bntRefresh.setBounds(10, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-          bntRefresh.setFont(new Font("sansserif", Font.BOLD, 16));
-          bntRefresh.setForeground(Color.BLACK);
-          bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntRefresh.addActionListener((e) -> {
-              Refresh();
-          });
-          panel.add(bntRefresh); 
-           
-          
-           bntExportFile = new MyButton("Export File", 0);
-           bntExportFile.setBackgroundColor(Color.WHITE); // Màu nền
-           bntExportFile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntExportFile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntExportFile.setBounds(150, 40, 170, 35); // Tăng chiều rộng để icon không bị che mất
-           bntExportFile.setFont(new Font("sansserif", Font.BOLD, 16));
-           bntExportFile.setForeground(Color.BLACK);
-           bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 40, 40, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-           bntExportFile.addActionListener(e -> {
+        // Sắp xếp lại các button theo hàng ngang, tránh chồng chéo
+        // Button Refresh
+        bntRefresh = new MyButton("Refresh", 20);
+        bntRefresh.setBackgroundColor(INFO_COLOR);
+        bntRefresh.setHoverColor(INFO_HOVER);
+        bntRefresh.setPressedColor(INFO_HOVER.darker());
+        bntRefresh.setFont(FONT_BUTTON_MEDIUM);
+        bntRefresh.setForeground(Color.WHITE);
+        bntRefresh.setBounds(20, 150, 120, 35);
+        bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntRefresh.addActionListener((e) -> {
+            Refresh();
+        });
+        panel.add(bntRefresh);
+        
+        
+        // Button Details
+        bntDetails = new MyButton("Details", 20);
+        bntDetails.setBackgroundColor(PRIMARY_COLOR);
+        bntDetails.setHoverColor(PRIMARY_HOVER);
+        bntDetails.setPressedColor(PRIMARY_HOVER.darker());
+        bntDetails.setFont(FONT_BUTTON_MEDIUM);
+        bntDetails.setForeground(Color.WHITE);
+        bntDetails.setBounds(150, 150, 120, 35); 
+        bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\details.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntDetails.addActionListener((e) -> {
+            showOrderDetails();
+        });
+        panel.add(bntDetails);
+        
+        // Button Update
+        bntUpdate = new MyButton("Update", 20);
+        bntUpdate.setBackgroundColor(WARNING_COLOR);
+        bntUpdate.setHoverColor(WARNING_HOVER);
+        bntUpdate.setPressedColor(WARNING_HOVER.darker());
+        bntUpdate.setFont(FONT_BUTTON_MEDIUM);
+        bntUpdate.setForeground(Color.WHITE);
+        bntUpdate.setBounds(280, 150, 120, 35);
+        bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntUpdate.addActionListener((e) -> {
+            updateOrderStatus();
+        });
+        panel.add(bntUpdate);
+        
+        // Button Export File
+        bntExportFile = new MyButton("Export", 20);
+        bntExportFile.setBackgroundColor(Color.WHITE);
+        bntExportFile.setPressedColor(Color.decode("#D3D3D3"));
+        bntExportFile.setHoverColor(Color.decode("#EEEEEE"));
+        bntExportFile.setBounds( 410, 150, 120, 35);
+        bntExportFile.setFont(new Font("sansserif", Font.BOLD, 14));
+        bntExportFile.setForeground(Color.BLACK);
+        bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntExportFile.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Save Excel File");
             fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Files", "xlsx"));
@@ -150,7 +193,6 @@ public class Form_Order extends JPanel {
                 File file = fileChooser.getSelectedFile();
                 String filePath = file.getAbsolutePath();
 
-                // Đảm bảo có đuôi .xlsx
                 if (!filePath.toLowerCase().endsWith(".xlsx")) {
                     filePath += ".xlsx";
                 }
@@ -162,52 +204,8 @@ public class Form_Order extends JPanel {
                 }
             }
         });
-           
-           panel.add(bntExportFile);
-          
-           
-           bntDetails = new MyButton("Details", 0);
-           bntDetails.setBackgroundColor(Color.WHITE); // Màu nền
-           bntDetails.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntDetails.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntDetails.setFont(new Font("sansserif", Font.BOLD, 16));
-           bntDetails.setForeground(Color.BLACK);
-           bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\details.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntDetails.setBounds(320, 40, 120, 35);
-            bntDetails.addActionListener((e) -> {
-                showOrderDetails();
-            });
-           
-           panel.add(bntDetails);
-          
-           String[] items_status = {"Waiting", "Confirmed"};
-            cmbStatus = new MyCombobox<>(items_status);
-            cmbStatus.setBounds(460, 40, 130, 35);
-            cmbStatus.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
-            cmbStatus.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-            panel.add(cmbStatus);
-            
-            lblStatus= new JLabel("Status");
-            lblStatus.setFont(new Font("Arial", Font.PLAIN, 16));
-            lblStatus.setForeground(Color.BLACK);
-            lblStatus.setBounds(490, 5, 100, 35);
-            panel.add(lblStatus);
-            
-            
-           bntUpdate = new MyButton("Update", 20);
-           bntUpdate.setBackgroundColor(Color.WHITE); // Màu nền
-           bntUpdate.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntUpdate.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntUpdate.setBounds(600, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-           bntUpdate.setFont(new Font("sansserif", Font.BOLD, 16));
-           bntUpdate.setForeground(Color.BLACK);
-           bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-           bntUpdate.addActionListener((e) -> {
-               updateOrderStatus();
-               
-           });    
-           panel.add(bntUpdate);
-           
+        panel.add(bntExportFile);
+
            // 1️⃣ Tên cột
         String[] columnNames = {
             "Order.No", "Customer.ID", "Customer Name", "Address", 
@@ -218,24 +216,21 @@ public class Form_Order extends JPanel {
         model = new DefaultTableModel(columnNames, 0);
 
 
-        // 4️⃣ Định dạng font
-        Font contentFont = new Font("Times New Roman", Font.PLAIN, 15);
-        Font headerFont = new Font("SansSerif", Font.BOLD, 16);
 
-        // 5️⃣ Tạo bảng sử dụng MyTable
+        // 5️⃣ Tạo bảng với style chuẩn
         tableOrder = new MyTable(
             model,
-            new Color(255, 255, 255),  // Nền bảng
-            new Color(0, 0, 0),        // Chữ bảng
-            new Color(250, 219, 216),  // Nền dòng được chọn
-            new Color(0, 0, 0),        // Chữ dòng được chọn
-            Color.decode("#FF6666"),   // Nền tiêu đề
-            new Color(255, 255, 255),  // Chữ tiêu đề
-            contentFont,
-            headerFont
+            Color.WHITE,                    // Nền bảng
+            TEXT_PRIMARY,                   // Chữ bảng
+            Color.decode("#E8F5E9"),        // Nền dòng chọn
+            Color.BLACK,                    // Chữ dòng chọn
+            PRIMARY_COLOR,                  // Nền tiêu đề
+            Color.WHITE,                    // Chữ tiêu đề
+            FONT_TABLE_CONTENT,             // Font nội dung
+            FONT_TABLE_HEADER               // Font tiêu đề
         );
 
-        JScrollPane scrollPane = MyTable.createScrollPane(tableOrder, 0, 100, 1275, 700);
+        JScrollPane scrollPane = MyTable.createScrollPane(tableOrder, 20, 200, 1775, 630);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
@@ -258,12 +253,12 @@ public class Form_Order extends JPanel {
         
         // 8️⃣ Thêm scrollPane vào panel
         panel.add(scrollPane);
-          SwingUtilities.invokeLater(() -> {
-               busOrder= new BUS_order();
-               List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
-               loadOrderDataToTable(allOrders);
-               tableOrder.adjustColumnWidths();         // Căn chỉnh cột
-          });                
+        SwingUtilities.invokeLater(() -> {
+            busOrder = new BUS_order();
+            List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
+            loadOrderDataToTable(allOrders);
+            expandTableColumns(); // 👈 Gọi method mới để mở rộng cột
+        });                
        
    }
     
@@ -312,12 +307,51 @@ public class Form_Order extends JPanel {
     }
     
     private void Refresh(){
-        busOrder= new BUS_order();
+        busOrder = new BUS_order();
         List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
         loadOrderDataToTable(allOrders);
-        tableOrder.adjustColumnWidths();  
+        expandTableColumns();
         cmbStatus.setSelectedIndex(0);
         cmbSearch.setSelectedIndex(0);   
+    }
+    
+    /**
+     * Mở rộng các cột của table để sử dụng hết không gian có sẵn
+     */
+    private void expandTableColumns() {
+        if (tableOrder == null) return;
+        
+        javax.swing.table.TableColumnModel columnModel = tableOrder.getColumnModel();
+        int totalWidth = 1490; // Chiều rộng tổng của table
+        int columnCount = tableOrder.getColumnCount();
+        
+        // Định nghĩa tỷ lệ chiều rộng cho từng cột
+        double[] columnRatios = {
+            0.05,  // Order.No - 10%
+            0.08,  // Customer.ID - 10%
+            0.15,  // Customer Name - 15%
+            0.15,  // Address - 15%
+            0.08,  // Contact - 10%
+            0.08,  // Total Product - 8%
+            0.10,  // Total Price - 10%
+            0.08,  // Payment - 8%
+            0.08,  // Date Order - 8%
+            0.08,  // Time Order - 8%
+            0.08   // Status - 8%
+        };
+        
+        // Áp dụng tỷ lệ cho từng cột
+        for (int i = 0; i < columnCount && i < columnRatios.length; i++) {
+            javax.swing.table.TableColumn column = columnModel.getColumn(i);
+            int columnWidth = (int) (totalWidth * columnRatios[i]);
+            column.setPreferredWidth(columnWidth);
+            column.setWidth(columnWidth);
+        }
+        
+        // Đảm bảo table sử dụng hết không gian
+        tableOrder.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tableOrder.revalidate();
+        tableOrder.repaint();
     }
     
     private void updateOrderStatus() {
@@ -345,7 +379,7 @@ public class Form_Order extends JPanel {
             CustomDialog.showSuccess("Status updated successfully to " + newStatus + "!");
             List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
             loadOrderDataToTable(allOrders);
-            tableOrder.adjustColumnWidths();
+            expandTableColumns();
         } else {
             CustomDialog.showError("Failed to update status!");
         }

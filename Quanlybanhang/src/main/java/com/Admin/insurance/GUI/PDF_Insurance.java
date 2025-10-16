@@ -27,7 +27,6 @@ public class PDF_Insurance {
     private JPanel panelBill;
     private String adminID;
     private String adminName;
-    private String imei;
     private DTO_CustomerInfo customer;
     private DTOProductInfo productInfo;
     private Date startDate;
@@ -35,13 +34,12 @@ public class PDF_Insurance {
     private String description;
 
     public PDF_Insurance(JPanel panelBill, String adminID, String adminName, 
-                        String imei, DTO_CustomerInfo customer, 
+                        DTO_CustomerInfo customer, 
                         DTOProductInfo productInfo, Date startDate, 
                         Date endDate, String description) {
         this.panelBill = panelBill;
         this.adminID = adminID;
         this.adminName = adminName;
-        this.imei = imei;
         this.customer = customer;
         this.productInfo = productInfo;
         this.startDate = startDate;
@@ -185,7 +183,6 @@ public class PDF_Insurance {
         if (productInfo == null) return;
 
         LinkedHashMap<String, String> productData = new LinkedHashMap<>();
-        productData.put("IMEI.No:", imei);
         productData.put("Product.ID:", productInfo.getProductId());
         productData.put("Product Name:", productInfo.getProductName());
         productData.put("Category.ID:", productInfo.getCategoryId());

@@ -31,11 +31,11 @@ public class BUS_ExportBill {
         }
     }
     public boolean insertBillExported(DTO_BillExported bill) {
-        return daoExportBill.insertBillExported(bill);
+        return daoExportBill.insertBillExported(bill, null);
     }
     
     public boolean insertBillDetail(DTO_BillExportedDetail detail, List<String> imeiList) {
-        return daoExportBill.insertBillExportedDetail(detail, imeiList);
+        return daoExportBill.insertBillExportedDetail(detail, (String) null);
    }
 
 
@@ -79,12 +79,12 @@ public class BUS_ExportBill {
         return daoExportBill.searchBillDetails(searchType, searchKeyword);
     }
     
-     public String getWarranry(String productID) {
+    public String getWarranry(String productID) {
         try {
             return daoExportBill.getWarranty(productID);
-        } catch (SQLException e) {
+        } catch (Exception e) { // broaden catch: underlying call may not throw SQLException directly
             e.printStackTrace();
-               CustomDialog.showError("Data upload eror ! ");
+            CustomDialog.showError("Data upload eror ! ");
             return null;
         }
     }

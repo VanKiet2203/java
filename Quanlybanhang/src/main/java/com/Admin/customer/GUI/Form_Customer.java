@@ -1,32 +1,28 @@
 package com.Admin.customer.GUI;
 
 import javax.swing.JPanel;
-//import javax.swing.JLabel;
+import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Dimension;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableColumn;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import javax.swing.table.JTableHeader;
-import com.Admin.customer.BUS.BusCustomer;
-import javax.swing.tree.*;
 import com.Admin.customer.BUS.BusCustomer;
 import com.Admin.customer.DTO.DTOCustomer;
-import javax.swing.table.DefaultTableModel;
 import com.ComponentandDatabase.Components.MyTable;
 import com.ComponentandDatabase.Components.MyCombobox;
 import com.ComponentandDatabase.Components.MyTextField;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.ComponentandDatabase.Components.MyButton;
-import com.ComponentandDatabase.Components.MyTreeview;
 import com.ComponentandDatabase.Components.CustomDialog;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
 import javax.swing.*;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 public class Form_Customer extends JPanel {
     private JPanel panel;
@@ -67,24 +63,11 @@ public class Form_Customer extends JPanel {
         model = new DefaultTableModel(columnNames, 0);
 
 
-        // 4️⃣ Định dạng font
-        Font contentFont = new Font("Times New Roman", Font.PLAIN, 15);
-        Font headerFont = new Font("SansSerif", Font.BOLD, 16);
+        // 5️⃣ Tạo bảng với style chuẩn
+        Customner = createStyledTable(model);
+        Customner.setRowHeight(30);
 
-        // 5️⃣ Tạo bảng sử dụng MyTable
-        Customner = new MyTable(
-            model,
-            new Color(255, 255, 255),  // Nền bảng
-            new Color(0, 0, 0),        // Chữ bảng
-            new Color(250, 219, 216),  // Nền dòng được chọn
-            new Color(0, 0, 0),        // Chữ dòng được chọn
-            Color.decode("#FF6666"),   // Nền tiêu đề
-            new Color(255, 255, 255),  // Chữ tiêu đề
-            contentFont,
-            headerFont
-        );
-
-        JScrollPane scrollPane = MyTable.createScrollPane(Customner, 20, 100, 1250, 700);
+        JScrollPane scrollPane = MyTable.createScrollPane(Customner, 20, 200, 1490, 630);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
@@ -100,7 +83,7 @@ public class Form_Customer extends JPanel {
         // 🔟 Load dữ liệu vào model sau khi GUI sẵn sàng
         SwingUtilities.invokeLater(() -> {
             loadCustomerData(model);
-            Customner.adjustColumnWidths(); // 👈 Gọi sau khi dữ liệu đã được load
+            expandTableColumns(); // 👈 Gọi method mới để mở rộng cột
         });
 
            // Bắt sự kiện chọn dòng trong bảng để set giá trị vào combobox State
@@ -118,65 +101,51 @@ public class Form_Customer extends JPanel {
        });
       
     
-         // Tạo panelSearch với màu nền trắng
+            // Title
+            JLabel lblTitle = new JLabel("MANAGE CUSTOMER");
+            lblTitle.setFont(FONT_TITLE_LARGE);
+            lblTitle.setForeground(PRIMARY_COLOR);
+            lblTitle.setBounds(20, 10, 400, 40);
+            panel.add(lblTitle);
+            
+            // Tạo panelSearch với màu nền trắng
             panelSearch = new MyPanel(Color.WHITE);
             panelSearch.setLayout(null);
-            panelSearch.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-            panelSearch.setBounds(650,20, 600, 60);
+            panelSearch.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+                "Search",
+                0, 0,
+                FONT_TITLE_SMALL,
+                PRIMARY_COLOR
+            ));
+            panelSearch.setBounds(20, 60, 1490, 80);
             
-  
-            // Tạo txtSearch
-            txtSearch = new MyTextField();
-            txtSearch.setHint("Enter the search key word...");
-            txtSearch.setBounds(200, 10, 250, 35); // Đặt vị trí và kích thước
-            txtSearch.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-            txtSearch.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-            txtSearch.setHintFont(new Font("Arial", Font.ITALIC, 14));
-            txtSearch.setBackgroundColor(Color.decode("#F5FFFA"));
-            panelSearch.add(txtSearch); // Thêm vào giao diện
-            
-            // Tạo danh sách item cho JComboBox
-                        // Tạo danh sách item cho JComboBox
+            // ComboBox search
             String[] items = {"Customer.ID", "Customer Name", "Email", "Contact"};
             cmbSearch = new MyCombobox<>(items);
-            cmbSearch.setBounds(30, 10, 160, 35);
-            cmbSearch.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
+            cmbSearch.setBounds(20, 30, 150, 35);
+            cmbSearch.setCustomFont(FONT_CONTENT_MEDIUM);
             cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
             panelSearch.add(cmbSearch);
-            //cmbSearch.refreshUI();
             
-              // Tạo danh sách item cho JComboBox
-                        // Tạo danh sách item cho JComboBox
-            String[] items_status = {"Active", "Inactive"};
-            cmbStatus = new MyCombobox<>(items_status);
-            cmbStatus.setBounds(380, 40, 110, 35);
-            cmbStatus.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
-            cmbStatus.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-            panel.add(cmbStatus);
-            
-            lblStatus= new JLabel("Status");
-            lblStatus.setFont(new Font("Arial", Font.PLAIN, 16));
-            lblStatus.setForeground(Color.BLACK);
-            lblStatus.setBounds(410, 5, 100, 35);
-            panel.add(lblStatus);
-            
-            
-            
-            bntSearch= new MyButton("Search", 20);
-            bntSearch.setBackgroundColor(Color.decode("#00CC33")); // Màu nền
-            bntSearch.setPressedColor(Color.decode("#33CC33")); // Màu khi nhấn
-            bntSearch.setHoverColor(Color.decode("#00EE00")); // Màu khi rê chuột vào
-            //bntSearch.setBounds(320, 10, 130, 35);
-            bntSearch.setFont(new Font("Times New Roman", Font.BOLD, 16));
-            bntSearch.setForeground(Color.WHITE);
-            bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-            bntSearch.setBounds(txtSearch.getX() + txtSearch.getWidth() + 10, 10, 120, 35);
-           bntSearch.addActionListener(e -> {
+            // TextField search
+            txtSearch = new MyTextField();
+            txtSearch.setHint("Search something...");
+            txtSearch.setBounds(180, 30, 300, 35);
+            txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+            panelSearch.add(txtSearch);
+
+            // Button Search trong panelSearch
+            bntSearch = new MyButton("Search", 20);
+            stylePrimaryButton(bntSearch);
+            bntSearch.setBounds(500, 30, 120, 35);
+            bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+            bntSearch.addActionListener(e -> {
                 try {
                     String selectedColumn = cmbSearch.getSelectedItem().toString();
                     String keyword = txtSearch.getText().trim();
                     String statusFilter = cmbStatus.getSelectedItem().toString();
-                     busCustomer= new BusCustomer();
+                    busCustomer = new BusCustomer();
                     // Gọi BUS để lấy danh sách khách hàng đã lọc
                     List<DTOCustomer> resultList = busCustomer.searchCustomer(selectedColumn, keyword, statusFilter);
 
@@ -204,35 +173,46 @@ public class Form_Customer extends JPanel {
                 }
             });
 
-
             panelSearch.add(bntSearch);
             panel.add(panelSearch);
-             
-            bntRefresh = new MyButton("Refresh", 20);
-            bntRefresh.setBackgroundColor(Color.WHITE); // Màu nền
-            bntRefresh.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-            bntRefresh.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-            bntRefresh.setBounds(0, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-            bntRefresh.setFont(new Font("sansserif", Font.BOLD, 18));
-            bntRefresh.setForeground(Color.BLACK);
+            // Status dropdown - đặt ngang hàng với search box
+            lblStatus = new JLabel("Status");
+            lblStatus.setFont(new Font("Arial", Font.PLAIN, 16));
+            lblStatus.setForeground(Color.BLACK);
+            lblStatus.setBounds(650, 5, 100, 35);
+            panelSearch.add(lblStatus);
+
+            String[] items_status = {"Active", "Inactive"};
+            cmbStatus = new MyCombobox<>(items_status);
+            cmbStatus.setBounds(650, 30, 110, 35);
+            cmbStatus.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
+            cmbStatus.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
+            panelSearch.add(cmbStatus);            
+            // Sắp xếp lại các button theo hàng ngang, tránh chồng chéo
+            // Button Refresh
+            bntRefresh = new MyButton("Refresh", 30);
+            styleInfoButton(bntRefresh);
+            bntRefresh.setBounds(20, 150, 120, 35);
             bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             bntRefresh.addActionListener((ActionEvent e) -> {
                 refreshForm();
-        });
+            });
             panel.add(bntRefresh);
             
+            // Button Delete
             bntDelete = new MyButton("Delete", 20);
-            bntDelete.setBackgroundColor(Color.WHITE); // Màu nền
-            bntDelete.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-            bntDelete.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-            bntDelete.setBounds(150, 40, 130, 35); // Tăng chiều rộng để icon không bị che mất
-            bntDelete.setFont(new Font("sansserif", Font.BOLD, 18));
-            bntDelete.setForeground(Color.BLACK);
+            // Sử dụng màu đỏ đậm để tránh trùng với icon
+            bntDelete.setBackgroundColor(Color.decode("#DC3545"));
+            bntDelete.setHoverColor(Color.decode("#C82333"));
+            bntDelete.setPressedColor(Color.decode("#BD2130"));
+            bntDelete.setFont(FONT_BUTTON_MEDIUM);
+            bntDelete.setForeground(Color.WHITE);
+            bntDelete.setBounds(150, 150, 120, 35);
             bntDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             bntDelete.addActionListener(e -> {
                 int selectedRow = Customner.getSelectedRow();
                 if (selectedRow == -1) {
-                    CustomDialog.showError("Please choose a customer to delete!");
+                    CustomDialog.showError("Please choose a customer to deactivate!");
                     return;
                 }
 
@@ -241,8 +221,8 @@ public class Form_Customer extends JPanel {
                 String fullName = busCustomer.getCustomerNameByID(customerID);
 
                 boolean confirm = CustomDialog.showOptionPane(
-                        "Confirm Deletion",
-                        "Are you sure you want to delete customer: " + fullName + "?",
+                        "Confirm Deactivation",
+                        "Are you sure you want to deactivate customer: " + fullName + "?",
                         UIManager.getIcon("OptionPane.questionIcon"),
                         Color.decode("#FF6666")
                 );
@@ -252,60 +232,52 @@ public class Form_Customer extends JPanel {
                         busCustomer = new BusCustomer();
                         boolean isDeleted = busCustomer.delete(customerID);
 
-
                         if (isDeleted) {
                             model.setRowCount(0);
                             loadCustomerData(model);
-                            Customner.adjustColumnWidths();
-                            CustomDialog.showSuccess("Successfully deleted customer " + fullName + "!");
+                            expandTableColumns();
+                            CustomDialog.showSuccess("Successfully deactivated customer " + fullName + "!");
                         } else {
-                            System.out.println("DEBUG: Deletion failed, customer might not exist.");
-                            CustomDialog.showError("Delete failure! Customer may not exist or an issue occurred.");
+                            System.out.println("DEBUG: Deactivation failed, customer might not exist.");
+                            CustomDialog.showError("Deactivation failure! Customer may not exist or an issue occurred.");
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();
-                        CustomDialog.showError("Error while deleting customer: " + ex.getMessage());
+                        CustomDialog.showError("Error while deactivating customer: " + ex.getMessage());
                     }
                 }
             });
-
-
-           panel.add(bntDelete);
+            panel.add(bntDelete);
             
-           bntExportfile = new MyButton("",20);
-           bntExportfile.setBackgroundColor(Color.WHITE); // Màu nền
-           bntExportfile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntExportfile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntExportfile.setBounds(280, 40, 80, 40); // Tăng chiều rộng để icon không bị che mất
-           bntExportfile.setFont(new Font("sansserif", Font.BOLD, 18));
-           bntExportfile.setForeground(Color.BLACK);
-           bntExportfile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntExportfile.addActionListener((ActionEvent e) -> {
-              busCustomer= new BusCustomer();
-              busCustomer.exportFile(Customner);
-        });
-
-           panel.add(bntExportfile);
-           
-           
-           bntUpdate = new MyButton("Update", 20);
-           bntUpdate.setBackgroundColor(Color.WHITE); // Màu nền
-           bntUpdate.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntUpdate.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntUpdate.setBounds(500, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-           bntUpdate.setFont(new Font("sansserif", Font.BOLD, 18));
-           bntUpdate.setForeground(Color.BLACK);
-           bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-           bntUpdate.addActionListener(e -> {
+            // Button Update
+            bntUpdate = new MyButton("Update", 20);
+            styleWarningButton(bntUpdate);
+            bntUpdate.setBounds(280, 150, 120, 35);
+            bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+            bntUpdate.addActionListener(e -> {
                 busCustomer = new BusCustomer();
                 busCustomer.update(Customner, cmbStatus);
 
                 model.setRowCount(0);  // 👈 Xóa dữ liệu cũ khỏi bảng
                 loadCustomerData(model);  // 👈 Tải lại dữ liệu mới
-                Customner.adjustColumnWidths(); // 👈 Cập nhật lại chiều rộng cột
-      });
-
-           panel.add(bntUpdate);
+                expandTableColumns(); // 👈 Cập nhật lại chiều rộng cột
+            });
+            panel.add(bntUpdate);
+            
+            // Button Export Excel
+            bntExportfile = new MyButton("Export", 20);
+            bntExportfile.setBackgroundColor(Color.WHITE); // Màu nền
+            bntExportfile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
+            bntExportfile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
+            bntExportfile.setBounds(410, 150, 120, 35); // Điều chỉnh vị trí và kích thước
+            bntExportfile.setFont(new Font("sansserif", Font.BOLD, 14));
+            bntExportfile.setForeground(Color.BLACK);
+            bntExportfile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+            bntExportfile.addActionListener((ActionEvent e) -> {
+                busCustomer = new BusCustomer();
+                busCustomer.exportFile(Customner);
+            });
+            panel.add(bntExportfile);
            panelSearch.repaint();
            panelSearch.revalidate();
             
@@ -347,7 +319,85 @@ public class Form_Customer extends JPanel {
         if (cmbStatus != null) cmbStatus.setSelectedIndex(0);
         if (cmbSearch != null) cmbSearch.setSelectedIndex(0);
     }
+    
+    /**
+     * Mở rộng các cột của table để sử dụng hết không gian có sẵn
+     */
+    private void expandTableColumns() {
+        if (Customner == null) return;
+        
+        TableColumnModel columnModel = Customner.getColumnModel();
+        int totalWidth = 1490; // Chiều rộng tổng của table
+        int columnCount = Customner.getColumnCount();
+        
+        // Định nghĩa tỷ lệ chiều rộng cho từng cột
+        double[] columnRatios = {
+            0.12,  // Customer.ID - 12%
+            0.20,  // Full Name - 20%
+            0.08,  // Gender - 8%
+            0.12,  // Date Of Birth - 12%
+            0.18,  // Email - 18%
+            0.10,  // Contact - 10%
+            0.15,  // Address - 15%
+            0.05   // Status - 5%
+        };
+        
+        // Áp dụng tỷ lệ cho từng cột
+        for (int i = 0; i < columnCount && i < columnRatios.length; i++) {
+            TableColumn column = columnModel.getColumn(i);
+            int columnWidth = (int) (totalWidth * columnRatios[i]);
+            column.setPreferredWidth(columnWidth);
+            column.setWidth(columnWidth);
+        }
+        
+        // Đảm bảo table sử dụng hết không gian
+        Customner.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        Customner.revalidate();
+        Customner.repaint();
+    }
 
+    // ============================================
+    // HELPER METHODS FOR UI STYLING
+    // ============================================
+
+    private void stylePrimaryButton(MyButton btn) {
+        btn.setBackgroundColor(PRIMARY_COLOR);
+        btn.setHoverColor(PRIMARY_HOVER);
+        btn.setPressedColor(PRIMARY_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+
+    private void styleWarningButton(MyButton btn) {
+        btn.setBackgroundColor(WARNING_COLOR);
+        btn.setHoverColor(WARNING_HOVER);
+        btn.setPressedColor(WARNING_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+    private void styleInfoButton(MyButton btn) {
+        btn.setBackgroundColor(INFO_COLOR);
+        btn.setHoverColor(INFO_HOVER);
+        btn.setPressedColor(INFO_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+    private MyTable createStyledTable(DefaultTableModel model) {
+        return new MyTable(
+            model,
+            Color.WHITE,                    // Nền bảng
+            TEXT_PRIMARY,                   // Chữ bảng
+            Color.decode("#E8F5E9"),        // Nền dòng chọn
+            Color.BLACK,                    // Chữ dòng chọn
+            PRIMARY_COLOR,                  // Nền tiêu đề
+            Color.WHITE,                    // Chữ tiêu đề
+            FONT_TABLE_CONTENT,             // Font nội dung
+            FONT_TABLE_HEADER               // Font tiêu đề
+        );
+    }
    
 }
 

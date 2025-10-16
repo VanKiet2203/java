@@ -5,8 +5,6 @@ import javax.swing.table.DefaultTableModel;
 import java.sql.*;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Vector;
-import java.text.SimpleDateFormat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,12 +12,11 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.TableModel;
 import com.ComponentandDatabase.Components.CustomDialog;
-import com.ComponentandDatabase.Components.MyTextField;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class ControlCustomer {
-    private DatabaseConnection db;
+    private DatabaseConnection db = new DatabaseConnection();
     private DefaultTableModel model;
     
 
@@ -233,77 +230,27 @@ public class ControlCustomer {
   
     public boolean deleteCustomer(String customerID) {
        Connection conn = null;
-       PreparedStatement pstmtCheck = null;
-       PreparedStatement pstmtUpdateBill = null;
-       PreparedStatement pstmtUpdateDetails = null;
-       PreparedStatement pstmtUpdateInsurance = null;
-       PreparedStatement pstmtDeleteCustomer = null;
+       PreparedStatement pstmtUpdateStatus = null;
 
        try {
            conn = db.connect();
-           conn.setAutoCommit(false); // Bắt đầu giao dịch để đảm bảo an toàn dữ liệu
-
-           // Bước 1: Kiểm tra xem khách hàng có dữ liệu liên quan không
-           String sqlCheck = "SELECT 1 FROM Bill_Exported WHERE Customer_ID = ? UNION ALL " +
-                             "SELECT 1 FROM Bill_Exported_Details WHERE Customer_ID = ? UNION ALL " +
-                             "SELECT 1 FROM Insurance WHERE Customer_ID = ?";
-           pstmtCheck = conn.prepareStatement(sqlCheck);
-           pstmtCheck.setString(1, customerID);
-           pstmtCheck.setString(2, customerID);
-           pstmtCheck.setString(3, customerID);
-
-           ResultSet rs = pstmtCheck.executeQuery();
-           boolean hasRelatedData = rs.next(); // Nếu có dữ liệu liên quan, `hasRelatedData = true`
-
-           // Bước 2: Nếu có dữ liệu liên quan, cập nhật `NULL` trước khi xóa
-           if (hasRelatedData) {
-               // Cập nhật `Customer_ID = NULL` trong `Bill_Exported`
-               String sqlUpdateBill = "UPDATE Bill_Exported SET Customer_ID = NULL, Description = CONCAT('Deleted_', ?) WHERE Customer_ID = ?";
-               pstmtUpdateBill = conn.prepareStatement(sqlUpdateBill);
-               pstmtUpdateBill.setString(1, customerID);
-               pstmtUpdateBill.setString(2, customerID);
-               pstmtUpdateBill.executeUpdate();
-
-               // Cập nhật `Customer_ID = NULL` trong `Bill_Exported_Details`
-               String sqlUpdateDetails = "UPDATE Bill_Exported_Details SET Customer_ID = NULL WHERE Customer_ID = ?";
-               pstmtUpdateDetails = conn.prepareStatement(sqlUpdateDetails);
-               pstmtUpdateDetails.setString(1, customerID);
-               pstmtUpdateDetails.executeUpdate();
-
-               // Cập nhật `Customer_ID = NULL` trong `Insurance`
-               String sqlUpdateInsurance = "UPDATE Insurance SET Customer_ID = NULL, Describle_Customer = CONCAT('Deleted_', ?) WHERE Customer_ID = ?";
-               pstmtUpdateInsurance = conn.prepareStatement(sqlUpdateInsurance);
-               pstmtUpdateInsurance.setString(1, customerID);
-               pstmtUpdateInsurance.setString(2, customerID);
-               pstmtUpdateInsurance.executeUpdate();
-           }
-
-           // Bước 3: Xóa khách hàng khỏi bảng `Customer`
-           String sqlDeleteCustomer = "DELETE FROM Customer WHERE Customer_ID = ?";
-           pstmtDeleteCustomer = conn.prepareStatement(sqlDeleteCustomer);
-           pstmtDeleteCustomer.setString(1, customerID);
-           int affectedRows = pstmtDeleteCustomer.executeUpdate();
-
-           conn.commit(); // Xác nhận giao dịch
-
+           
+           // Chỉ update status thành "Inactive" thay vì xóa hẳn
+           String sqlUpdateStatus = "UPDATE Customer SET Status = 'Inactive' WHERE Customer_ID = ?";
+           pstmtUpdateStatus = conn.prepareStatement(sqlUpdateStatus);
+           pstmtUpdateStatus.setString(1, customerID);
+           
+           int affectedRows = pstmtUpdateStatus.executeUpdate();
+           
            return affectedRows > 0;
 
        } catch (SQLException ex) {
-           try {
-               if (conn != null) conn.rollback(); // Quay lại trạng thái trước khi lỗi xảy ra
-           } catch (SQLException rollbackEx) {
-               rollbackEx.printStackTrace();
-           }
            ex.printStackTrace();
            return false;
 
        } finally {
            try {
-               if (pstmtCheck != null) pstmtCheck.close();
-               if (pstmtUpdateBill != null) pstmtUpdateBill.close();
-               if (pstmtUpdateDetails != null) pstmtUpdateDetails.close();
-               if (pstmtUpdateInsurance != null) pstmtUpdateInsurance.close();
-               if (pstmtDeleteCustomer != null) pstmtDeleteCustomer.close();
+               if (pstmtUpdateStatus != null) pstmtUpdateStatus.close();
                if (conn != null) conn.close();
            } catch (SQLException ex) {
                ex.printStackTrace();

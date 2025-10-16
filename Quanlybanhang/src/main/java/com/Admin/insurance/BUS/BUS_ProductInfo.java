@@ -11,24 +11,4 @@ public class BUS_ProductInfo {
     public BUS_ProductInfo() {
         daoProductInfo = new DAOProductInfo();
     }
-
-    // Phương thức gọi DAO để lấy thông tin sản phẩm theo IMEI
-    public DTOProductInfo getProductInfoByIMEI(String imei) {
-        try {
-            return daoProductInfo.getProductInfoByIMEI(imei);
-        } catch (SQLException e) {
-            System.err.println("Error fetching product info: " + e.getMessage());
-            return null; // Trả về null nếu có lỗi
-        }
-    }
-     public String getProductID(String imei) {
-        try {
-            return daoProductInfo.getProductIDByIMEI(imei);
-        } catch (SQLException e) {
-            System.err.println("Error fetching product info: " + e.getMessage());
-            return null; // Trả về null nếu có lỗi
-        }
-    }
-    
-    
 }

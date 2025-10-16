@@ -7,6 +7,7 @@ public class DTO_Insurance {
     private String insuranceNo;
     private String adminId;
     private String customerId;
+    private String describleCustomer;
     private LocalDate startDateInsurance;
     private LocalDate endDateInsurance;
 
@@ -18,6 +19,16 @@ public class DTO_Insurance {
         this.insuranceNo = insuranceNo;
         this.adminId = adminId;
         this.customerId = customerId;
+        this.startDateInsurance = startDateInsurance;
+        this.endDateInsurance = endDateInsurance;
+    }
+    
+    public DTO_Insurance(String insuranceNo, String adminId, String customerId, String describleCustomer,
+                         LocalDate startDateInsurance, LocalDate endDateInsurance) {
+        this.insuranceNo = insuranceNo;
+        this.adminId = adminId;
+        this.customerId = customerId;
+        this.describleCustomer = describleCustomer;
         this.startDateInsurance = startDateInsurance;
         this.endDateInsurance = endDateInsurance;
     }
@@ -44,6 +55,14 @@ public class DTO_Insurance {
 
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
+    }
+    
+    public String getDescribleCustomer() {
+        return describleCustomer;
+    }
+    
+    public void setDescribleCustomer(String describleCustomer) {
+        this.describleCustomer = describleCustomer;
     }
 
     public LocalDate getStartDateInsurance() {

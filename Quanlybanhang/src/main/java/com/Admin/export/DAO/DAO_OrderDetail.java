@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import com.Admin.product.DTO.DTOIMEI;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -115,42 +114,9 @@ public class DAO_OrderDetail {
       return orderDetails;
   }
 
-   public List<DTOIMEI> getIMEIByProductID(String productID) throws SQLException {
-        List<DTOIMEI> imeiList = new ArrayList<>();
-        String sql = "SELECT IMei_No FROM IMei_Product WHERE Product_ID = ? AND State = 'Useable'";
-
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, productID);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    DTOIMEI imei = new DTOIMEI();
-                    imei.setImeiNo(rs.getString("IMei_No"));
-                    imeiList.add(imei); // Thêm dòng này để thêm IMEI vào danh sách
-                }
-            }
-        }
-        return imeiList;
-    }
    
-    public boolean deleteIMEI(String imeiNo) {
-        String sql = "DELETE FROM IMei_Product WHERE IMei_No = ?";
-
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, imeiNo);
-            int affectedRows = stmt.executeUpdate();
-
-            return affectedRows > 0; // true nếu có ít nhất một dòng bị xóa
-
-        } catch (SQLException e) {
-            System.err.println("Error deleting IMEI: " + e.getMessage());
-            return false;
-        }
-    }
+   
+    // IMEI deletion removed
 
    
     

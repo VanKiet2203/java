@@ -22,8 +22,8 @@ import java.sql.Time;
 public class DAO_Warranty {
 
     public boolean insertBillWarranty(DTO_Insurance insurance) throws SQLException {
-        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Start_Date_Insurance, End_Date_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Describle_customer, Start_Date_Insurance, End_Date_Insurance) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -31,8 +31,9 @@ public class DAO_Warranty {
             pst.setString(1, insurance.getInsuranceNo());
             pst.setString(2, insurance.getAdminId());
             pst.setString(3, insurance.getCustomerId());
-            pst.setDate(4, java.sql.Date.valueOf(insurance.getStartDateInsurance()));
-            pst.setDate(5, java.sql.Date.valueOf(insurance.getEndDateInsurance()));
+            pst.setString(4, insurance.getDescribleCustomer()); // Thêm trường Describle_customer
+            pst.setDate(5, java.sql.Date.valueOf(insurance.getStartDateInsurance()));
+            pst.setDate(6, java.sql.Date.valueOf(insurance.getEndDateInsurance()));
 
             int rowsAffected = pst.executeUpdate();
             return rowsAffected > 0; // Trả về `true` nếu thành công, `false` nếu thất bại
@@ -43,8 +44,8 @@ public class DAO_Warranty {
     }
     
     public boolean insertBillWarrantyDetails(DTO_InsuranceDetails insuranceDetails) throws SQLException {
-        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Product_ID, IMEI_No, Description, Date_Insurance, Time_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Product_ID, Description, Date_Insurance, Time_Insurance) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -53,10 +54,9 @@ public class DAO_Warranty {
             pst.setString(2, insuranceDetails.getAdminId());
             pst.setString(3, insuranceDetails.getCustomerId());
             pst.setString(4, insuranceDetails.getProductId());
-            pst.setString(5, insuranceDetails.getiMeiNo());
-            pst.setString(6, insuranceDetails.getDescription());
-            pst.setDate(7, Date.valueOf(insuranceDetails.getDateInsurance()));  // Chuyển đổi LocalDate sang SQL Date
-            pst.setTime(8, Time.valueOf(insuranceDetails.getTimeInsurance()));  // Chuyển đổi LocalTime sang SQL Time
+            pst.setString(5, insuranceDetails.getDescription());
+            pst.setDate(6, Date.valueOf(insuranceDetails.getDateInsurance()));  // Chuyển đổi LocalDate sang SQL Date
+            pst.setTime(7, Time.valueOf(insuranceDetails.getTimeInsurance()));  // Chuyển đổi LocalTime sang SQL Time
 
             int rowsAffected = pst.executeUpdate();
             return rowsAffected > 0; // Trả về `true` nếu thành công, `false` nếu thất bại
@@ -111,7 +111,6 @@ public class DAO_Warranty {
                 String adminId = rs.getString("Admin_ID");
                 String customerId = rs.getString("Customer_ID");
                 String productId = rs.getString("Product_ID");
-                String iMeiNo = rs.getString("IMei_No");
                 String description = rs.getString("Description");
                 LocalDate dateInsurance = rs.getDate("Date_Insurance").toLocalDate();
                 LocalTime timeInsurance = rs.getTime("Time_Insurance").toLocalTime();
@@ -119,7 +118,7 @@ public class DAO_Warranty {
                 // Tạo đối tượng DTO_InsuranceDetails và thêm vào danh sách
                 DTO_InsuranceDetails insuranceDetails = new DTO_InsuranceDetails(
                     insuranceNo, adminId, customerId, productId, 
-                    iMeiNo, description, dateInsurance, timeInsurance
+                    description, dateInsurance, timeInsurance
                 );
                 insuranceDetailsList.add(insuranceDetails);
             }
@@ -147,8 +146,8 @@ public class DAO_Warranty {
             case "Customer.ID":
                 sql = "SELECT * FROM Insurance_Details WHERE Customer_ID LIKE ?";
                 break;
-            case "IMEI.No":
-                sql = "SELECT * FROM Insurance_Details WHERE IMei_No LIKE ?";
+            case "Product.ID":
+                sql = "SELECT * FROM Insurance_Details WHERE Product_ID LIKE ?";
                 break;
             case "Date":
                 sql = "SELECT * FROM Insurance_Details WHERE Date_Insurance = ?";
@@ -181,7 +180,6 @@ public class DAO_Warranty {
                         rs.getString("Admin_ID"),
                         rs.getString("Customer_ID"),
                         rs.getString("Product_ID"),
-                        rs.getString("IMei_No"),
                         rs.getString("Description"),
                         rs.getDate("Date_Insurance").toLocalDate(),
                         rs.getTime("Time_Insurance").toLocalTime()
@@ -281,7 +279,7 @@ public class DAO_Warranty {
         Sheet sheet = workbook.createSheet("Insurance_Details");
 
         // Tạo header
-        String[] headers = {"Insurance No", "Admin ID", "Customer ID", "Product ID", "IMEI No", "Description", "Date Insurance", "Time Insurance"};
+        String[] headers = {"Insurance No", "Admin ID", "Customer ID", "Product ID", "Description", "Date Insurance", "Time Insurance"};
         createHeaderRow(workbook, sheet, headers);
 
         // Lấy dữ liệu từ database
@@ -313,11 +311,10 @@ public class DAO_Warranty {
             row.createCell(1).setCellValue(detail.getAdminId());
             row.createCell(2).setCellValue(detail.getCustomerId());
             row.createCell(3).setCellValue(detail.getProductId());
-            row.createCell(4).setCellValue(detail.getiMeiNo());
-            row.createCell(5).setCellValue(detail.getDescription());
+            row.createCell(4).setCellValue(detail.getDescription());
 
             // Xử lý ngày bảo hiểm
-            Cell dateCell = row.createCell(6);
+            Cell dateCell = row.createCell(5);
             if (detail.getDateInsurance() != null) {
                 dateCell.setCellValue(Date.valueOf(detail.getDateInsurance()));
                 dateCell.setCellStyle(dateStyle);
@@ -326,7 +323,7 @@ public class DAO_Warranty {
             }
 
             // Xử lý thời gian bảo hiểm
-            Cell timeCell = row.createCell(7);
+            Cell timeCell = row.createCell(6);
             if (detail.getTimeInsurance() != null) {
                 // Chuyển LocalTime sang java.sql.Time
                 timeCell.setCellValue(Time.valueOf(detail.getTimeInsurance()));
@@ -336,7 +333,7 @@ public class DAO_Warranty {
             }
 
             // Áp dụng style cho các ô còn lại
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 5; i++) {
                 row.getCell(i).setCellStyle(dataStyle);
             }
         }

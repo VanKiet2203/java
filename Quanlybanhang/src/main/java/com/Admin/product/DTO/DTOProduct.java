@@ -9,25 +9,68 @@ public class DTOProduct {
     private String speed;
     private String batteryCapacity;
     private int quantity;
-    private String categoryId; 
+    private String categoryId;
+    private String supId;
     private String image;
-    private double price;
+    private BigDecimal price;
+    private BigDecimal listPriceBefore;
+    private BigDecimal listPriceAfter;
 
     // Constructor
     public DTOProduct() {}
 
     public DTOProduct(String productId, String productName, String color,
                      String speed, String batteryCapacity, int quantity,
-                     String categoryId, String image, double price) {
+                     String categoryId, String supId, String image,
+                     BigDecimal price, BigDecimal listPriceBefore, BigDecimal listPriceAfter) {
         this.productId = productId;
         this.productName = productName;
         this.color = color;
-        this.speed = speed; 
+        this.speed = speed;
+        this.batteryCapacity = batteryCapacity;
+        this.quantity = quantity;
+        this.categoryId = categoryId;
+        this.supId = supId;
+        this.image = image;
+        this.price = price;
+        this.listPriceBefore = listPriceBefore;
+        this.listPriceAfter = listPriceAfter;
+    }
+
+    // Convenience constructor with Sup_ID and no list prices (defaults list prices to price)
+    public DTOProduct(String productId, String productName, String color,
+                      String speed, String batteryCapacity, int quantity,
+                      String categoryId, String supId, String image, BigDecimal price) {
+        this.productId = productId;
+        this.productName = productName;
+        this.color = color;
+        this.speed = speed;
+        this.batteryCapacity = batteryCapacity;
+        this.quantity = quantity;
+        this.categoryId = categoryId;
+        this.supId = supId;
+        this.image = image;
+        this.price = price;
+        this.listPriceBefore = price;
+        this.listPriceAfter = price;
+    }
+
+    // Backward-compatible constructor (old usage)
+    public DTOProduct(String productId, String productName, String color,
+                      String speed, String batteryCapacity, int quantity,
+                      String categoryId, String image, double price) {
+        this.productId = productId;
+        this.productName = productName;
+        this.color = color;
+        this.speed = speed;
         this.batteryCapacity = batteryCapacity;
         this.quantity = quantity;
         this.categoryId = categoryId;
         this.image = image;
-        this.price = price;
+        this.price = BigDecimal.valueOf(price);
+        // Default list prices to current price when not provided
+        this.listPriceBefore = this.price;
+        this.listPriceAfter = this.price;
     }
 
     // Getters and setters
@@ -87,6 +130,14 @@ public class DTOProduct {
         this.categoryId = categoryId;
     }
 
+    public String getSupId() {
+        return supId;
+    }
+
+    public void setSupId(String supId) {
+        this.supId = supId;
+    }
+
     public String getImage() {
         return image;
     }
@@ -95,12 +146,28 @@ public class DTOProduct {
         this.image = image;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public BigDecimal getListPriceBefore() {
+        return listPriceBefore;
+    }
+
+    public void setListPriceBefore(BigDecimal listPriceBefore) {
+        this.listPriceBefore = listPriceBefore;
+    }
+
+    public BigDecimal getListPriceAfter() {
+        return listPriceAfter;
+    }
+
+    public void setListPriceAfter(BigDecimal listPriceAfter) {
+        this.listPriceAfter = listPriceAfter;
     }
 
     @Override
@@ -113,8 +180,11 @@ public class DTOProduct {
                 ", batteryCapacity='" + batteryCapacity + '\'' +
                 ", quantity=" + quantity +
                 ", categoryId='" + categoryId + '\'' +
+                ", supId='" + supId + '\'' +
                 ", image='" + image + '\'' +
                 ", price=" + price +
+                ", listPriceBefore=" + listPriceBefore +
+                ", listPriceAfter=" + listPriceAfter +
                 '}';
     }
 }

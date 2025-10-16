@@ -2,7 +2,6 @@ package com.Admin.export.BUS;
 
 import com.Admin.export.DAO.DAO_OrderDetail;
 import com.Admin.export.DTO.DTO_Oderdetails;
-import com.Admin.product.DTO.DTOIMEI;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -67,25 +66,6 @@ public class BUS_OrderDetail {
         }
     }
      
-    public List<DTOIMEI> getIMEIByProductID(String productID) {
-        try {
-            return daoOrderDetail.getIMEIByProductID(productID);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
-    
- 
-    public List<DTOIMEI> getIMEIByProductIDWithLimit(String productID, int limit) {
-        try {
-            List<DTOIMEI> allIMEIs = daoOrderDetail.getIMEIByProductID(productID);
-            return allIMEIs.subList(0, Math.min(limit, allIMEIs.size()));
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
     
      public String getProductName(String productID) {
         try {
@@ -96,9 +76,7 @@ public class BUS_OrderDetail {
         }
     }
     
-     public boolean deleteIMEI(String imeiNo) {
-         return daoOrderDetail.deleteIMEI(imeiNo);
-     }
+    // IMEI removed
      public boolean deleteOrder(String orderNo) {
          return daoOrderDetail.deleteOrderByOrderNo(orderNo);
      }

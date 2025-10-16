@@ -74,7 +74,6 @@ public class PDFExporter {
             addAdminCustomerInfo(document);
             addOrderDetails(document);
             addOrderSummary(document);
-            addImeiInfo(document);
             addFooter(document);
 
             document.close();
@@ -464,32 +463,7 @@ public class PDFExporter {
     }
 
 
-    private void addImeiInfo(Document document) throws DocumentException {
-        if (imeiNumbers != null && !imeiNumbers.trim().isEmpty()) {
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.DARK_GRAY);
-            Paragraph imeiTitle = new Paragraph("IMEI INFORMATION", titleFont);
-            imeiTitle.setSpacingBefore(25f); // Tăng khoảng cách trước tiêu đề
-            document.add(imeiTitle);
-
-            // Thêm khoảng trống trước bảng
-            document.add(new Paragraph("\n")); // Đẩy bảng xuống sâu hơn
-
-            // Create bordered box for IMEI numbers
-            PdfPTable imeiTable = new PdfPTable(1);
-            imeiTable.setWidthPercentage(100);
-            imeiTable.setSpacingBefore(10f); // Đẩy bảng xuống thêm một chút
-            imeiTable.setSpacingAfter(15f);
-
-            PdfPCell imeiCell = new PdfPCell(new Phrase(imeiNumbers, 
-                FontFactory.getFont(FontFactory.HELVETICA, 10)));
-            imeiCell.setPadding(12); // Tăng khoảng cách bên trong ô
-            imeiCell.setBorderWidth(0.5f);
-            imeiCell.setBorderColor(BaseColor.LIGHT_GRAY);
-            imeiTable.addCell(imeiCell);
-
-            document.add(imeiTable);
-        }
-    }
+    
 
 
     private void addFooter(Document document) throws DocumentException {

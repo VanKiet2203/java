@@ -28,6 +28,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import net.miginfocom.swing.MigLayout;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 
 public class Bill_ExportDetails extends javax.swing.JFrame {
@@ -74,22 +75,9 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         model = new DefaultTableModel(columnNames, 0);
 
 
-        // 4️⃣ Định dạng font
-        Font contentFont = new Font("Times New Roman", Font.PLAIN, 15);
-        Font headerFont = new Font("SansSerif", Font.BOLD, 16);
-
-        // 5️⃣ Tạo bảng sử dụng MyTable
-        tableBillDetail = new MyTable(
-            model,
-            new Color(255, 255, 255),  // Nền bảng
-            new Color(0, 0, 0),        // Chữ bảng
-            new Color(250, 219, 216),  // Nền dòng được chọn
-            new Color(0, 0, 0),        // Chữ dòng được chọn
-            Color.decode("#FF6666"),   // Nền tiêu đề
-            new Color(255, 255, 255),  // Chữ tiêu đề
-            contentFont,
-            headerFont
-        );
+        // 5️⃣ Tạo bảng với style chuẩn
+        tableBillDetail = createStyledTable(model);
+        tableBillDetail.setRowHeight(30);
 
         JScrollPane scrollPane = MyTable.createScrollPane(tableBillDetail, 10, 150, 950, 630);
 
@@ -105,22 +93,17 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         bg.add(scrollPane, "pos 10 140, w 1430!, h 630!");
         
        
-            // Tạo txtSearch
+            // TextField search
             txtSearch = new MyTextField();
-            txtSearch.setHint("Enter the search key word...");
-            txtSearch.setBounds(210, 10, 250, 35); // Đặt vị trí và kích thước
-            txtSearch.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-            txtSearch.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-            txtSearch.setHintFont(new Font("Arial", Font.ITALIC, 14));
-            txtSearch.setBackgroundColor(Color.decode("#F5FFFA"));
+            txtSearch.setHint("Nhập từ khóa tìm kiếm...");
+            txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
             bg.add(txtSearch, "pos 510 75, w 300!, h 35!");
             
-            // Tạo danh sách item cho JComboBox
-                        // Tạo danh sách item cho JComboBox
-            String[] items = {"Invoice.No", "Admin.ID", "Customer.ID", "IMEI.No", "Date"};
+            // ComboBox search
+            String[] items = {"Invoice.No", "Admin.ID", "Customer.ID", "Date"};
             cmbSearch = new MyCombobox<>(items);
             cmbSearch.setBounds(30, 10, 165,35);
-            cmbSearch.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
+            cmbSearch.setCustomFont(FONT_CONTENT_MEDIUM);
             cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
             //cmbSearch.setMaximumRowCount(5); // Giới hạn dòng dropdown nếu dài
             cmbSearch.repaint();
@@ -128,13 +111,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
 
            bg.add(cmbSearch, "pos 350 75, w 140!, h 35!");
             
-            bntSearch= new MyButton("Search ", 20);
-            bntSearch.setBackgroundColor(Color.decode("#00CC33")); // Màu nền
-            bntSearch.setPressedColor(Color.decode("#33CC33")); // Màu khi nhấn
-            bntSearch.setHoverColor(Color.decode("#00EE00")); // Màu khi rê chuột vào
-            //bntSearch.setBounds(320, 10, 130, 35);
-            bntSearch.setFont(new Font("Times New Roman", Font.BOLD, 16));
-            bntSearch.setForeground(Color.WHITE);
+            bntSearch = new MyButton("Tìm kiếm", 20);
+            stylePrimaryButton(bntSearch);
             bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
             bntSearch.addActionListener((e) -> {
                 String searchType = cmbSearch.getSelectedItem().toString();
@@ -169,12 +147,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         });
         bg.add(bntSearch, "pos 820 75, w 120!, h 35");
         
-          bntRefresh = new MyButton("Refresh", 20);
-          bntRefresh.setBackgroundColor(Color.WHITE); // Màu nền
-          bntRefresh.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-          bntRefresh.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-          bntRefresh.setFont(new Font("sansserif", Font.BOLD, 16));
-          bntRefresh.setForeground(Color.BLACK);
+          bntRefresh = new MyButton("Làm mới", 20);
+          styleInfoButton(bntRefresh);
           bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntRefresh.addActionListener((e) -> {
               Refresh();
@@ -207,10 +181,9 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
                detail.getAdminId(),
                detail.getCustomerId(),
                detail.getProductId(),
-               detail.getImeiNo(),
                detail.getUnitPrice(),
                detail.getQuantity(),
-               detail.getDiscountValues() + "%",
+               detail.getDiscountPercent() + "%",
                detail.getTotalPriceBefore(),
                detail.getTotalPriceAfter(),
                dateFormat.format(detail.getDateExported()),
@@ -244,10 +217,9 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
                 detail.getAdminId(),
                 detail.getCustomerId(),
                 detail.getProductId(),
-                detail.getImeiNo(),
                 detail.getUnitPrice(),
                 detail.getQuantity(),
-                detail.getDiscountValues()+"%",
+                detail.getDiscountPercent()+"%",
                 detail.getTotalPriceBefore(),
                 detail.getTotalPriceAfter(),
                 detail.getDateExported() != null ? dateFormat.format(detail.getDateExported()) : "",
@@ -299,6 +271,40 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         }
 
         return dateString; // Trả về nguyên bản nếu không thể chuẩn hóa
+    }
+    
+    // ============================================
+    // HELPER METHODS FOR UI STYLING
+    // ============================================
+
+    private void stylePrimaryButton(MyButton btn) {
+        btn.setBackgroundColor(PRIMARY_COLOR);
+        btn.setHoverColor(PRIMARY_HOVER);
+        btn.setPressedColor(PRIMARY_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+    private void styleInfoButton(MyButton btn) {
+        btn.setBackgroundColor(INFO_COLOR);
+        btn.setHoverColor(INFO_HOVER);
+        btn.setPressedColor(INFO_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+    private MyTable createStyledTable(DefaultTableModel model) {
+        return new MyTable(
+            model,
+            Color.WHITE,                    // Nền bảng
+            TEXT_PRIMARY,                   // Chữ bảng
+            Color.decode("#E8F5E9"),        // Nền dòng chọn
+            Color.BLACK,                    // Chữ dòng chọn
+            PRIMARY_COLOR,                  // Nền tiêu đề
+            Color.WHITE,                    // Chữ tiêu đề
+            FONT_TABLE_CONTENT,             // Font nội dung
+            FONT_TABLE_HEADER               // Font tiêu đề
+        );
     }
   
     @SuppressWarnings("unchecked")
