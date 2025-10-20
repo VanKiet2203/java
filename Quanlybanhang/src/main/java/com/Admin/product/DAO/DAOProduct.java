@@ -7,7 +7,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.ComponentandDatabase.Components.CustomDialog;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.sql.*;
+import java.math.BigDecimal;
 import java.awt.Font;
 import java.awt.Image;
 import javax.swing.table.DefaultTableModel;
@@ -16,6 +18,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -202,11 +205,17 @@ public class DAOProduct {
     public void uploadProductToTable(DefaultTableModel model) {
         model.setRowCount(0);
         
-        String sql = "SELECT p.Product_ID, p.Product_Name, p.Color, p.Speed, " +
-                    "p.Battery_Capacity, p.Quantity, p.Price, " +
-                    "c.Category_ID, c.Category_Name " +
-                    "FROM Product p " +
-                    "JOIN Category c ON p.Category_ID = c.Category_ID";
+        // Chỉ hiển thị sản phẩm từ kho (Product_Stock) đã được tạo Product
+        String sql = """
+            SELECT p.Product_ID, p.Product_Name, p.Color, p.Speed, 
+                   p.Battery_Capacity, ISNULL(ps.Quantity_Stock, 0) AS Quantity, p.Price, 
+                   c.Category_ID, c.Category_Name 
+            FROM Product p 
+            JOIN Category c ON p.Category_ID = c.Category_ID
+            LEFT JOIN Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
+            WHERE ps.Warehouse_Item_ID IS NOT NULL
+            ORDER BY p.Product_ID
+        """;
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -557,6 +566,251 @@ public class DAOProduct {
         }
         return null;
     }
+    
+    // Lấy danh sách Warehouse Items chưa được tạo Product
+    public void loadAvailableWarehouseItems(DefaultTableModel model) {
+        String sql = """
+            SELECT ps.Warehouse_Item_ID, ps.Product_Name, c.Category_Name, s.Sup_Name, 
+                   ps.Quantity_Stock, ps.Unit_Price_Import, ps.Created_Date
+            FROM Product_Stock ps
+            LEFT JOIN Category c ON ps.Category_ID = c.Category_ID
+            LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
+            WHERE ps.Warehouse_Item_ID NOT IN (
+                SELECT DISTINCT Warehouse_Item_ID 
+                FROM Product 
+                WHERE Warehouse_Item_ID IS NOT NULL
+            )
+            ORDER BY ps.Created_Date DESC
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            model.setRowCount(0);
+            
+            while (rs.next()) {
+                Object[] row = {
+                    rs.getString("Warehouse_Item_ID"),
+                    rs.getString("Product_Name"),
+                    rs.getString("Category_Name"),
+                    rs.getString("Sup_Name"),
+                    rs.getInt("Quantity_Stock"),
+                    rs.getBigDecimal("Unit_Price_Import"),
+                    rs.getDate("Created_Date")
+                };
+                model.addRow(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            CustomDialog.showError("Error loading warehouse items: " + e.getMessage());
+        }
+    }
+    
+    // Tạo Product từ Warehouse Item
+    public boolean createProductFromWarehouse(String warehouseItemId, String color, String speed, 
+                                            String batteryCapacity, BigDecimal price) {
+        String insertSQL = """
+            INSERT INTO Product (Product_ID, Product_Name, Color, Speed, Battery_Capacity, 
+                               Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, 
+                               List_Price_After, Warehouse_Item_ID)
+            SELECT ?, Product_Name, ?, ?, ?, Quantity_Stock, Category_ID, Sup_ID, 
+                   NULL, ?, ?, ?, Warehouse_Item_ID
+            FROM Product_Stock 
+            WHERE Warehouse_Item_ID = ?
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(insertSQL)) {
+            
+            stmt.setString(1, warehouseItemId); // Product_ID = Warehouse_Item_ID
+            stmt.setString(2, color);
+            stmt.setString(3, speed);
+            stmt.setString(4, batteryCapacity);
+            stmt.setBigDecimal(5, price);
+            stmt.setBigDecimal(6, price.multiply(new BigDecimal("0.9"))); // List_Price_Before
+            stmt.setBigDecimal(7, price.multiply(new BigDecimal("0.8"))); // List_Price_After
+            stmt.setString(8, warehouseItemId);
+            
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-    // Cập nhật các phương thức khác như update, delete, select tương tự
+    // Import products from Excel file
+    public void importProductFromExcel(File excelFile) {
+        String insertSQL = "INSERT INTO Product (Product_ID, Product_Name, Color, Speed, Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ?";
+        String checkProductSQL = "SELECT COUNT(*) FROM Product WHERE Product_ID = ?";
+
+        int successCount = 0;
+        int errorCount = 0;
+        StringBuilder errors = new StringBuilder();
+
+        try (FileInputStream fis = new FileInputStream(excelFile);
+             XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.iterator();
+
+            if (rowIterator.hasNext()) {
+                rowIterator.next(); // Skip header
+            }
+
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                int rowNum = row.getRowNum() + 1;
+
+                if (row.getPhysicalNumberOfCells() >= 9) {
+                    String productID = getCellValueAsString(row.getCell(0));
+                    String productName = getCellValueAsString(row.getCell(1));
+                    String color = getCellValueAsString(row.getCell(2));
+                    String speed = getCellValueAsString(row.getCell(3));
+                    String batteryCapacity = getCellValueAsString(row.getCell(4));
+                    int quantity = (int) getCellValueAsNumber(row.getCell(5));
+                    String categoryID = getCellValueAsString(row.getCell(6));
+                    String supID = getCellValueAsString(row.getCell(7));
+                    double price = getCellValueAsNumber(row.getCell(8));
+
+                    if (productID == null || productID.trim().isEmpty() ||
+                        productName == null || productName.trim().isEmpty() ||
+                        categoryID == null || categoryID.trim().isEmpty() ||
+                        supID == null || supID.trim().isEmpty() ||
+                        quantity <= 0 || price <= 0) {
+                        errors.append("Row ").append(rowNum).append(": Missing or invalid data\n");
+                        errorCount++;
+                        continue;
+                    }
+
+                    try (Connection conn = getConnection()) {
+                        conn.setAutoCommit(false);
+
+                        try (PreparedStatement checkCategoryStmt = conn.prepareStatement(checkCategorySQL);
+                             PreparedStatement checkProductStmt = conn.prepareStatement(checkProductSQL);
+                             PreparedStatement insertStmt = conn.prepareStatement(insertSQL)) {
+
+                            // Check if Category exists
+                            checkCategoryStmt.setString(1, categoryID);
+                            try (ResultSet categoryRs = checkCategoryStmt.executeQuery()) {
+                                if (!categoryRs.next() || categoryRs.getInt(1) == 0) {
+                                    errors.append("Row ").append(rowNum).append(": Category ID '").append(categoryID).append("' does not exist\n");
+                                    errorCount++;
+                                    continue;
+                                }
+                            }
+
+                            // Check if Product already exists
+                            checkProductStmt.setString(1, productID);
+                            try (ResultSet productRs = checkProductStmt.executeQuery()) {
+                                if (productRs.next() && productRs.getInt(1) > 0) {
+                                    errors.append("Row ").append(rowNum).append(": Product ID '").append(productID).append("' already exists\n");
+                                    errorCount++;
+                                    continue;
+                                }
+                            }
+
+                            // Insert product
+                            insertStmt.setString(1, productID);
+                            insertStmt.setString(2, productName);
+                            insertStmt.setString(3, color);
+                            insertStmt.setString(4, speed);
+                            insertStmt.setString(5, batteryCapacity);
+                            insertStmt.setInt(6, quantity);
+                            insertStmt.setString(7, categoryID);
+                            insertStmt.setString(8, supID);
+                            insertStmt.setString(9, null); // Image
+                            insertStmt.setBigDecimal(10, BigDecimal.valueOf(price));
+                            insertStmt.setBigDecimal(11, BigDecimal.valueOf(price * 0.9)); // List_Price_Before
+                            insertStmt.setBigDecimal(12, BigDecimal.valueOf(price * 0.8)); // List_Price_After
+                            insertStmt.setString(13, productID); // Warehouse_Item_ID = Product_ID
+
+                            insertStmt.executeUpdate();
+                            conn.commit();
+                            successCount++;
+
+                        } catch (SQLException e) {
+                            conn.rollback();
+                            errors.append("Row ").append(rowNum).append(": ").append(e.getMessage()).append("\n");
+                            errorCount++;
+                        } finally {
+                            conn.setAutoCommit(true);
+                        }
+
+                    } catch (SQLException e) {
+                        errors.append("Row ").append(rowNum).append(": Database connection error - ").append(e.getMessage()).append("\n");
+                        errorCount++;
+                    }
+                } else {
+                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 9 columns)\n");
+                    errorCount++;
+                }
+            }
+
+            // Show results
+            String message = String.format("Import completed!\nSuccess: %d products\nErrors: %d rows", 
+                                         successCount, errorCount);
+            if (errorCount > 0) {
+                message += "\n\nErrors:\n" + errors.toString();
+            }
+            
+            if (errorCount == 0) {
+                CustomDialog.showSuccess(message);
+            } else if (successCount > 0) {
+                CustomDialog.showError(message);
+            } else {
+                CustomDialog.showError("Import failed!\n\n" + errors.toString());
+            }
+            
+        } catch (IOException e) {
+            CustomDialog.showError("Error reading Excel file: " + e.getMessage());
+        } catch (Exception e) {
+            CustomDialog.showError("Unexpected error during import: " + e.getMessage());
+        }
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return String.valueOf((long) cell.getNumericCellValue());
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return null;
+        }
+    }
+
+    private double getCellValueAsNumber(Cell cell) {
+        if (cell == null) {
+            return 0.0;
+        }
+        
+        switch (cell.getCellType()) {
+            case NUMERIC:
+                return cell.getNumericCellValue();
+            case STRING:
+                try {
+                    return Double.parseDouble(cell.getStringCellValue());
+                } catch (NumberFormatException e) {
+                    return 0.0;
+                }
+            default:
+                return 0.0;
+        }
+    }
 }

@@ -49,13 +49,16 @@ public class DAO_ExportBill {
         try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
 
-            // 1) Validate stock
-            String stockSql = "SELECT Quantity FROM Product WHERE Product_ID = ?";
+            // 1) Validate stock against current warehouse stock (Product_Stock)
+            String stockSql = "SELECT ISNULL(ps.Quantity_Stock, 0) AS Current_Stock "
+                            + "FROM Product p "
+                            + "LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID "
+                            + "WHERE p.Product_ID = ?";
             try (PreparedStatement ps = conn.prepareStatement(stockSql)) {
                 ps.setString(1, detail.getProductId());
                 ResultSet rs = ps.executeQuery();
                 if (!rs.next()) { conn.rollback(); return false; }
-                int onHand = rs.getInt("Quantity");
+                int onHand = rs.getInt("Current_Stock");
                 if (onHand < detail.getQuantity()) { conn.rollback(); return false; }
             }
 
@@ -96,13 +99,7 @@ public class DAO_ExportBill {
                 ps.executeUpdate();
             }
 
-            // 5) Decrease stock
-            String updateStock = "UPDATE Product SET Quantity = Quantity - ? WHERE Product_ID = ?";
-            try (PreparedStatement ps = conn.prepareStatement(updateStock)) {
-                ps.setInt(1, detail.getQuantity());
-                ps.setString(2, detail.getProductId());
-                ps.executeUpdate();
-            }
+            // 5) Do NOT manually decrease Product.Quantity here. Warehouse stock will be updated by DB triggers on Bill_Exported_Details.
 
             conn.commit();
             return true;
@@ -197,11 +194,29 @@ public class DAO_ExportBill {
     }
 
     public boolean updateProductQuantity(DTO_BillExportedDetail detail) throws SQLException {
+        // No-op: Stock is handled by DB triggers after inserting Bill_Exported_Details
+        return true;
+    }
+
+    public DTO_BillExported getExportBillDetailsByInvoice(String invoiceNo, String adminID) throws SQLException {
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Total_Product, Description, Promotion_Code FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ?";
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement ps = conn.prepareStatement("UPDATE Product SET Quantity = Quantity - ? WHERE Product_ID = ?")) {
-            ps.setInt(1, detail.getQuantity());
-            ps.setString(2, detail.getProductId());
-            return ps.executeUpdate() > 0;
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, invoiceNo);
+            ps.setString(2, adminID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new DTO_BillExported(
+                        rs.getString("Invoice_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getInt("Total_Product"),
+                        rs.getString("Description"),
+                        rs.getString("Promotion_Code")
+                    );
+                }
+            }
         }
+        return null;
     }
 }

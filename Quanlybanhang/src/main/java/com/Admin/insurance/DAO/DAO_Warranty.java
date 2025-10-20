@@ -22,8 +22,8 @@ import java.sql.Time;
 public class DAO_Warranty {
 
     public boolean insertBillWarranty(DTO_Insurance insurance) throws SQLException {
-        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Describle_customer, Start_Date_Insurance, End_Date_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Describle_customer, Start_Date_Insurance, End_Date_Insurance) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -31,21 +31,22 @@ public class DAO_Warranty {
             pst.setString(1, insurance.getInsuranceNo());
             pst.setString(2, insurance.getAdminId());
             pst.setString(3, insurance.getCustomerId());
-            pst.setString(4, insurance.getDescribleCustomer()); // Thêm trường Describle_customer
-            pst.setDate(5, java.sql.Date.valueOf(insurance.getStartDateInsurance()));
-            pst.setDate(6, java.sql.Date.valueOf(insurance.getEndDateInsurance()));
+            pst.setString(4, insurance.getInvoiceNo()); // Add Invoice_No
+            pst.setString(5, insurance.getDescribleCustomer());
+            pst.setDate(6, java.sql.Date.valueOf(insurance.getStartDateInsurance()));
+            pst.setDate(7, java.sql.Date.valueOf(insurance.getEndDateInsurance()));
 
             int rowsAffected = pst.executeUpdate();
-            return rowsAffected > 0; // Trả về `true` nếu thành công, `false` nếu thất bại
+            return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Error inserting warranty bill: " + e.getMessage());
-            throw e; // Rethrow lỗi để xử lý ở cấp cao hơn
+            throw e;
         }
     }
     
     public boolean insertBillWarrantyDetails(DTO_InsuranceDetails insuranceDetails) throws SQLException {
-        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Product_ID, Description, Date_Insurance, Time_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Product_ID, Description, Date_Insurance, Time_Insurance) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -53,10 +54,11 @@ public class DAO_Warranty {
             pst.setString(1, insuranceDetails.getInsuranceNo());
             pst.setString(2, insuranceDetails.getAdminId());
             pst.setString(3, insuranceDetails.getCustomerId());
-            pst.setString(4, insuranceDetails.getProductId());
-            pst.setString(5, insuranceDetails.getDescription());
-            pst.setDate(6, Date.valueOf(insuranceDetails.getDateInsurance()));  // Chuyển đổi LocalDate sang SQL Date
-            pst.setTime(7, Time.valueOf(insuranceDetails.getTimeInsurance()));  // Chuyển đổi LocalTime sang SQL Time
+            pst.setString(4, insuranceDetails.getInvoiceNo()); // Add Invoice_No
+            pst.setString(5, insuranceDetails.getProductId());
+            pst.setString(6, insuranceDetails.getDescription());
+            pst.setDate(7, Date.valueOf(insuranceDetails.getDateInsurance()));
+            pst.setTime(8, Time.valueOf(insuranceDetails.getTimeInsurance()));
 
             int rowsAffected = pst.executeUpdate();
             return rowsAffected > 0; // Trả về `true` nếu thành công, `false` nếu thất bại
@@ -91,6 +93,36 @@ public class DAO_Warranty {
         } catch (SQLException e) {
             System.err.println("Error retrieving all insurance records: " + e.getMessage());
             throw e; // Ném lỗi lên để xử lý ở cấp cao hơn
+        }
+
+        return insuranceList;
+    }
+
+    public List<DTO_Insurance> getAllInsuranceWithExportInfo() throws SQLException {
+        String sql = "SELECT i.*, be.Invoice_No FROM Insurance i LEFT JOIN Bill_Exported be ON i.Invoice_No = be.Invoice_No AND i.Admin_ID = be.Admin_ID";
+        List<DTO_Insurance> insuranceList = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+
+            while (rs.next()) {
+                String insuranceNo = rs.getString("Insurance_No");
+                String adminId = rs.getString("Admin_ID");
+                String customerId = rs.getString("Customer_ID");
+                String invoiceNo = rs.getString("Invoice_No");
+                String describleCustomer = rs.getString("Describle_customer");
+                LocalDate startDateInsurance = rs.getDate("Start_Date_Insurance").toLocalDate();
+                LocalDate endDateInsurance = rs.getDate("End_Date_Insurance").toLocalDate();
+
+                DTO_Insurance insurance = new DTO_Insurance(
+                    insuranceNo, adminId, customerId, invoiceNo, describleCustomer, startDateInsurance, endDateInsurance
+                );
+                insuranceList.add(insurance);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving insurance records with export info: " + e.getMessage());
+            throw e;
         }
 
         return insuranceList;
@@ -367,7 +399,75 @@ public class DAO_Warranty {
         }
     }
     
+    /**
+     * Get insurance by insurance number
+     * @param insuranceNo Insurance number
+     * @return Insurance record
+     */
+    public DTO_Insurance getInsuranceByNo(String insuranceNo) throws SQLException {
+        String sql = "SELECT * FROM Insurance WHERE Insurance_No = ?";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, insuranceNo);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return new DTO_Insurance(
+                        rs.getString("Insurance_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getString("Invoice_No"),
+                        rs.getString("Describle_customer"),
+                        rs.getDate("Start_Date_Insurance").toLocalDate(),
+                        rs.getDate("End_Date_Insurance").toLocalDate()
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting insurance by number: " + e.getMessage());
+            throw e;
+        }
+        
+        return null;
+    }
     
-    
+    /**
+     * Get insurance details by insurance number
+     * @param insuranceNo Insurance number
+     * @return List of insurance details
+     */
+    public List<DTO_InsuranceDetails> getInsuranceDetailsByNo(String insuranceNo) throws SQLException {
+        String sql = "SELECT * FROM Insurance_Details WHERE Insurance_No = ?";
+        List<DTO_InsuranceDetails> detailsList = new ArrayList<>();
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, insuranceNo);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    DTO_InsuranceDetails details = new DTO_InsuranceDetails(
+                        rs.getString("Insurance_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getString("Invoice_No"),
+                        rs.getString("Product_ID"),
+                        rs.getString("Description"),
+                        rs.getDate("Date_Insurance").toLocalDate(),
+                        rs.getTime("Time_Insurance").toLocalTime()
+                    );
+                    detailsList.add(details);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting insurance details by number: " + e.getMessage());
+            throw e;
+        }
+        
+        return detailsList;
+    }
 }
 

@@ -2,148 +2,233 @@ package com.Admin.inventory.GUI;
 
 import com.Admin.inventory.DTO.DTOInventory;
 import com.ComponentandDatabase.Components.MyButton;
+import com.ComponentandDatabase.Components.MyTextField;
+import com.ComponentandDatabase.Components.CustomDialog;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.math.BigDecimal;
 
 public class ProductDetailsDialog extends JDialog {
-    private DTOInventory product;
+    private DTOInventory inventoryItem;
+    private MyTextField txtWarehouseId, txtProductName, txtCategory, txtSupplier;
+    private MyTextField txtQuantity, txtUnitPrice;
+    private MyButton btnSave, btnCancel;
+    private boolean isEditMode;
     
-    public ProductDetailsDialog(JFrame parent, DTOInventory product) {
-        super(parent, "Product Details - " + product.getProductId(), true);
-        this.product = product;
+    public ProductDetailsDialog(JFrame parent, DTOInventory item, boolean isEdit) {
+        super(parent, isEdit ? "Edit Product" : "View Product Details", true);
+        this.inventoryItem = item;
+        this.isEditMode = isEdit;
         
         initComponents();
-        loadProductDetails();
+        init();
+        loadData();
     }
     
     private void initComponents() {
-        setLayout(new BorderLayout());
-        setSize(600, 500);
+        setSize(500, 400);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout());
+        setResizable(false);
+    }
         
-        // Header panel
+    private void init() {
+        // Header
         JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-        headerPanel.setBackground(Color.decode("#1976D2"));
-        headerPanel.setPreferredSize(new Dimension(600, 60));
+        headerPanel.setBackground(PRIMARY_COLOR);
+        headerPanel.setPreferredSize(new Dimension(500, 50));
+        headerPanel.setLayout(new BorderLayout());
         
-        JLabel lblTitle = new JLabel("PRODUCT DETAILS", JLabel.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        JLabel lblTitle = new JLabel(isEditMode ? "Edit Product Details" : "Product Details");
+        lblTitle.setFont(FONT_TITLE_MEDIUM);
         lblTitle.setForeground(Color.WHITE);
-        headerPanel.add(lblTitle);
+        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        headerPanel.add(lblTitle, BorderLayout.CENTER);
         
         add(headerPanel, BorderLayout.NORTH);
         
-        // Content panel
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new GridBagLayout());
-        contentPanel.setBackground(Color.WHITE);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Main content
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(null);
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.WEST;
+        // Form fields
+        createFormFields(mainPanel);
         
-        // Product ID
-        gbc.gridx = 0; gbc.gridy = 0;
-        contentPanel.add(createLabel("Product ID:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getProductId()), gbc);
+        // Buttons
+        createButtons(mainPanel);
+        
+        add(mainPanel, BorderLayout.CENTER);
+    }
+    
+    private void createFormFields(JPanel panel) {
+        int y = 20;
+        int labelWidth = 120;
+        int fieldWidth = 300;
+        int fieldHeight = 35;
+        int spacing = 50;
+        
+        // Warehouse ID
+        JLabel lblWarehouseId = new JLabel("Warehouse ID:");
+        lblWarehouseId.setBounds(20, y, labelWidth, 25);
+        lblWarehouseId.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblWarehouseId);
+        
+        txtWarehouseId = new MyTextField();
+        txtWarehouseId.setBounds(150, y, fieldWidth, fieldHeight);
+        txtWarehouseId.setEnabled(false); // Always disabled for viewing
+        panel.add(txtWarehouseId);
+        y += spacing;
         
         // Product Name
-        gbc.gridx = 0; gbc.gridy = 1;
-        contentPanel.add(createLabel("Product Name:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getProductName()), gbc);
+        JLabel lblProductName = new JLabel("Product Name:");
+        lblProductName.setBounds(20, y, labelWidth, 25);
+        lblProductName.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblProductName);
         
-        // Price
-        gbc.gridx = 0; gbc.gridy = 2;
-        contentPanel.add(createLabel("Price:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(String.format("%,.0f VND", product.getPrice().doubleValue())), gbc);
+        txtProductName = new MyTextField();
+        txtProductName.setBounds(150, y, fieldWidth, fieldHeight);
+        txtProductName.setEnabled(isEditMode);
+        panel.add(txtProductName);
+        y += spacing;
         
         // Category
-        gbc.gridx = 0; gbc.gridy = 3;
-        contentPanel.add(createLabel("Category:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getCategoryId()), gbc);
+        JLabel lblCategory = new JLabel("Category:");
+        lblCategory.setBounds(20, y, labelWidth, 25);
+        lblCategory.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblCategory);
         
-        // Brand
-        gbc.gridx = 0; gbc.gridy = 4;
-        contentPanel.add(createLabel("Brand:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getBrandId()), gbc);
+        txtCategory = new MyTextField();
+        txtCategory.setBounds(150, y, fieldWidth, fieldHeight);
+        txtCategory.setEnabled(isEditMode);
+        panel.add(txtCategory);
+        y += spacing;
         
-        // Stock Quantity
-        gbc.gridx = 0; gbc.gridy = 5;
-        contentPanel.add(createLabel("Stock Quantity:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(String.valueOf(product.getQuantityInStock())), gbc);
+        // Supplier
+        JLabel lblSupplier = new JLabel("Supplier:");
+        lblSupplier.setBounds(20, y, labelWidth, 25);
+        lblSupplier.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblSupplier);
         
-        // Has Image
-        gbc.gridx = 0; gbc.gridy = 6;
-        contentPanel.add(createLabel("Has Image:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getImage() != null ? "Yes" : "No"), gbc);
+        txtSupplier = new MyTextField();
+        txtSupplier.setBounds(150, y, fieldWidth, fieldHeight);
+        txtSupplier.setEnabled(isEditMode);
+        panel.add(txtSupplier);
+        y += spacing;
         
-        // Color
-        gbc.gridx = 0; gbc.gridy = 7;
-        contentPanel.add(createLabel("Color:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getColor() != null ? product.getColor() : "Not specified"), gbc);
+        // Quantity
+        JLabel lblQuantity = new JLabel("Quantity:");
+        lblQuantity.setBounds(20, y, labelWidth, 25);
+        lblQuantity.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblQuantity);
         
-        // Speed
-        gbc.gridx = 0; gbc.gridy = 8;
-        contentPanel.add(createLabel("Speed:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getSpeed() != null ? product.getSpeed() : "Not specified"), gbc);
+        txtQuantity = new MyTextField();
+        txtQuantity.setBounds(150, y, fieldWidth, fieldHeight);
+        txtQuantity.setEnabled(isEditMode);
+        panel.add(txtQuantity);
+        y += spacing;
         
-        // Battery Capacity
-        gbc.gridx = 0; gbc.gridy = 9;
-        contentPanel.add(createLabel("Battery Capacity:"), gbc);
-        gbc.gridx = 1;
-        contentPanel.add(createValueLabel(product.getBatteryCapacity() != null ? product.getBatteryCapacity() : "Not specified"), gbc);
+        // Unit Price
+        JLabel lblUnitPrice = new JLabel("Unit Price:");
+        lblUnitPrice.setBounds(20, y, labelWidth, 25);
+        lblUnitPrice.setFont(FONT_CONTENT_MEDIUM);
+        panel.add(lblUnitPrice);
         
-        add(contentPanel, BorderLayout.CENTER);
-        
-        // Button panel
+        txtUnitPrice = new MyTextField();
+        txtUnitPrice.setBounds(150, y, fieldWidth, fieldHeight);
+        txtUnitPrice.setEnabled(isEditMode);
+        panel.add(txtUnitPrice);
+    }
+    
+    private void createButtons(JPanel panel) {
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
         buttonPanel.setBackground(Color.WHITE);
         
-        MyButton btnClose = new MyButton("Close", 20);
-        btnClose.setBackgroundColor(Color.decode("#757575"));
-        btnClose.setHoverColor(Color.decode("#616161"));
-        btnClose.setPressedColor(Color.decode("#424242"));
-        btnClose.setFont(new Font("Arial", Font.BOLD, 12));
-        btnClose.setForeground(Color.WHITE);
-        btnClose.addActionListener(e -> dispose());
-        buttonPanel.add(btnClose);
+        btnSave = new MyButton("Save", 20);
+        btnSave.setBackgroundColor(Color.decode("#4CAF50"));
+        btnSave.setHoverColor(Color.decode("#45A049"));
+        btnSave.setPressedColor(Color.decode("#3D8B40"));
+        btnSave.setForeground(Color.WHITE);
+        btnSave.setFont(FONT_CONTENT_MEDIUM);
+        btnSave.setVisible(isEditMode);
+        btnSave.addActionListener(e -> saveProduct());
         
-        add(buttonPanel, BorderLayout.SOUTH);
+        btnCancel = new MyButton("Close", 20);
+        btnCancel.setBackgroundColor(Color.decode("#F44336"));
+        btnCancel.setHoverColor(Color.decode("#D32F2F"));
+        btnCancel.setPressedColor(Color.decode("#C62828"));
+        btnCancel.setForeground(Color.WHITE);
+        btnCancel.setFont(FONT_CONTENT_MEDIUM);
+        btnCancel.addActionListener(e -> dispose());
+        
+        buttonPanel.add(btnSave);
+        buttonPanel.add(btnCancel);
+        
+        panel.add(buttonPanel);
+        buttonPanel.setBounds(0, 350, 460, 50);
     }
     
-    private JLabel createLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setForeground(Color.decode("#333333"));
-        return label;
+    private void loadData() {
+        if (inventoryItem != null) {
+            txtWarehouseId.setText(inventoryItem.getWarehouseItemId());
+            txtProductName.setText(inventoryItem.getProductName());
+            txtCategory.setText(inventoryItem.getCategoryId());
+            txtSupplier.setText(inventoryItem.getSupId());
+            txtQuantity.setText(String.valueOf(inventoryItem.getQuantityStock()));
+            txtUnitPrice.setText(inventoryItem.getUnitPriceImport().toString());
+        }
     }
     
-    private JLabel createValueLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.PLAIN, 14));
-        label.setForeground(Color.decode("#666666"));
-        label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        label.setBackground(Color.decode("#F5F5F5"));
-        label.setOpaque(true);
-        return label;
-    }
-    
-    private void loadProductDetails() {
-        // Product details are already loaded in constructor
-        // This method can be used for additional processing if needed
+    private void saveProduct() {
+        try {
+            // Validate input
+            if (txtProductName.getText().trim().isEmpty()) {
+                CustomDialog.showError("Product name is required!");
+                return;
+            }
+            
+            if (txtQuantity.getText().trim().isEmpty()) {
+                CustomDialog.showError("Quantity is required!");
+                return;
+            }
+            
+            if (txtUnitPrice.getText().trim().isEmpty()) {
+                CustomDialog.showError("Unit price is required!");
+                return;
+            }
+            
+            int quantity = Integer.parseInt(txtQuantity.getText().trim());
+            BigDecimal unitPrice = new BigDecimal(txtUnitPrice.getText().trim());
+            
+            if (quantity < 0) {
+                CustomDialog.showError("Quantity must be non-negative!");
+                return;
+            }
+            
+            if (unitPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                CustomDialog.showError("Unit price must be positive!");
+                return;
+            }
+            
+            // Update inventory item
+            inventoryItem.setProductName(txtProductName.getText().trim());
+            inventoryItem.setQuantityStock(quantity);
+            inventoryItem.setUnitPriceImport(unitPrice);
+            
+            // Here you would call your BUS layer to save the changes
+            // busInventory.updateInventoryItem(inventoryItem);
+            
+            CustomDialog.showSuccess("Product updated successfully!");
+            dispose();
+            
+        } catch (NumberFormatException e) {
+            CustomDialog.showError("Please enter valid numbers for quantity and unit price!");
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to save product: " + e.getMessage());
+        }
     }
 }

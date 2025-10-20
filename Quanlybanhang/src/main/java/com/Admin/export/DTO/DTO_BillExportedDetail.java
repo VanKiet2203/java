@@ -16,6 +16,7 @@ public class DTO_BillExportedDetail {
     private BigDecimal totalPriceAfter;
     private Date dateExported;
     private Time timeExported;
+    private String promotionCode;
 
     public DTO_BillExportedDetail() {}
 
@@ -34,6 +35,24 @@ public class DTO_BillExportedDetail {
         this.totalPriceAfter = totalPriceAfter;
         this.dateExported = dateExported;
         this.timeExported = timeExported;
+    }
+    
+    public DTO_BillExportedDetail(String invoiceNo, String adminId, String customerId, String productId,
+                                  BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
+                                  BigDecimal totalPriceBefore, BigDecimal totalPriceAfter,
+                                  Date dateExported, Time timeExported, String promotionCode) {
+        this.invoiceNo = invoiceNo;
+        this.adminId = adminId;
+        this.customerId = customerId;
+        this.productId = productId;
+        this.unitPrice = unitPrice;
+        this.quantity = quantity;
+        this.discountPercent = discountPercent;
+        this.totalPriceBefore = totalPriceBefore;
+        this.totalPriceAfter = totalPriceAfter;
+        this.dateExported = dateExported;
+        this.timeExported = timeExported;
+        this.promotionCode = promotionCode;
     }
 
     public String getInvoiceNo() { return invoiceNo; }
@@ -58,4 +77,6 @@ public class DTO_BillExportedDetail {
     public void setDateExported(Date dateExported) { this.dateExported = dateExported; }
     public Time getTimeExported() { return timeExported; }
     public void setTimeExported(Time timeExported) { this.timeExported = timeExported; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
 }

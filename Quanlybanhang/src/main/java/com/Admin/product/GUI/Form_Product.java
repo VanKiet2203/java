@@ -12,6 +12,7 @@ import javax.swing.JPanel;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JLabel;
 import java.awt.Color;
+import java.awt.BorderLayout;
 import javax.swing.SwingConstants;
 import java.awt.Dimension;
 import javax.swing.*;
@@ -20,7 +21,7 @@ import static com.ComponentandDatabase.Components.UIConstants.*;
 
 public class Form_Product extends JPanel  implements ProductUpdateObserver {
     private JPanel panel, panelSearch;
-    private MyButton bntSearch, bntNew, bntEdit, bntDelete, bntRefresh, bntExportFile;
+    private MyButton bntSearch, bntNew, bntEdit, bntDelete, bntRefresh, bntExportFile, bntImportFile;
     private MyCombobox<String> cmbSearchProduct;
     public MyTable tableProduct;
     private MyTextField txtSearch;
@@ -33,17 +34,26 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
     }
 
     private void initComponents() {
-        setLayout(null);
-        setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
-        setBackground(Color.WHITE); // Kiểm tra hiển thị
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(1200, 700)); // Giảm kích thước cho màn hình nhỏ
+        setBackground(Color.WHITE);
     }
 
     private void init() {
-        panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE); // Màu xanh dương
-        add(panel);
+        // Tạo main panel với scroll
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(null);
+        mainPanel.setPreferredSize(new Dimension(1200, 900)); // Kích thước lớn hơn để scroll
+        mainPanel.setBackground(Color.WHITE);
+        
+        // Tạo scroll pane
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        
+        add(scrollPane, BorderLayout.CENTER);
+        panel = mainPanel; // Gán panel để sử dụng trong các method khác
         
         
             // Title
@@ -63,7 +73,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                 FONT_TITLE_SMALL,
                 PRIMARY_COLOR
             ));
-            panelSearch.setBounds(20, 60, 1490, 80);
+            panelSearch.setBounds(20, 60, 1160, 120);
             
   
             // ComboBox search
@@ -113,7 +123,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
            bntNew = new MyButton("Add new", 20);
            stylePrimaryButton(bntNew);
            bntNew.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntNew.setBounds(1340, 30, 130, 35);
+           bntNew.setBounds(410, 70, 130, 35); // Hàng 2
           bntNew.addActionListener(e -> {
             NewProduct newProductFrame = new NewProduct();
              newProductFrame.setVisible(true);
@@ -125,7 +135,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
            
           bntRefresh = new MyButton("Refresh", 20);
           styleInfoButton(bntRefresh);
-          bntRefresh.setBounds(620, 30, 120, 35); // Ngang hàng với search
+          bntRefresh.setBounds(620, 30, 120, 35); // Hàng 1
           bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntRefresh.addActionListener((e) -> {
               initRefreshButton();
@@ -135,7 +145,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
            bntEdit = new MyButton("Edit", 20);
            styleWarningButton(bntEdit);
            bntEdit.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\edit.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntEdit.setBounds(750, 30, 120, 35); // Ngang hàng với search
+           bntEdit.setBounds(20, 70, 120, 35); // Hàng 2
 
             bntEdit.addActionListener(e -> {
           // 1. Kiểm tra dòng được chọn
@@ -168,7 +178,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             
             bntDelete = new MyButton("Delete", 20);
             styleDangerButton(bntDelete);
-            bntDelete.setBounds(880, 30, 120, 35); // Ngang hàng với search
+            bntDelete.setBounds(150, 70, 120, 35); // Hàng 2
             bntDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             // Add click event for Delete button
             bntDelete.addActionListener(e -> {
@@ -218,7 +228,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
            bntExportFile.setBackgroundColor(Color.WHITE); // Màu nền
            bntExportFile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
            bntExportFile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntExportFile.setBounds(1010, 30, 120, 35); // Ngang hàng với search
+           bntExportFile.setBounds(280, 70, 120, 35); // Hàng 2
         //    bntExportFile.setFont(new Font("sansserif", Font.BOLD, 18));
            bntExportFile.setForeground(Color.BLACK);
            bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
@@ -239,6 +249,34 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             }
          });
            panelSearch.add(bntExportFile);
+           
+           // Import File button
+           bntImportFile = new MyButton("Import", 20);
+           bntImportFile.setBackgroundColor(Color.WHITE);
+           bntImportFile.setPressedColor(Color.decode("#D3D3D3"));
+           bntImportFile.setHoverColor(Color.decode("#EEEEEE"));
+           bntImportFile.setBounds(410, 70, 120, 35); // Next to Export button
+           bntImportFile.setForeground(Color.BLACK);
+           bntImportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+           bntImportFile.addActionListener((e) -> {
+               JFileChooser fileChooser = new JFileChooser();
+               fileChooser.setDialogTitle("Choose Excel file to import");
+               fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+               
+               int result = fileChooser.showOpenDialog(null);
+               if (result == JFileChooser.APPROVE_OPTION) {
+                   java.io.File selectedFile = fileChooser.getSelectedFile();
+                   busProduct = new BusProduct();
+                   busProduct.importFile(selectedFile);
+                   
+                   // Refresh table after import
+                   DefaultTableModel model = (DefaultTableModel) tableProduct.getModel();
+                   model.setRowCount(0);
+                   busProduct.uploadProduct(model);
+                   tableProduct.adjustColumnWidths();
+               }
+           });
+           panelSearch.add(bntImportFile);
 
                     // 1️⃣ Tên cột
          String[] columnNames = {
@@ -262,15 +300,15 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
          tableProduct = createStyledTable(model);
          tableProduct.setRowHeight(30);
 
-         // 6️⃣ ScrollPane chứa bảng - phủ hết như bảng Order
-         JScrollPane scrollPane = MyTable.createScrollPane(tableProduct, 20, 200, 1490, 630);
+         // 6️⃣ ScrollPane chứa bảng - tối ưu cho màn hình nhỏ
+         JScrollPane tableScrollPane = MyTable.createScrollPane(tableProduct, 20, 200, 1160, 350);
 
          // 7️⃣ Tùy chỉnh thanh cuộn
-         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-         scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+         tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+         tableScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
 
-         // 8️⃣ Thêm scrollPane vào panel
-         panel.add(scrollPane);
+         // 8️⃣ Thêm tableScrollPane vào panel
+         panel.add(tableScrollPane);
 
          SwingUtilities.invokeLater(() -> {
                busProduct = new BusProduct(); // Có thể khai báo sẵn ở đầu lớp GUI
@@ -364,20 +402,20 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
         if (tableProduct == null) return;
         
         javax.swing.table.TableColumnModel columnModel = tableProduct.getColumnModel();
-        int totalWidth = 1490; // Chiều rộng tổng của table
+        int totalWidth = 1160; // Chiều rộng tổng của table (tối ưu cho màn hình nhỏ)
         int columnCount = tableProduct.getColumnCount();
         
-        // Định nghĩa tỷ lệ chiều rộng cho từng cột
+        // Định nghĩa tỷ lệ chiều rộng cho từng cột (tối ưu cho màn hình nhỏ)
         double[] columnRatios = {
-            0.10,  // Product ID - 10%
-            0.20,  // Product Name - 20%
+            0.12,  // Product ID - 12%
+            0.22,  // Product Name - 22%
             0.08,  // Color - 8%
             0.08,  // Speed - 8%
             0.12,  // Battery Capacity - 12%
             0.08,  // Quantity - 8%
             0.10,  // Price - 10%
             0.10,  // Category ID - 10%
-            0.14   // Category Name - 14%
+            0.10   // Category Name - 10%
         };
         
         // Áp dụng tỷ lệ cho từng cột

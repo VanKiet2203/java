@@ -12,6 +12,8 @@ import com.Admin.export.BUS.BUS_ExportBill;
 import com.Admin.export.DTO.DTO_Oderdetails;
 import com.Admin.export.DTO.DTO_BillExported;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
+import com.Admin.promotion.BUS.BUSPromotion;
+import com.Admin.promotion.DTO.DTOPromotion;
 import com.User.order.GUI.OrderUpdateNotifier;
 import com.User.dashboard_user.DTO.DTOProfile_cus;
 import com.ComponentandDatabase.Components.CustomDialog;
@@ -28,7 +30,6 @@ import java.util.Random;
 import javax.swing.JScrollPane;
 import javax.swing.table.TableColumnModel;
 import javax.swing.JLabel;
-import javax.swing.JSpinner;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.*;
@@ -36,31 +37,28 @@ import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import javax.swing.SwingConstants;
 import java.awt.Dimension;
-import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Locale;
 import javax.swing.table.DefaultTableModel;
 
 public class Form_Export extends JPanel {
-    // TODO: Add a text field named txtPromotionCode; pass its value
-    // into DAO_ExportBill.insertBillExported(..., promotionCode)
 
     private JPanel panel, panelSearch,billBody;
     private MyPanel panelBill, panelTitle;
-    private JLabel lblAdminID, lblAdminName, lblDiscount, lblInvoice;
-    private MyButton bntSearch, bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport, bntPDF;
-    private MyTextField txtSearch,txtSearchOrder, txtAdminID, txtAdminName;
-    // IMEI removed
-    private MyCombobox<String> cmbSearch, cmbSearchOrder;
-    private MyTable tableOrderDetails, tableBillExportDetail;
+    private JLabel lblAdminID, lblAdminName, lblInvoice;
+    private MyButton bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport;
+    private MyTextField txtSearchOrder, txtAdminID, txtAdminName;
+    private MyCombobox<String> cmbSearchOrder;
+    private MyTable tableOrderDetails;
     public static String invoiceNo;
     public static String orderNo;
     private DefaultTableModel model;
-    private JSpinner spinnerDiscount;
-    private MyTextField txtPromotionCode;
+    private MyCombobox<String> cmbPromotionCode;
+    private JLabel lblPromotionInfo;
     private BUS_OrderDetail busOrderDetail;
     private BUS_ExportBill busExportBill;
+    private BUSPromotion busPromotion;
     private DTOProfile_cus customer;
+    private DTOPromotion currentPromotion;
 
     public Form_Export() {
         initComponents();
@@ -77,34 +75,56 @@ public class Form_Export extends JPanel {
         panel = new JPanel();
         panel.setLayout(null);
         panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(BG_WHITE); // Màu xanh dương
+        panel.setBackground(Color.WHITE);
         add(panel);
         
-      
+        // Title
+        JLabel lblTitle = new JLabel("MANAGE EXPORT");
+        lblTitle.setFont(FONT_TITLE_LARGE);
+        lblTitle.setForeground(PRIMARY_COLOR);
+        lblTitle.setBounds(20, 10, 400, 40);
+        panel.add(lblTitle);
+        
+        // Tạo panelSearch với màu nền trắng
+        panelSearch = new MyPanel(Color.WHITE);
+        panelSearch.setLayout(null);
+        panelSearch.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+            "Export Management",
+            0, 0,
+            FONT_TITLE_SMALL,
+            PRIMARY_COLOR
+        ));
+        panelSearch.setBounds(20, 60, 1490, 80);
           
           bntRefresh = new MyButton("Refresh", 20);
-          bntRefresh.setBackgroundColor(BG_WHITE); // Màu nền
-          bntRefresh.setPressedColor(INFO_COLOR); // Màu khi nhấn
-          bntRefresh.setHoverColor(INFO_HOVER); // Màu khi rê chuột vào
-          bntRefresh.setBounds(10, 40, 140, 35); // Tăng chiều rộng để icon không bị che mất
-          bntRefresh.setFont(FONT_BUTTON_MEDIUM);
-          bntRefresh.setForeground(TEXT_PRIMARY);
+          styleInfoButton(bntRefresh);
+          bntRefresh.setBounds(620, 30, 120, 35);
           bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntRefresh.addActionListener((e) -> {
               Refresh();
           });
           
-          panel.add(bntRefresh); 
+          panelSearch.add(bntRefresh); 
           
+          bntDetails = new MyButton("Details", 20);
+          styleInfoButton(bntDetails);
+          bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
+          bntDetails.setBounds(750, 30, 120, 35);
+          bntDetails.addActionListener((e) -> {
+              Bill_ExportDetails billDetail= new Bill_ExportDetails();
+              billDetail.setVisible(true);
+          });
+          panelSearch.add(bntDetails);
           
-          bntExportFile = new MyButton("Export File", 0);
-          bntExportFile.setBackgroundColor(BG_WHITE); // Màu nền
-          bntExportFile.setPressedColor(INFO_COLOR); // Màu khi nhấn
-          bntExportFile.setHoverColor(INFO_HOVER); // Màu khi rê chuột vào
-          bntExportFile.setBounds(190, 40, 170, 35); // Tăng chiều rộng để icon không bị che mất
+          bntExportFile = new MyButton("Export", 20);
+          bntExportFile.setBackgroundColor(Color.WHITE);
+          bntExportFile.setPressedColor(Color.decode("#D3D3D3"));
+          bntExportFile.setHoverColor(Color.decode("#EEEEEE"));
           bntExportFile.setFont(FONT_BUTTON_MEDIUM);
-          bntExportFile.setForeground(TEXT_PRIMARY);
-          bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 40, 40, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+          bntExportFile.setForeground(Color.BLACK);
+          bntExportFile.setBounds(880, 30, 120, 35);
+          bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntExportFile.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Save Excel File");
@@ -132,117 +152,118 @@ public class Form_Export extends JPanel {
             }
         });
           
-                  
-          panel.add(bntExportFile); 
-          // Promotion Code input
-          JLabel lblPromo = new JLabel("Promotion Code");
-          lblPromo.setFont(new Font("Arial", Font.PLAIN, 16));
-          lblPromo.setForeground(Color.BLACK);
-          lblPromo.setBounds(820, 5, 140, 35);
-          panel.add(lblPromo);
+          panelSearch.add(bntExportFile);
+          
+          // Search section - Moved inside panelSearch
+          String[] itemsOrder = {"Order.No", "Customer.ID", "Date Order"};
+          cmbSearchOrder= new MyCombobox<>(itemsOrder);
+          cmbSearchOrder.setBounds(20, 30, 150, 35);
+          cmbSearchOrder.setCustomFont(FONT_CONTENT_MEDIUM);
+          cmbSearchOrder.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
+          cmbSearchOrder.repaint();
+          cmbSearchOrder.revalidate();
 
-          txtPromotionCode = new MyTextField();
-          txtPromotionCode.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-          txtPromotionCode.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-          txtPromotionCode.setBackgroundColor(Color.WHITE);
-          txtPromotionCode.setBounds(800, 40, 160, 35);
-          panel.add(txtPromotionCode);
-                
+          SwingUtilities.invokeLater(() -> {
+              cmbSearchOrder.repaint();
+              cmbSearchOrder.revalidate();
+          });
+
+          panelSearch.add(cmbSearchOrder);
+          
+          txtSearchOrder = new MyTextField();
+          txtSearchOrder.setHint("Search something...");
+          txtSearchOrder.setBounds(180, 30, 300, 35);
+          txtSearchOrder.setTextFont(FONT_CONTENT_MEDIUM);
+          txtSearchOrder.setHintFont(FONT_CONTENT_SMALL);
+          txtSearchOrder.setBackgroundColor(Color.decode("#F5FFFA"));
+          panelSearch.add(txtSearchOrder);
+         
+          bntSearchOrder= new MyButton("Search", 20);
+          stylePrimaryButton(bntSearchOrder);
+          bntSearchOrder.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);     
+          bntSearchOrder.setBounds(490, 30, 120, 35);
+          bntSearchOrder.addActionListener(e -> {
+             String searchType = (String) cmbSearchOrder.getSelectedItem();
+             String keyword = txtSearchOrder.getText().trim();
+
+              busOrderDetail = new BUS_OrderDetail();
+             List<DTO_Oderdetails> searchResults = busOrderDetail.searchOrderDetails(searchType, keyword);
+
+             // Gọi phương thức hiển thị kết quả lên table
+             displaySearchResults(searchResults);
+         });
+          panelSearch.add(bntSearchOrder);
+          
+          panel.add(panelSearch);
+          
+          // Admin Info section - Outside Export Management panel, moved to left
           lblAdminID= new JLabel("Admin.ID");
-          lblAdminID.setFont(new Font("Arial", Font.PLAIN, 16));
-          lblAdminID.setForeground(Color.BLACK);
-          lblAdminID.setBounds(430, 5, 100, 35);
+          lblAdminID.setFont(FONT_CONTENT_MEDIUM);
+          lblAdminID.setForeground(TEXT_PRIMARY);
+          lblAdminID.setBounds(400, 150, 100, 25);
           panel.add(lblAdminID);
        
           txtAdminID = new MyTextField();
           txtAdminID.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-          txtAdminID.setTextColor(Color.RED); // Đặt màu mong muốn
-          txtAdminID.setLocked(true); // Gọi sau cũng không sao
-          txtAdminID.setTextFont(new Font("Times New Roman", Font.BOLD, 16));
+          txtAdminID.setTextColor(Color.RED);
+          txtAdminID.setLocked(true);
+          txtAdminID.setTextFont(FONT_CONTENT_MEDIUM);
           txtAdminID.setBackgroundColor(Color.WHITE);
-          txtAdminID.setBounds(400, 40, 130, 35);
+          txtAdminID.setBounds(400, 175, 120, 35);
           txtAdminID.setText(Dashboard_ad.adminID);
           panel.add(txtAdminID);
           
-           
          lblAdminName= new JLabel("Admin Name");
-         lblAdminName.setFont(new Font("Arial", Font.PLAIN, 16));
-         lblAdminName.setForeground(Color.BLACK);
-         lblAdminName.setBounds(610, 5, 100, 35);
+         lblAdminName.setFont(FONT_CONTENT_MEDIUM);
+         lblAdminName.setForeground(TEXT_PRIMARY);
+         lblAdminName.setBounds(530, 150, 100, 25);
          panel.add(lblAdminName);
          
           txtAdminName = new MyTextField();
           txtAdminName.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-          txtAdminName.setTextColor(Color.BLUE); // Đặt màu mong muốn
-          txtAdminName.setLocked(true); // Gọi sau cũng không sao
-          txtAdminName.setTextFont(new Font("Times New Roman", Font.BOLD, 16));
+          txtAdminName.setTextColor(Color.BLUE);
+          txtAdminName.setLocked(true);
+          txtAdminName.setTextFont(FONT_CONTENT_MEDIUM);
           txtAdminName.setBackgroundColor(Color.WHITE);
-          txtAdminName.setBounds(570, 40, 160, 35);
+          txtAdminName.setBounds(530, 175, 120, 35);
           txtAdminName.setText(Dashboard_ad.getAdminName(txtAdminID.getText().strip()));
           panel.add(txtAdminName);
-       
-          String[] itemsOrder = {"Order.No", "Customer.ID", "Date Order"};
-           cmbSearchOrder= new MyCombobox<>(itemsOrder);
-           cmbSearchOrder.setBounds(50, 100, 135,35);
-           cmbSearchOrder.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
-           cmbSearchOrder.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-           cmbSearchOrder.repaint();
-           cmbSearchOrder.revalidate();
-
-                    // 👉 Thêm đoạn invokeLater để đảm bảo cmbSearch được refresh UI
-           SwingUtilities.invokeLater(() -> {
-               
-             cmbSearchOrder.repaint();
-             cmbSearchOrder.revalidate();
-              //cmbSearch.updateUI(); // 👈 Bắt buộc để refresh lại giao diện
-           });
-
-           panel.add(cmbSearchOrder);
           
-           
-          txtSearchOrder = new MyTextField();
-          txtSearchOrder.setHint("Enter the search key word...");
-          txtSearchOrder.setBounds(220, 100, 230, 35); // Đặt vị trí và kích thước
-          txtSearchOrder.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-          txtSearchOrder.setTextFont(new Font("Times new roman", Font.PLAIN, 16));
-          txtSearchOrder.setHintFont(new Font("Arial", Font.ITALIC, 14));
-          txtSearchOrder.setBackgroundColor(Color.decode("#F5FFFA"));
-          panel.add(txtSearchOrder);
-         
-         bntSearchOrder= new MyButton("Search", 20);
-         bntSearchOrder.setBackgroundColor(Color.decode("#00CC33")); // Màu nền
-         bntSearchOrder.setPressedColor(Color.decode("#33CC33")); // Màu khi nhấn
-         bntSearchOrder.setHoverColor(Color.decode("#00EE00")); // Màu khi rê chuột vào
-         bntSearchOrder.setFont(new Font("Times New Roman", Font.BOLD, 16));
-         bntSearchOrder.setForeground(Color.WHITE);
-         bntSearchOrder.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);     
-         bntSearchOrder.setBounds(480, 100, 110, 35);
-         bntSearchOrder.addActionListener(e -> {
-            String searchType = (String) cmbSearchOrder.getSelectedItem();
-            String keyword = txtSearchOrder.getText().trim();
+          // Promotion Code selection - Outside Export Management panel, moved to left
+          JLabel lblPromo = new JLabel("Promotion Code");
+          lblPromo.setFont(FONT_CONTENT_MEDIUM);
+          lblPromo.setForeground(TEXT_PRIMARY);
+          lblPromo.setBounds(660, 150, 140, 25);
+          panel.add(lblPromo);
 
-             busOrderDetail = new BUS_OrderDetail();
-            List<DTO_Oderdetails> searchResults = busOrderDetail.searchOrderDetails(searchType, keyword);
-
-            // Gọi phương thức hiển thị kết quả lên table
-            displaySearchResults(searchResults);
-        });
-         panel.add(bntSearchOrder);
-            
- 
-           bntDetails = new MyButton("Bill Details", 0);
-           bntDetails.setBackgroundColor(Color.WHITE); // Màu nền
-           bntDetails.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
-           bntDetails.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntDetails.setFont(new Font("sansserif", Font.BOLD, 16));
-           bntDetails.setForeground(Color.BLACK);
-           bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntDetails.setBounds(620, 100, 150, 35);
-           bntDetails.addActionListener((e) -> {
-               Bill_ExportDetails billDetail= new Bill_ExportDetails();
-               billDetail.setVisible(true);
-           });
-           panel.add(bntDetails);
+          // ComboBox for promotion selection
+          cmbPromotionCode = new MyCombobox<>();
+          cmbPromotionCode.setBounds(660, 175, 200, 35);
+          cmbPromotionCode.setCustomFont(FONT_CONTENT_MEDIUM);
+          cmbPromotionCode.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
+          cmbPromotionCode.addItem("-- Select Promotion --");
+          panel.add(cmbPromotionCode);
+          
+          // Load active promotions
+          loadActivePromotions();
+          
+          // Add promotion validation button
+          MyButton bntValidatePromo = new MyButton("Validate", 20);
+          bntValidatePromo.setBackgroundColor(Color.decode("#28a745"));
+          bntValidatePromo.setHoverColor(Color.decode("#218838"));
+          bntValidatePromo.setPressedColor(Color.decode("#1e7e34"));
+          bntValidatePromo.setFont(FONT_BUTTON_SMALL);
+          bntValidatePromo.setForeground(Color.WHITE);
+          bntValidatePromo.setBounds(870, 175, 80, 35);
+          bntValidatePromo.addActionListener(e -> validateSelectedPromotion());
+          panel.add(bntValidatePromo);
+          
+          // Add promotion info display
+          lblPromotionInfo = new JLabel("");
+          lblPromotionInfo.setFont(new Font("Arial", Font.ITALIC, 11));
+          lblPromotionInfo.setForeground(Color.decode("#666666"));
+          lblPromotionInfo.setBounds(660, 210, 300, 20);
+          panel.add(lblPromotionInfo);
            
 
 
@@ -253,17 +274,17 @@ public class Form_Export extends JPanel {
        panelBill.setLayout(new BorderLayout());
        panelBill.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1)); // Chỉ 1 viền chính
        panelBill.setBackground(Color.WHITE);
-       panelBill.setBounds(820, 20, 450, 680);
+       panelBill.setBounds(820, 220, 450, 500);
        panel.add(panelBill);
 
        // Tạo panel title "Bill For Order" (không thêm border riêng)
        JPanel paneltitle = new JPanel();
-       paneltitle.setBackground(Color.RED);
+       paneltitle.setBackground(PRIMARY_COLOR);
        paneltitle.setPreferredSize(new Dimension(450, 30)); // Fixed height
-       JLabel lblTitle = new JLabel("BILL FOR ORDER", JLabel.CENTER);
-       lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
-       lblTitle.setForeground(Color.WHITE);
-       paneltitle.add(lblTitle);
+       JLabel lblBillTitle = new JLabel("BILL FOR ORDER", JLabel.CENTER);
+       lblBillTitle.setFont(new Font("Arial", Font.BOLD, 16));
+       lblBillTitle.setForeground(Color.WHITE);
+       paneltitle.add(lblBillTitle);
        panelBill.add(paneltitle, BorderLayout.NORTH);
 
        // Tạo panel content chính với scroll (không border)
@@ -296,24 +317,10 @@ public class Form_Export extends JPanel {
         model = new DefaultTableModel(columnNames, 0);
 
 
-        // 4️⃣ Định dạng font
-        Font contentFont = new Font("Times New Roman", Font.PLAIN, 15);
-        Font headerFont = new Font("SansSerif", Font.BOLD, 16);
+        // 5️⃣ Tạo bảng với style chuẩn giống Product
+        tableOrderDetails = createStyledTable(model);
 
-        // 5️⃣ Tạo bảng sử dụng MyTable
-        tableOrderDetails = new MyTable(
-            model,
-            new Color(255, 255, 255),  // Nền bảng
-            new Color(0, 0, 0),        // Chữ bảng
-            new Color(250, 219, 216),  // Nền dòng được chọn
-            new Color(0, 0, 0),        // Chữ dòng được chọn
-            Color.decode("#FF6666"),   // Nền tiêu đề
-            new Color(255, 255, 255),  // Chữ tiêu đề
-            contentFont,
-            headerFont
-        );
-
-        JScrollPane scrollPane = MyTable.createScrollPane(tableOrderDetails, 10, 150, 790, 550);
+        JScrollPane scrollPane = MyTable.createScrollPane(tableOrderDetails, 20, 220, 790, 480);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
@@ -331,17 +338,12 @@ public class Form_Export extends JPanel {
                     if (selectedRows.length > 0) {
                         // Kiểm tra cùng Order.No
                         String firstOrderNo = tableOrderDetails.getValueAt(selectedRows[0], 0).toString();
-                        int totalQuantity = 0;
 
                         for (int row : selectedRows) {
                             String currentOrderNo = tableOrderDetails.getValueAt(row, 0).toString();
                             if (!currentOrderNo.equals(firstOrderNo)) {
                                 throw new Exception("All selected items must have the same Order.No!");
                             }
-
-                            String productID = tableOrderDetails.getValueAt(row, 2).toString();
-                            int quantity = Integer.parseInt(tableOrderDetails.getValueAt(row, 4).toString());
-                            totalQuantity += quantity;
 
                     // IMEI logic removed
                         }
@@ -358,46 +360,12 @@ public class Form_Export extends JPanel {
         // 8️⃣ Thêm scrollPane vào panel
         panel.add(scrollPane);   
         
-        // IMEI UI removed
         
-        lblDiscount= new JLabel("Discount %");
-        lblDiscount.setFont(new Font("sansserif", Font.BOLD, 18));
-        lblDiscount.setForeground(Color.BLACK);
-        lblDiscount.setBounds(520,730, 130, 35);
-        panel.add(lblDiscount);
-        
-                // 1. Thay đổi SpinnerNumberModel để sử dụng Double thay vì Integer
-        SpinnerNumberModel discountModel = new SpinnerNumberModel(
-            0.0,    // initial value (double)
-            0.0,    // minimum value
-            100.0,  // maximum value
-            0.5     // step size (cho phép giá trị thập phân)
-        );
-
-        // 2. Tạo spinner với model mới
-        spinnerDiscount = new JSpinner(discountModel);
-
-        // 3. Thiết lập định dạng hiển thị (2 số thập phân)
-        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinnerDiscount, "0.0");
-        spinnerDiscount.setEditor(editor);
-
-        // 4. Tuỳ chỉnh font và màu nền
-        JFormattedTextField textField = ((JSpinner.DefaultEditor) spinnerDiscount.getEditor()).getTextField();
-        textField.setFont(new Font("Times New Roman", Font.PLAIN, 16));
-        textField.setBackground(Color.WHITE);
-
-        // 5. Đặt vị trí và thêm vào panel
-        spinnerDiscount.setBounds(610, 732, 60, 30);
-        panel.add(spinnerDiscount);
         
 
         bntAddBill = new MyButton("Add Bill", 20);
-        bntAddBill.setBackgroundColor(Color.decode("#2196F3")); // Xanh dương chính
-        bntAddBill.setHoverColor(Color.decode("#42A5F5"));       // Hover sáng hơn
-        bntAddBill.setPressedColor(Color.decode("#1976D2"));     // Nhấn đậm hơn
-        bntAddBill.setFont(new Font("Times New Roman", Font.BOLD, 16));
-        bntAddBill.setForeground(Color.WHITE);
-        bntAddBill.setBounds(700, 732, 110, 35);
+        stylePrimaryButton(bntAddBill);
+        bntAddBill.setBounds(20, 720, 110, 35);
 
         // Hàm xử lý khi nhấn nút Add Bill
         bntAddBill.addActionListener(e -> {
@@ -410,11 +378,14 @@ public class Form_Export extends JPanel {
                     throw new Exception("No order items selected!");
                 }
 
-                // 2. Lấy thông tin chung
-                String customerID = orderItems.get(0)[1].toString();
-                double discount = ((Number) spinnerDiscount.getValue()).doubleValue();
-                String imeiNumbers = ""; // IMEI removed
-                customer = busExportBill.getCustomerInfoSafe(customerID);
+        // 2. Lấy thông tin chung
+        String customerID = orderItems.get(0)[1].toString();
+        double discount = 0.0; // Default discount
+        if (currentPromotion != null) {
+            discount = currentPromotion.getDiscountPercent().doubleValue();
+        }
+        String imeiNumbers = ""; // IMEI removed
+        customer = busExportBill.getCustomerInfoSafe(customerID);
 
                 // 3. Xóa nội dung cũ trước khi tạo hóa đơn mới
                 billBody = getBillBody();
@@ -439,12 +410,9 @@ public class Form_Export extends JPanel {
         panel.add(bntAddBill);
         
         bntExport = new MyButton("Generate/Save Bill", 20);
-        bntExport.setBackgroundColor(Color.decode("#009688")); // Xanh dương chính
-        bntExport.setHoverColor(Color.decode("#00695C"));       // Hover sáng hơn
-        bntExport.setPressedColor(Color.decode("#00796B")); 
-        bntExport.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        bntExport.setForeground(Color.WHITE);
-        bntExport.setBounds(950, 720, 200, 60);
+        stylePrimaryButton(bntExport);
+        bntExport.setFont(FONT_BUTTON_LARGE);
+        bntExport.setBounds(950, 720, 200, 50);
         bntExport.addActionListener(e -> {
             boolean confirm = CustomDialog.showOptionPane(
                 "Confirm Exportation",
@@ -520,11 +488,107 @@ public class Form_Export extends JPanel {
                tableOrderDetails.adjustColumnWidths();         // Căn chỉnh cột
           });     
         cmbSearchOrder.setSelectedIndex(0);
+        txtSearchOrder.setText(""); // Clear search text
+        // Clear promotion selection
+        cmbPromotionCode.setSelectedIndex(0);
+        currentPromotion = null;
+        lblPromotionInfo.setText("");
         // IMEI cleared removed
         billBody.removeAll();
         billBody.revalidate();
         billBody.repaint();
 
+    }
+    
+    /**
+     * Load active promotions into ComboBox
+     */
+    private void loadActivePromotions() {
+        try {
+            if (busPromotion == null) {
+                busPromotion = new BUSPromotion();
+            }
+            
+            // Clear existing items except the first one
+            cmbPromotionCode.removeAllItems();
+            cmbPromotionCode.addItem("-- Select Promotion --");
+            
+            // Get all promotions and filter active ones
+            List<DTOPromotion> allPromotions = busPromotion.getAllPromotions();
+            for (DTOPromotion promotion : allPromotions) {
+                String status = busPromotion.getPromotionStatus(promotion);
+                if (status.equals("Đang hoạt động")) {
+                    String displayText = String.format("%s - %s (%.1f%%)", 
+                        promotion.getPromotionCode(), 
+                        promotion.getPromotionName(),
+                        promotion.getDiscountPercent().doubleValue());
+                    cmbPromotionCode.addItem(displayText);
+                }
+            }
+            
+            // Add selection listener
+            cmbPromotionCode.addActionListener(e -> onPromotionSelected());
+            
+        } catch (Exception e) {
+            CustomDialog.showError("Error loading promotions: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Handle promotion selection
+     */
+    private void onPromotionSelected() {
+        String selectedItem = (String) cmbPromotionCode.getSelectedItem();
+        
+        if (selectedItem == null || selectedItem.equals("-- Select Promotion --")) {
+            currentPromotion = null;
+            lblPromotionInfo.setText("");
+            return;
+        }
+        
+        try {
+            // Extract promotion code from display text
+            String promotionCode = selectedItem.split(" - ")[0];
+            currentPromotion = busPromotion.findActivePromotion(promotionCode);
+            
+            if (currentPromotion != null) {
+                String infoText = String.format("✅ %s - Valid until: %s", 
+                    currentPromotion.getPromotionName(),
+                    currentPromotion.getEndDate().toString());
+                lblPromotionInfo.setText(infoText);
+                lblPromotionInfo.setForeground(Color.decode("#28a745"));
+            } else {
+                lblPromotionInfo.setText("❌ Promotion not found or expired");
+                lblPromotionInfo.setForeground(Color.decode("#dc3545"));
+            }
+        } catch (Exception e) {
+            lblPromotionInfo.setText("❌ Error loading promotion details");
+            lblPromotionInfo.setForeground(Color.decode("#dc3545"));
+            currentPromotion = null;
+        }
+    }
+    
+    /**
+     * Validate selected promotion
+     */
+    private void validateSelectedPromotion() {
+        if (currentPromotion == null) {
+            CustomDialog.showError("Please select a promotion code!");
+            return;
+        }
+        
+        String message = String.format(
+            "✅ Valid Promotion Code!\n\n" +
+            "Code: %s\n" +
+            "Name: %s\n" +
+            "Discount: %.1f%%\n" +
+            "Valid until: %s",
+            currentPromotion.getPromotionCode(),
+            currentPromotion.getPromotionName(),
+            currentPromotion.getDiscountPercent().doubleValue(),
+            currentPromotion.getEndDate().toString()
+        );
+        CustomDialog.showSuccess(message);
     }
     
     // Hàm tạo separator
@@ -551,21 +615,11 @@ public class Form_Export extends JPanel {
         panel.add(rowPanel);
     }
 
-    // Hàm tạo bảng thông tin
-    private JTable createInfoTable(String[] columns, Object[][] data) {
-        JTable table = new JTable(data, columns);
-        table.setFont(new Font("Arial", Font.PLAIN, 12));
-        table.setRowHeight(25);
-        table.setEnabled(false); // Không cho chỉnh sửa
-        return table;
-    }
 
     // Hàm lấy billBody an toàn (phiên bản mới phù hợp với cấu trúc của bạn)
         private JPanel getBillBody() {
             // Kiểm tra cấu trúc panel theo đúng cách bạn đã thiết kế
             if (panelBill.getComponentCount() > 0) {
-                Component northComp = panelBill.getComponent(0); // Panel tiêu đề (NORTH)
-
                 // Lấy component CENTER (index 1 nếu có cả NORTH và CENTER)
                 if (panelBill.getComponentCount() > 1) {
                     Component centerComp = panelBill.getComponent(1);
@@ -706,9 +760,26 @@ public class Form_Export extends JPanel {
         billBody.add(createSeparator());
         billBody.add(Box.createVerticalStrut(15));
 
-        // ===== 4. Order Summary =====
+        // ===== 4. Promotion Information =====
+        if (currentPromotion != null) {
+            JPanel promoPanel = createSectionPanel("PROMOTION INFORMATION");
+            addInfoRow(promoPanel, "Promotion Code:", currentPromotion.getPromotionCode());
+            addInfoRow(promoPanel, "Promotion Name:", currentPromotion.getPromotionName());
+            addInfoRow(promoPanel, "Discount:", String.format("%.1f%%", currentPromotion.getDiscountPercent().doubleValue()));
+            billBody.add(promoPanel);
+            billBody.add(createSeparator());
+            billBody.add(Box.createVerticalStrut(10));
+        }
+
+        // ===== 5. Order Summary =====
         JPanel summaryPanel = createSectionPanel("ORDER SUMMARY");
         addInfoRow(summaryPanel, "Total Products:", String.valueOf(totalProducts));
+        if (currentPromotion != null) {
+            addInfoRow(summaryPanel, "Subtotal:", String.format("%,d VND", totalNetPay.intValue()));
+            BigDecimal discountAmount = totalNetPay.multiply(BigDecimal.valueOf(discount / 100));
+            addInfoRow(summaryPanel, "Discount (" + String.format("%.1f%%", discount) + "):", "-" + String.format("%,d VND", discountAmount.intValue()));
+            totalNetPay = totalNetPay.subtract(discountAmount);
+        }
         addInfoRow(summaryPanel, "Total Net Pay:", String.format("%,d VND", totalNetPay.intValue()));
         billBody.add(summaryPanel);
         billBody.add(createSeparator());
@@ -775,7 +846,6 @@ public class Form_Export extends JPanel {
     private void confirmExport() throws Exception {
         // Lấy danh sách sản phẩm và IMEI
         List<Object[]> orderItems = getMultipleOrderInfo();
-        String imeiList = ""; // IMEI removed
         List<String> imeis = Collections.emptyList();
 
         if (orderItems.isEmpty()) {
@@ -810,20 +880,22 @@ public class Form_Export extends JPanel {
             protected Void doInBackground() {
                 try {
                     // Gửi email
-            SendEmail sendEmail = new SendEmail();
-                    sendEmail.sendInvoiceEmail(
+                    SendEmail.sendInvoiceEmail(
                         customer, 
                         orderItems, 
-                        ((Number) spinnerDiscount.getValue()).doubleValue(), 
+                        0.0, // No discount spinner, use promotion code instead
                         invoiceNo
                     );
 
                     // Xuất PDF
+                    String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : "";
+                    double pdfDiscount = currentPromotion != null ? currentPromotion.getDiscountPercent().doubleValue() : 0.0;
                     PDFExporter exporter = new PDFExporter(
                         panelBill, txtAdminID.getText(), txtAdminName.getText(),
                         customer, busOrderDetail, orderItems,
-                        ((Number) spinnerDiscount.getValue()).doubleValue(),
-                        txtPromotionCode.getText()
+                        pdfDiscount, // Use calculated discount from promotion
+                        promotionCode,
+                        invoiceNo // Pass the invoice number
                     );
                     exporter.exportToPDF();
 
@@ -850,22 +922,24 @@ public class Form_Export extends JPanel {
 
 
     private void processExportData(List<Object[]> orderItems, List<String> imeis) throws Exception {
-        // 1. Insert Bill Exported
+        // 1. Insert Bill Exported with promotion code
         DTO_BillExported bill = new DTO_BillExported();
         bill.setInvoiceNo(invoiceNo);
         bill.setAdminId(txtAdminID.getText());
         bill.setCustomerId(customer.getCustomerID());
         bill.setTotalProduct(orderItems.size());
+        
+        String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : null;
 
-        if (!busExportBill.insertBillExported(bill)) {
+        if (!busExportBill.insertBillExported(bill, promotionCode)) {
             throw new Exception("Failed to insert exported bill!");
         }
 
-        // Get the original discount value once
-        BigDecimal discountPercent = BigDecimal.valueOf(((Number) spinnerDiscount.getValue()).doubleValue());
-
-        // Track current position in IMEI list
-        int imeiIndex = 0;
+        // Get the discount value from promotion
+        BigDecimal discountPercent = BigDecimal.valueOf(0.0);
+        if (currentPromotion != null) {
+            discountPercent = currentPromotion.getDiscountPercent();
+        }
 
         for (Object[] item : orderItems) {
             String productID = item[2].toString();
@@ -879,7 +953,8 @@ public class Form_Export extends JPanel {
                     null,
                     discountPercent,
                     unitPrice,
-                    productID
+                    productID,
+                    promotionCode
                 );
             }
         }
@@ -888,7 +963,7 @@ public class Form_Export extends JPanel {
     }
 
     private void processSingleImeiItem(Object[] item, String imei, BigDecimal discountPercent, 
-                                     BigDecimal unitPrice, String productID) throws Exception {
+                                     BigDecimal unitPrice, String productID, String promotionCode) throws Exception {
         // Calculate discount for single item
         BigDecimal discountAmount = unitPrice.multiply(discountPercent)
                                            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -902,7 +977,8 @@ public class Form_Export extends JPanel {
             1, // Quantity per IMEI is always 1
             discountPercent, // Original discount percentage
             unitPrice,       // Price before discount for single item
-            priceAfterDiscount
+            priceAfterDiscount,
+            promotionCode
         );
 
         if (!busExportBill.insertBillDetail(detail, Collections.emptyList()) || 
@@ -911,14 +987,11 @@ public class Form_Export extends JPanel {
         }
     }
 
-      private boolean requiresImei(String productId) {
-          return false;
-      }
 
 
         private DTO_BillExportedDetail createExportDetail(
             String productID, String imei, BigDecimal unitPrice, int quantity,
-            BigDecimal discountPercent, BigDecimal totalBefore, BigDecimal totalAfter
+            BigDecimal discountPercent, BigDecimal totalBefore, BigDecimal totalAfter, String promotionCode
         ) {
             return new DTO_BillExportedDetail(
                 invoiceNo,
@@ -931,7 +1004,8 @@ public class Form_Export extends JPanel {
                 totalBefore,
                 totalAfter,
                 new java.sql.Date(System.currentTimeMillis()),
-                new java.sql.Time(System.currentTimeMillis())
+                new java.sql.Time(System.currentTimeMillis()),
+                promotionCode
             );
         }
 
@@ -939,6 +1013,40 @@ public class Form_Export extends JPanel {
         // Xóa order
         busOrderDetail.deleteOrder(orderNo);
         CustomDialog.showSuccess("Export bill and update database successfully!");
-    } 
+    }
+    
+    // ============================================
+    // HELPER METHODS FOR UI STYLING
+    // ============================================
+
+    private void stylePrimaryButton(MyButton btn) {
+        btn.setBackgroundColor(PRIMARY_COLOR);
+        btn.setHoverColor(PRIMARY_HOVER);
+        btn.setPressedColor(PRIMARY_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+
+    private void styleInfoButton(MyButton btn) {
+        btn.setBackgroundColor(INFO_COLOR);
+        btn.setHoverColor(INFO_HOVER);
+        btn.setPressedColor(INFO_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+    
+    private MyTable createStyledTable(DefaultTableModel model) {
+        return new MyTable(
+            model,
+            Color.WHITE,                    // Nền bảng
+            TEXT_PRIMARY,                   // Chữ bảng
+            Color.decode("#E8F5E9"),        // Nền dòng chọn
+            Color.BLACK,                    // Chữ dòng chọn
+            PRIMARY_COLOR,                  // Nền tiêu đề
+            Color.WHITE,                    // Chữ tiêu đề
+            FONT_TABLE_CONTENT,             // Font nội dung
+            FONT_TABLE_HEADER               // Font tiêu đề
+        );
+    }
 
 }

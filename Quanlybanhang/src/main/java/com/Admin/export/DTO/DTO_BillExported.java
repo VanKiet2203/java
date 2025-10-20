@@ -5,6 +5,8 @@ public class DTO_BillExported {
     private String adminId;
     private String customerId;
     private int totalProduct;
+    private String description;
+    private String promotionCode;
 
     public DTO_BillExported() {
     }
@@ -14,6 +16,15 @@ public class DTO_BillExported {
         this.adminId = adminId;
         this.customerId = customerId;
         this.totalProduct = totalProduct;
+    }
+
+    public DTO_BillExported(String invoiceNo, String adminId, String customerId, int totalProduct, String description, String promotionCode) {
+        this.invoiceNo = invoiceNo;
+        this.adminId = adminId;
+        this.customerId = customerId;
+        this.totalProduct = totalProduct;
+        this.description = description;
+        this.promotionCode = promotionCode;
     }
 
     public String getInvoiceNo() {
@@ -48,6 +59,22 @@ public class DTO_BillExported {
         this.totalProduct = totalProduct;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getPromotionCode() {
+        return promotionCode;
+    }
+
+    public void setPromotionCode(String promotionCode) {
+        this.promotionCode = promotionCode;
+    }
+
     @Override
     public String toString() {
         return "DTO_BillExported{" +
@@ -55,6 +82,8 @@ public class DTO_BillExported {
                 ", adminId='" + adminId + '\'' +
                 ", customerId='" + customerId + '\'' +
                 ", totalProduct=" + totalProduct +
+                ", description='" + description + '\'' +
+                ", promotionCode='" + promotionCode + '\'' +
                 '}';
     }
 }

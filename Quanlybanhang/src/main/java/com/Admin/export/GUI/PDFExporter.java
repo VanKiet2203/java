@@ -37,11 +37,13 @@ public class PDFExporter {
     private List<Object[]> orderItems;
     private double discount;
     private String imeiNumbers;
+    private String promotionCode;
+    private String invoiceNo;
     private BUS_ExportBill bus_ExportBill;
 
     public PDFExporter(JPanel panelBill, String adminID, String adminName, 
                       DTOProfile_cus customer, BUS_OrderDetail busOrderDetail, 
-                      List<Object[]> orderItems, double discount, String imeiNumbers) {
+                      List<Object[]> orderItems, double discount, String promotionCode, String invoiceNo) {
         this.panelBill = panelBill;
         this.txtAdminID = adminID;
         this.txtAdminName = adminName;
@@ -49,7 +51,8 @@ public class PDFExporter {
         this.busOrderDetail = busOrderDetail;
         this.orderItems = orderItems;
         this.discount = discount;
-        this.imeiNumbers = imeiNumbers;
+        this.promotionCode = promotionCode;
+        this.invoiceNo = invoiceNo;
     }
 
     public void exportToPDF() {
@@ -59,9 +62,9 @@ public class PDFExporter {
             exportDir.mkdirs();
         }
 
-        // 2. Generate invoice number and filename
-        String invoiceNo = generateInvoiceNo();
-        String fileName = "src\\main\\\\resources\\Bill_Exported\\" + invoiceNo + ".pdf";
+        // 2. Use provided invoice number or generate one
+        String finalInvoiceNo = (invoiceNo != null && !invoiceNo.isEmpty()) ? invoiceNo : generateInvoiceNo();
+        String fileName = "src\\main\\resources\\Bill_Exported\\" + finalInvoiceNo + ".pdf";
 
         try {
             // 3. Create PDF document with proper margins
@@ -70,9 +73,10 @@ public class PDFExporter {
             document.open();
 
             // 4. Add content to PDF with improved formatting
-            addPdfHeader(document, invoiceNo);
+            addPdfHeader(document, finalInvoiceNo);
             addAdminCustomerInfo(document);
             addOrderDetails(document);
+            addPromotionInfo(document);
             addOrderSummary(document);
             addFooter(document);
 
@@ -300,8 +304,12 @@ public class PDFExporter {
             BigDecimal unitPrice = (BigDecimal) item[3];
             int quantity = (int) item[4];
             String warranty= bus_ExportBill.getWarranry(productId);
-            BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(quantity))
-                                    .multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount / 100)));
+            
+            // Calculate item total without discount first
+            BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
+            // Apply discount to the subtotal
+            BigDecimal itemTotal = itemSubtotal.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount / 100)));
+            
             // Alternate row color for better readability
             BaseColor rowColor = rowNum % 2 == 0 ? new BaseColor(248, 248, 248) : BaseColor.WHITE;
 
@@ -316,6 +324,59 @@ public class PDFExporter {
             
             grandTotal = grandTotal.add(itemTotal);
         }
+
+        document.add(table);
+        addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+    }
+
+    private void addPromotionInfo(Document document) throws DocumentException {
+        if (promotionCode == null || promotionCode.trim().isEmpty()) {
+            return; // No promotion code, skip this section
+        }
+
+        // Section title
+        Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BaseColor.DARK_GRAY);
+        Paragraph section = new Paragraph("PROMOTION INFORMATION", sectionFont);
+        section.setSpacingAfter(10f);
+        document.add(section);
+
+        // Create table for promotion info
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(10f);
+        table.setSpacingAfter(15f);
+        table.setWidths(new float[]{1.5f, 2.5f, 1.5f, 1.5f});
+
+        // Header color
+        BaseColor headerBgColor = new BaseColor(0, 51, 102);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
+
+        // Headers
+        addTableHeader(table, "Promotion Code", headerFont, headerBgColor);
+        addTableHeader(table, "Promotion Name", headerFont, headerBgColor);
+        addTableHeader(table, "Discount %", headerFont, headerBgColor);
+        addTableHeader(table, "Status", headerFont, headerBgColor);
+
+        // Data
+        Font rowFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        BaseColor rowColor = new BaseColor(248, 248, 248);
+
+        // Get promotion details
+        String promotionName = "N/A";
+        try {
+            com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
+            com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.findActivePromotion(promotionCode);
+            if (promotion != null) {
+                promotionName = promotion.getPromotionName();
+            }
+        } catch (Exception e) {
+            // Use default values if error
+        }
+
+        table.addCell(createTableCell(promotionCode, rowFont, rowColor));
+        table.addCell(createTableCell(promotionName, rowFont, rowColor));
+        table.addCell(createTableCell(String.format("%.1f%%", discount), rowFont, rowColor));
+        table.addCell(createTableCell("Active", rowFont, rowColor));
 
         document.add(table);
         addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
@@ -346,8 +407,8 @@ public class PDFExporter {
     private BigDecimal calculateTotal(Object price, Object quantity) {
         BigDecimal unitPrice = new BigDecimal(price.toString());
         int qty = Integer.parseInt(quantity.toString());
-        return unitPrice.multiply(BigDecimal.valueOf(qty))
-                      .multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount/100)));
+        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+        return subtotal.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount/100)));
     }
 
   private String formatCurrency(String amount) {

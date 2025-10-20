@@ -54,5 +54,89 @@ public class BUS_Warranty {
      public boolean exportToExcel(String filePath) {
          return daoWarranty.exportToExcel(filePath);
      }
+     
+     /**
+      * Get all insurance records with export bill information
+      * @return List of insurance records
+      */
+     public List<DTO_Insurance> getAllInsuranceWithExportInfo() {
+         try {
+             return daoWarranty.getAllInsuranceWithExportInfo();
+         } catch (SQLException e) {
+             System.err.println("Error getting insurance records: " + e.getMessage());
+             return null;
+         }
+     }
+     
+     /**
+      * Get all insurance records
+      * @return List of insurance records
+      */
+     public List<DTO_Insurance> getAllInsurance() {
+         try {
+             return daoWarranty.getAllInsurance();
+         } catch (SQLException e) {
+             System.err.println("Error getting insurance records: " + e.getMessage());
+             return null;
+         }
+     }
+     
+     /**
+      * Get insurance by insurance number
+      * @param insuranceNo Insurance number
+      * @return Insurance record
+      */
+     public DTO_Insurance getInsuranceByNo(String insuranceNo) {
+         try {
+             return daoWarranty.getInsuranceByNo(insuranceNo);
+         } catch (SQLException e) {
+             System.err.println("Error getting insurance by number: " + e.getMessage());
+             return null;
+         }
+     }
+     
+     /**
+      * Get insurance details by insurance number
+      * @param insuranceNo Insurance number
+      * @return List of insurance details
+      */
+     public List<DTO_InsuranceDetails> getInsuranceDetailsByNo(String insuranceNo) {
+         try {
+             return daoWarranty.getInsuranceDetailsByNo(insuranceNo);
+         } catch (SQLException e) {
+             System.err.println("Error getting insurance details: " + e.getMessage());
+             return null;
+         }
+     }
+     
+     /**
+      * Create insurance with multiple products
+      * @param insurance Main insurance record
+      * @param detailsList List of insurance details for each product
+      * @return true if successful
+      */
+     public boolean createInsuranceWithProducts(DTO_Insurance insurance, List<DTO_InsuranceDetails> detailsList) {
+         try {
+             // Insert main insurance record
+             boolean insuranceInserted = daoWarranty.insertBillWarranty(insurance);
+             if (!insuranceInserted) {
+                 return false;
+             }
+             
+             // Insert details for each product
+             for (DTO_InsuranceDetails detail : detailsList) {
+                 boolean detailInserted = daoWarranty.insertBillWarrantyDetails(detail);
+                 if (!detailInserted) {
+                     // TODO: Rollback insurance record if needed
+                     return false;
+                 }
+             }
+             
+             return true;
+         } catch (SQLException e) {
+             System.err.println("Error creating insurance with products: " + e.getMessage());
+             return false;
+         }
+     }
 }
     

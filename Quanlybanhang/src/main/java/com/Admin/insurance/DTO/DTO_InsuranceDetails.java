@@ -8,6 +8,7 @@ public class DTO_InsuranceDetails {
     private String insuranceNo;
     private String adminId;
     private String customerId;
+    private String invoiceNo; // Link to export bill
     private String productId;
     private String description;
     private LocalDate dateInsurance;
@@ -22,6 +23,19 @@ public class DTO_InsuranceDetails {
         this.insuranceNo = insuranceNo;
         this.adminId = adminId;
         this.customerId = customerId;
+        this.productId = productId;
+        this.description = description;
+        this.dateInsurance = dateInsurance;
+        this.timeInsurance = timeInsurance;
+    }
+    
+    public DTO_InsuranceDetails(String insuranceNo, String adminId, String customerId, String invoiceNo,
+                                String productId, String description,
+                                LocalDate dateInsurance, LocalTime timeInsurance) {
+        this.insuranceNo = insuranceNo;
+        this.adminId = adminId;
+        this.customerId = customerId;
+        this.invoiceNo = invoiceNo;
         this.productId = productId;
         this.description = description;
         this.dateInsurance = dateInsurance;
@@ -50,6 +64,14 @@ public class DTO_InsuranceDetails {
 
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
+    }
+    
+    public String getInvoiceNo() {
+        return invoiceNo;
+    }
+    
+    public void setInvoiceNo(String invoiceNo) {
+        this.invoiceNo = invoiceNo;
     }
 
     public String getProductId() {

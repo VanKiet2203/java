@@ -9,6 +9,23 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class DAOCart {
+    // Lấy tồn kho hiện tại từ Product_Stock qua Product
+    public int getCurrentStock(String productId) {
+        String sql = "SELECT ISNULL(ps.Quantity_Stock, 0) AS Current_Stock "
+                   + "FROM Product p LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID "
+                   + "WHERE p.Product_ID = ?";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, productId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getInt("Current_Stock");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     // Thêm sản phẩm vào giỏ hàng
     public boolean addToCart(DTOCart cartItem) {
         String sql = "INSERT INTO Cart (Customer_ID, Product_ID, Quantity) VALUES (?, ?, ?)";
@@ -16,6 +33,12 @@ public class DAOCart {
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
+            // Validate stock to prevent over-adding
+            int currentStock = getCurrentStock(cartItem.getProductID());
+            if (cartItem.getQuantity() <= 0 || cartItem.getQuantity() > currentStock) {
+                return false;
+            }
+
             stmt.setString(1, cartItem.getCustomerID());
             stmt.setString(2, cartItem.getProductID());
             stmt.setInt(3, cartItem.getQuantity());
@@ -56,7 +79,13 @@ public class DAOCart {
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, cartItem.getQuantity());         // Gán trực tiếp số lượng mới
+            // Validate stock to prevent exceeding available
+            int currentStock = getCurrentStock(cartItem.getProductID());
+            if (cartItem.getQuantity() <= 0 || cartItem.getQuantity() > currentStock) {
+                return false;
+            }
+
+            stmt.setInt(1, cartItem.getQuantity());
             stmt.setString(2, cartItem.getCustomerID());
             stmt.setString(3, cartItem.getProductID());
 

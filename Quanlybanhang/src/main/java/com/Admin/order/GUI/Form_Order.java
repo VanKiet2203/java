@@ -4,6 +4,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.BorderLayout;
 import javax.swing.SwingConstants;
 import java.awt.Dimension;
 import javax.swing.*;
@@ -42,17 +43,26 @@ public class Form_Order extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(null);
-        setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
-        setBackground(Color.WHITE); // Kiểm tra hiển thị
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(1200, 700)); // Giảm kích thước cho màn hình nhỏ
+        setBackground(Color.WHITE);
     }
 
     private void init() {
-        panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE);
-        add(panel);
+        // Tạo main panel với scroll
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(null);
+        mainPanel.setPreferredSize(new Dimension(1200, 900)); // Kích thước lớn hơn để scroll
+        mainPanel.setBackground(Color.WHITE);
+        
+        // Tạo scroll pane
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        
+        add(scrollPane, BorderLayout.CENTER);
+        panel = mainPanel; // Gán panel để sử dụng trong các method khác
         
         // Title
         JLabel lblTitle = new JLabel("MANAGE ORDER");
@@ -71,7 +81,7 @@ public class Form_Order extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        panelSearch.setBounds(20, 60, 1490, 80);
+        panelSearch.setBounds(20, 60, 1160, 80);
             
   
         // ComboBox search
@@ -230,11 +240,11 @@ public class Form_Order extends JPanel {
             FONT_TABLE_HEADER               // Font tiêu đề
         );
 
-        JScrollPane scrollPane = MyTable.createScrollPane(tableOrder, 20, 200, 1775, 630);
+        JScrollPane tableScrollPane = MyTable.createScrollPane(tableOrder, 20, 200, 1160, 400);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
-        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-        scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+        tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+        tableScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
         
         tableOrder.addMouseListener(new MouseAdapter() {
            @Override
@@ -251,8 +261,8 @@ public class Form_Order extends JPanel {
         
         
         
-        // 8️⃣ Thêm scrollPane vào panel
-        panel.add(scrollPane);
+        // 8️⃣ Thêm tableScrollPane vào panel
+        panel.add(tableScrollPane);
         SwingUtilities.invokeLater(() -> {
             busOrder = new BUS_order();
             List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
@@ -322,21 +332,21 @@ public class Form_Order extends JPanel {
         if (tableOrder == null) return;
         
         javax.swing.table.TableColumnModel columnModel = tableOrder.getColumnModel();
-        int totalWidth = 1490; // Chiều rộng tổng của table
+        int totalWidth = 1160; // Chiều rộng tổng của table (tối ưu cho màn hình nhỏ)
         int columnCount = tableOrder.getColumnCount();
         
-        // Định nghĩa tỷ lệ chiều rộng cho từng cột
+        // Định nghĩa tỷ lệ chiều rộng cho từng cột (tối ưu cho màn hình nhỏ)
         double[] columnRatios = {
-            0.05,  // Order.No - 10%
-            0.08,  // Customer.ID - 10%
+            0.08,  // Order.No - 8%
+            0.08,  // Customer.ID - 8%
             0.15,  // Customer Name - 15%
             0.15,  // Address - 15%
-            0.08,  // Contact - 10%
+            0.08,  // Contact - 8%
             0.08,  // Total Product - 8%
             0.10,  // Total Price - 10%
             0.08,  // Payment - 8%
             0.08,  // Date Order - 8%
-            0.08,  // Time Order - 8%
+            0.05,  // Time Order - 5%
             0.08   // Status - 8%
         };
         

@@ -6,18 +6,11 @@ import com.ComponentandDatabase.Components.MyTextField;
 import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.product.BUS.BusProduct;
-import java.util.List;
-import java.util.Map;
-import java.util.LinkedHashMap;
-import com.Admin.category.DTO.DTOCategory;
 import com.Admin.product.DTO.DTOProduct;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import javax.swing.*;
 import net.miginfocom.swing.MigLayout;
-import java.awt.Dimension;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import javax.swing.table.DefaultTableModel;
@@ -25,15 +18,12 @@ import javax.swing.BorderFactory;
 
 public class NewProduct extends javax.swing.JFrame {
     private int mouseX, mouseY;
-    private JLabel lblTitle, lblProductID, lblProductName, lblColor, lblBattery,
-            lblSpeed, lblPrice, lblQuantity, lblCate;
+    private JLabel lblTitle;
     private MyPanel panelTitle;
     private MyTextField txtProductID, txtProductName, txtColor, txtBattery, txtSpeed, txtPrice;
     private MyCombobox<String> cmbOperate;
     private MyButton bntupload, bntSave, bntReset;
-    private JPanel panelUpload;
     private JSpinner spinnerQuantity;
-    private JMenu menu;
     private String image;
     private BusProduct busProduct;
 
@@ -75,21 +65,7 @@ public class NewProduct extends javax.swing.JFrame {
     
         bg.add(panelTitle, "growx, h 45!, wrap");
     
-        // Panel hướng dẫn
-        JPanel instructionPanel = new JPanel(new MigLayout("insets 10, fill"));
-        instructionPanel.setBackground(Color.decode("#E3F2FD"));
-        instructionPanel.setBorder(BorderFactory.createLineBorder(Color.decode("#2196F3"), 1));
-        
-        JLabel lblInstruction = new JLabel("<html><b>📋 Workflow:</b><br>" +
-                "1. <b>Select from Warehouse:</b> Click 'Browse Warehouse' to choose an item from inventory<br>" +
-                "2. <b>Load Basic Info:</b> System will auto-fill Product Name, Category, and Stock quantity<br>" +
-                "3. <b>Add Product Details:</b> Fill in Color, Speed, Battery, and Selling Price<br>" +
-                "4. <b>Upload Image:</b> Add product photo and click 'Save' to create product</html>");
-        lblInstruction.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblInstruction.setForeground(Color.decode("#1976D2"));
-        instructionPanel.add(lblInstruction, "growx");
-        
-        bg.add(instructionPanel, "growx, h 90!, wrap");
+        // Bỏ panel hướng dẫn workflow
     
         // Panel chính với 2 cột: Warehouse Selection + Product Details
         JPanel mainPanel = new JPanel(new MigLayout("fill, insets 0", "[300!][grow]", "[grow]"));
@@ -204,35 +180,23 @@ public class NewProduct extends javax.swing.JFrame {
         JPanel categoryPanel = new JPanel(new MigLayout("fill, insets 0"));
         categoryPanel.setBackground(Color.WHITE);
         
-        // Menu chọn category (giữ nguyên cách bạn đang làm)
-        JMenuBar menuBar = new JMenuBar();
-        menu = new JMenu("Choose Category");
-        menu.setFont(new Font("Arial", Font.PLAIN, 12));
+        // ComboBox chọn category (đơn giản hơn)
+        cmbOperate = new MyCombobox<>();
+        cmbOperate.setCustomFont(new Font("Arial", Font.PLAIN, 12));
+        cmbOperate.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
         try {
             busProduct = new BusProduct();
             java.util.List<com.Admin.category.DTO.DTOCategory> listCategory = busProduct.getAllCategoriesWithSupplier();
-            Map<String, JMenu> supplierMenuMap = new LinkedHashMap<>();
             for (com.Admin.category.DTO.DTOCategory dto : listCategory) {
-                String supName = dto.getSupName() == null ? "Unknown Supplier" : dto.getSupName();
-                JMenu supMenu = supplierMenuMap.computeIfAbsent(supName, k -> {
-                    JMenu m = new JMenu(k);
-                    m.setFont(new Font("Arial", Font.PLAIN, 11));
-                    menuBar.add(m);
-                    return m;
-                });
                 String categoryID = String.valueOf(dto.getCategoryID());
                 String categoryName = dto.getCategoryName();
-                JMenuItem categoryItem = new JMenuItem(categoryName + " (ID: " + categoryID + ")");
-                categoryItem.setFont(new Font("Arial", Font.PLAIN, 11));
-                categoryItem.addActionListener(e -> menu.setText(categoryID));
-                supMenu.add(categoryItem);
+                cmbOperate.addItem(categoryID + " - " + categoryName);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
             CustomDialog.showError("Không tải được danh mục: " + ex.getMessage());
         }
-        menuBar.add(menu);
-        categoryPanel.add(menuBar, "growx");
+        categoryPanel.add(cmbOperate, "growx");
         panel.add(categoryPanel, "growx, wrap");
         
         // Color (cần nhập)
@@ -288,6 +252,7 @@ public class NewProduct extends javax.swing.JFrame {
         bntupload.setFont(new Font("Arial", Font.BOLD, 12));
         bntupload.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\upload_image.png",
                 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntupload.addActionListener(e -> uploadImage());
         panel.add(bntupload, "growx, wrap");
         
         // Buttons
@@ -300,6 +265,7 @@ public class NewProduct extends javax.swing.JFrame {
         bntSave.setHoverColor(Color.decode("#FF7F7F"));
         bntSave.setFont(new Font("Arial", Font.BOLD, 14));
         bntSave.setForeground(Color.WHITE);
+        bntSave.addActionListener(e -> saveProductFromGUI());
         buttonPanel.add(bntSave, "growx");
         
         bntReset = new MyButton("Reset Form", 20);
@@ -318,6 +284,9 @@ public class NewProduct extends javax.swing.JFrame {
     // Biến để lưu reference đến các label hiển thị thông tin warehouse
     private JLabel[] selectedWarehouseInfo;
     
+    // Biến để lưu thông tin warehouse item đã chọn
+    private DTOProduct selectedWarehouseProduct;
+    
 
     private MyTextField makeTextField() {
         MyTextField field = new MyTextField();
@@ -333,7 +302,8 @@ public class NewProduct extends javax.swing.JFrame {
         String color = txtColor.getText().trim();
         String speed = txtSpeed.getText().trim();
         String batteryCapacity = txtBattery.getText().trim();
-        String categoryId = menu.getText().trim();
+        String categoryId = cmbOperate.getSelectedItem() != null ? 
+            cmbOperate.getSelectedItem().toString().split(" - ")[0] : "";
         String priceStr = txtPrice.getText().trim();
         int quantity = (int) spinnerQuantity.getValue();
         // Use GUI image field first, fall back to busProduct if set
@@ -353,6 +323,11 @@ public class NewProduct extends javax.swing.JFrame {
                 CustomDialog.showError("Price must be >= 0!");
                 return;
             }
+            // Kiểm tra giá trị không quá lớn cho decimal(10,2)
+            if (price > 99999999.99) {
+                CustomDialog.showError("Price is too large! Maximum value is 99,999,999.99");
+                return;
+            }
         } catch (NumberFormatException e) {
             CustomDialog.showError("Invalid price format!");
             return;
@@ -363,9 +338,26 @@ public class NewProduct extends javax.swing.JFrame {
             return;
         }
 
+        // Tạo BigDecimal từ double price
+        java.math.BigDecimal priceDecimal = java.math.BigDecimal.valueOf(price);
+        
+        // Lấy Sup_ID từ warehouse item đã chọn
+        String supId = null;
+        if (selectedWarehouseProduct != null) {
+            supId = selectedWarehouseProduct.getSupId();
+        }
+        
+        // Debug: In ra các giá trị
+        System.out.println("🔍 Debug Product Data:");
+        System.out.println("Product ID: " + productId);
+        System.out.println("Product Name: " + productName);
+        System.out.println("Price: " + price + " -> BigDecimal: " + priceDecimal);
+        System.out.println("Category ID: " + categoryId);
+        System.out.println("Sup ID: " + supId);
+        
         DTOProduct product = new DTOProduct(
                 productId, productName, color, speed, batteryCapacity,
-                quantity, categoryId, imagePath, price
+                quantity, categoryId, supId, imagePath, priceDecimal
         );
 
         busProduct.saveProduct(product);
@@ -388,6 +380,10 @@ public class NewProduct extends javax.swing.JFrame {
         DTOProduct warehouseProduct = busProduct.getProductFromWarehouse(warehouseItemId);
         if (warehouseProduct != null) {
             System.out.println("✅ Found warehouse item: " + warehouseProduct.getProductName());
+            
+            // Lưu thông tin warehouse item để sử dụng khi save
+            selectedWarehouseProduct = warehouseProduct;
+            
             // Nếu có trong kho, điền thông tin từ kho
             txtProductName.setText(warehouseProduct.getProductName());
             // Color, Speed, Battery_Capacity không có trong kho mới - để trống để admin nhập
@@ -398,7 +394,15 @@ public class NewProduct extends javax.swing.JFrame {
             txtPrice.setText("");
             // Số lượng từ kho
             spinnerQuantity.setValue(warehouseProduct.getQuantity());
-            menu.setText(warehouseProduct.getCategoryId());
+            // Tìm và chọn category trong ComboBox
+            String categoryId = warehouseProduct.getCategoryId();
+            for (int i = 0; i < cmbOperate.getItemCount(); i++) {
+                String item = cmbOperate.getItemAt(i);
+                if (item.startsWith(categoryId + " - ")) {
+                    cmbOperate.setSelectedIndex(i);
+                    break;
+                }
+            }
             
             CustomDialog.showSuccess("Warehouse data loaded successfully!\nPlease fill in Color, Speed, Battery, and Selling price.");
         } else {
@@ -431,7 +435,7 @@ public class NewProduct extends javax.swing.JFrame {
         try {
             // Sử dụng BUSInventory để lấy dữ liệu warehouse
             com.Admin.inventory.BUS.BUSInventory busInventory = new com.Admin.inventory.BUS.BUSInventory();
-            busInventory.loadInventoryToTable(model);
+            busInventory.loadInventoryData(model);
         } catch (Exception e) {
             e.printStackTrace();
             CustomDialog.showError("Error loading warehouse data: " + e.getMessage());
@@ -458,6 +462,9 @@ public class NewProduct extends javax.swing.JFrame {
                 
                 // Cập nhật thông tin warehouse đã chọn
                 updateSelectedWarehouseInfo(warehouseId, productName, category, supplier, stock, importPrice);
+                
+                // Lưu thông tin warehouse item để sử dụng khi save
+                selectedWarehouseProduct = busProduct.getProductFromWarehouse(warehouseId);
                 
                 browseDialog.dispose();
             } else {
@@ -493,6 +500,33 @@ public class NewProduct extends javax.swing.JFrame {
         txtProductID.setText(warehouseId);
     }
     
+    /**
+     * Upload hình ảnh sản phẩm
+     */
+    private void uploadImage() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Select Product Image");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Image Files", "jpg", "jpeg", "png", "gif", "bmp"));
+        
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            java.io.File selectedFile = fileChooser.getSelectedFile();
+            image = selectedFile.getAbsolutePath();
+            
+            // Cập nhật text của nút upload để hiển thị tên file
+            String fileName = selectedFile.getName();
+            if (fileName.length() > 20) {
+                fileName = fileName.substring(0, 17) + "...";
+            }
+            bntupload.setText("✓ " + fileName);
+            bntupload.setBackgroundColor(Color.decode("#E8F5E9"));
+            bntupload.setForeground(Color.decode("#2E7D32"));
+            
+            CustomDialog.showSuccess("Image uploaded successfully!");
+        }
+    }
+    
     private void resetForm() {
         txtProductID.setText("");
         txtProductName.setText("");
@@ -502,9 +536,15 @@ public class NewProduct extends javax.swing.JFrame {
         txtPrice.setText("");
         spinnerQuantity.setValue(1);
         image = null;
-        if (menu != null) menu.setText("Choose Category");
+        if (cmbOperate != null) cmbOperate.setSelectedIndex(0);
+        
+        // Reset nút upload
+        bntupload.setText("Upload Image");
+        bntupload.setBackgroundColor(Color.WHITE);
+        bntupload.setForeground(Color.BLACK);
         
         // Reset warehouse info
+        selectedWarehouseProduct = null;
         if (selectedWarehouseInfo != null && selectedWarehouseInfo.length >= 5) {
             selectedWarehouseInfo[0].setText("Warehouse ID: <i>Not selected</i>");
             selectedWarehouseInfo[1].setText("Product Name: <i>Not selected</i>");
@@ -514,7 +554,6 @@ public class NewProduct extends javax.swing.JFrame {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void initComponents() {
         jMenuItem1 = new javax.swing.JMenuItem();
         bg = new javax.swing.JLayeredPane();

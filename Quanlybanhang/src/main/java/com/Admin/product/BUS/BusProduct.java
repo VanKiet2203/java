@@ -114,9 +114,35 @@ public class BusProduct {
         daoProduct.exportProductToExcel(path);
     }
     
+    public void importFile(java.io.File file) {
+        daoProduct.importProductFromExcel(file);
+    }
+    
     // Lấy thông tin sản phẩm từ kho (Product_Stock) để tạo Product
     public DTOProduct getProductFromWarehouse(String warehouseItemId) {
         return daoProduct.getProductFromWarehouse(warehouseItemId);
+    }
+    
+    // Lấy danh sách Warehouse Items chưa được tạo Product
+    public void loadAvailableWarehouseItems(DefaultTableModel model) {
+        daoProduct.loadAvailableWarehouseItems(model);
+    }
+    
+    // Tạo Product từ Warehouse Item
+    public boolean createProductFromWarehouse(String warehouseItemId, String color, String speed, 
+                                            String batteryCapacity, java.math.BigDecimal price) {
+        try {
+            boolean success = daoProduct.createProductFromWarehouse(warehouseItemId, color, speed, batteryCapacity, price);
+            if (success) {
+                CustomDialog.showSuccess("Product created from warehouse item successfully!");
+            } else {
+                CustomDialog.showError("Failed to create product from warehouse item!");
+            }
+            return success;
+        } catch (Exception e) {
+            CustomDialog.showError("Error creating product: " + e.getMessage());
+            return false;
+        }
     }
 }
 

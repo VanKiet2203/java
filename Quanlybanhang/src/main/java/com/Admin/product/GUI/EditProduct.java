@@ -497,7 +497,7 @@ public class EditProduct extends javax.swing.JFrame {
         try {
             // Sử dụng BUSInventory để lấy dữ liệu warehouse
             com.Admin.inventory.BUS.BUSInventory busInventory = new com.Admin.inventory.BUS.BUSInventory();
-            busInventory.loadInventoryToTable(model);
+            busInventory.loadInventoryData(model);
         } catch (Exception e) {
             e.printStackTrace();
             CustomDialog.showError("Error loading warehouse data: " + e.getMessage());

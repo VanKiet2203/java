@@ -8,11 +8,11 @@ public class BUSCart {
     private DAOCart daoCart = new DAOCart();
     
     public boolean addToCart(DTOCart cartItem) {
-        // Kiểm tra số lượng hợp lệ
-        if (cartItem.getQuantity() <= 0) {
-            return false;
-        }
-        
+        // Kiểm tra số lượng hợp lệ và không vượt tồn kho hiện tại
+        if (cartItem.getQuantity() <= 0) return false;
+        int currentStock = daoCart.getCurrentStock(cartItem.getProductID());
+        if (cartItem.getQuantity() > currentStock) return false;
+
         // Kiểm tra sản phẩm đã có trong giỏ chưa
         if (daoCart.isProductInCart(cartItem.getCustomerID(), cartItem.getProductID())) {
             return daoCart.updateCartItem(cartItem);

@@ -2,13 +2,11 @@ package com.Admin.inventory.BUS;
 
 import com.Admin.inventory.DAO.DAOInventory;
 import com.Admin.inventory.DTO.DTOInventory;
-import com.Admin.inventory.DTO.DTOImportBill;
-import com.Admin.inventory.DTO.DTOImportBillDetails;
-
+import com.ComponentandDatabase.Components.CustomDialog;
 import javax.swing.table.DefaultTableModel;
-import java.math.BigDecimal;
-import java.util.List;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BUSInventory {
     private DAOInventory daoInventory;
@@ -17,156 +15,135 @@ public class BUSInventory {
         daoInventory = new DAOInventory();
     }
     
-    // Lấy tất cả sản phẩm trong kho
-    public List<DTOInventory> getAllInventory() {
-        return daoInventory.getAllInventory();
-    }
-    
-    // Tìm kiếm sản phẩm trong kho
-    public List<DTOInventory> searchInventory(String searchType, String keyword) {
-        return daoInventory.searchInventory(searchType, keyword);
-    }
-    
-    // Lấy tất cả hóa đơn nhập
-    public List<DTOImportBill> getAllImportBills() {
-        return daoInventory.getAllImportBills();
-    }
-    
-    // Lấy chi tiết hóa đơn nhập
-    public List<DTOImportBillDetails> getImportBillDetails(String invoiceNo) {
-        return daoInventory.getImportBillDetails(invoiceNo);
-    }
-    
-    // Nhập sản phẩm mới vào kho
-    public boolean importSimpleProduct(String productId, String productName, BigDecimal price, 
-                                     String categoryId, String brandId, int quantity, 
-                                     BigDecimal unitPrice, String adminId, String color, 
-                                     String speed, String batteryCapacity) {
-        return daoInventory.importSimpleProduct(productId, productName, price, categoryId, 
-                                              brandId, quantity, unitPrice, adminId, color, speed, batteryCapacity);
-    }
-    
-    // Nhập thêm sản phẩm đã có vào kho
-    public boolean importExistingProduct(String productId, int quantity, BigDecimal unitPrice, String adminId) {
-        return daoInventory.importExistingProduct(productId, quantity, unitPrice, adminId);
-    }
-    
-    // Load dữ liệu vào bảng inventory - Cập nhật cho database mới
-    public void loadInventoryToTable(DefaultTableModel model) {
-        model.setRowCount(0);
-        List<DTOInventory> inventoryList = getAllInventory();
-        
-        for (DTOInventory inventory : inventoryList) {
-            Object[] row = {
-                inventory.getWarehouseItemId(),        // Warehouse ID
-                inventory.getProductName(),            // Product Name
-                inventory.getCategoryId(),             // Category
-                inventory.getBrandId(),                // Supplier
-                inventory.getUnitPriceImport(),        // Import Price
-                inventory.getQuantityInStock(),        // Current Stock
-                "N/A",                                 // Total Imported (sẽ tính từ Bill_Imported_Details)
-                "N/A"                                  // Total Sold (sẽ tính từ Bill_Exported_Details)
-            };
-            model.addRow(row);
+    public void loadInventoryData(DefaultTableModel model) {
+        try {
+            daoInventory.loadInventoryData(model);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to load inventory data: " + e.getMessage());
         }
     }
     
-    // Load dữ liệu vào bảng import bills
-    public void loadImportBillsToTable(DefaultTableModel model) {
-        model.setRowCount(0);
-        List<DTOImportBill> bills = getAllImportBills();
-        
-        for (DTOImportBill bill : bills) {
-            Object[] row = {
-                bill.getInvoiceNo(),
-                bill.getAdminId(),
-                bill.getAdminName(),
-                bill.getTotalProduct(),
-                bill.getTotalPrice(),
-                bill.getDateImported(),
-                bill.getTimeImported()
-            };
-            model.addRow(row);
+    public void searchInventory(String keyword, String searchType, DefaultTableModel model) {
+        try {
+            daoInventory.searchInventory(keyword, searchType, model);
+        } catch (Exception e) {
+            CustomDialog.showError("Search failed: " + e.getMessage());
         }
     }
     
-    // Load chi tiết hóa đơn vào bảng
-    public void loadBillDetailsToTable(String invoiceNo, DefaultTableModel model) {
-        model.setRowCount(0);
-        List<DTOImportBillDetails> details = getImportBillDetails(invoiceNo);
-        
-        for (DTOImportBillDetails detail : details) {
-            Object[] row = {
-                detail.getProductId(),
-                detail.getProductName(),
-                detail.getQuantity(),
-                detail.getUnitPrice(),
-                detail.getTotalPrice(),
-                detail.getDateImported(),
-                detail.getTimeImported()
-            };
-            model.addRow(row);
+    public boolean importNewItems(File excelFile) {
+        try {
+            return daoInventory.importInventoryFromExcel(excelFile);
+        } catch (Exception e) {
+            CustomDialog.showError("Import failed: " + e.getMessage());
+            return false;
         }
     }
     
-    // Tìm kiếm và load vào bảng - Cập nhật cho database mới
-    public void searchAndLoadToTable(String searchType, String keyword, DefaultTableModel model) {
-        model.setRowCount(0);
-        List<DTOInventory> inventoryList = searchInventory(searchType, keyword);
-        
-        for (DTOInventory inventory : inventoryList) {
-            Object[] row = {
-                inventory.getWarehouseItemId(),        // Warehouse ID
-                inventory.getProductName(),            // Product Name
-                inventory.getCategoryId(),             // Category
-                inventory.getBrandId(),                // Supplier
-                inventory.getUnitPriceImport(),        // Import Price
-                inventory.getQuantityInStock(),        // Current Stock
-                "N/A",                                 // Total Imported (sẽ tính từ Bill_Imported_Details)
-                "N/A"                                  // Total Sold (sẽ tính từ Bill_Exported_Details)
-            };
-            model.addRow(row);
+    public boolean importExistingItems(File excelFile) {
+        try {
+            return daoInventory.updateInventoryFromExcel(excelFile);
+        } catch (Exception e) {
+            CustomDialog.showError("Import failed: " + e.getMessage());
+            return false;
         }
     }
     
-    // Kiểm tra sản phẩm có tồn tại không
-    public boolean isProductExists(String productId) {
-        List<DTOInventory> inventoryList = getAllInventory();
-        return inventoryList.stream()
-                .anyMatch(inventory -> inventory.getWarehouseItemId().equals(productId));
+    public void exportToExcel(String filePath) {
+        try {
+            daoInventory.exportInventoryToExcel(filePath);
+            CustomDialog.showSuccess("Inventory exported to Excel successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Export failed: " + e.getMessage());
+        }
     }
     
-    // Lấy thông tin sản phẩm theo ID
-    public DTOInventory getProductById(String productId) {
-        List<DTOInventory> inventoryList = getAllInventory();
-        return inventoryList.stream()
-                .filter(inventory -> inventory.getWarehouseItemId().equals(productId))
-                .findFirst()
-                .orElse(null);
+    public void exportToPDF(String filePath) {
+        try {
+            daoInventory.exportInventoryToPDF(filePath);
+            CustomDialog.showSuccess("Inventory exported to PDF successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("PDF export failed: " + e.getMessage());
+        }
     }
     
-    // Xuất dữ liệu kho hàng ra Excel
-    public boolean exportInventoryToExcel(String filePath) {
-        return daoInventory.exportInventoryToExcel(filePath);
+    public void loadBillsData(DefaultTableModel model) {
+        try {
+            daoInventory.loadBillsData(model);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to load bills data: " + e.getMessage());
+        }
     }
     
-    // Xuất hóa đơn nhập ra Excel
-    public boolean exportBillToExcel(String invoiceNo, String filePath) {
-        return daoInventory.exportBillToExcel(invoiceNo, filePath);
+    public DTOInventory getInventoryItemById(String warehouseItemId) {
+        try {
+            return daoInventory.getInventoryItemById(warehouseItemId);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to get inventory item: " + e.getMessage());
+            return null;
+        }
     }
     
-    // Nhập dữ liệu từ Excel
-    public boolean importInventoryFromExcel(File excelFile) {
-        return daoInventory.importInventoryFromExcel(excelFile);
+    public boolean updateInventoryItem(DTOInventory item) {
+        try {
+            return daoInventory.updateInventoryItem(item);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to update inventory item: " + e.getMessage());
+            return false;
+        }
     }
     
-    // Dọn dẹp tất cả dữ liệu kho hàng
-    public boolean cleanAllInventory() {
-        return daoInventory.cleanAllInventory();
+    public String createImportBill() {
+        try {
+            String billId = daoInventory.createImportBill();
+            CustomDialog.showSuccess("Import bill created successfully!\nBill ID: " + billId);
+            return billId;
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to create import bill: " + e.getMessage());
+            return null;
+        }
     }
     
-    // Xuất dữ liệu kho hàng ra PDF
-    public boolean exportInventoryToPDF(String filePath) {
-        return daoInventory.exportInventoryToPDF(filePath);
+    public String generateWarehouseId() {
+        try {
+            return daoInventory.generateWarehouseId();
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to generate warehouse ID: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    public boolean addInventoryItem(DTOInventory inventoryItem) {
+        try {
+            boolean result = daoInventory.addInventoryItem(inventoryItem);
+            if (!result) {
+                CustomDialog.showError("Failed to add inventory item! Please check:\n" +
+                    "1. Category ID exists in database\n" +
+                    "2. Supplier ID exists in database\n" +
+                    "3. Warehouse ID is unique\n" +
+                    "4. All required fields are filled");
+            }
+            return result;
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to add inventory item: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public List<String> getAllSuppliers() {
+        try {
+            return daoInventory.getAllSuppliers();
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to load suppliers: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    public void ensureSampleDataExists() {
+        try {
+            daoInventory.ensureSampleDataExists();
+        } catch (Exception e) {
+            System.err.println("Failed to ensure sample data exists: " + e.getMessage());
+        }
     }
 }

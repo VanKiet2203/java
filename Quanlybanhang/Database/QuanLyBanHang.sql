@@ -1,21 +1,9 @@
--- ============================================
--- QuanLyKho Database - COMPLETE VERSION WITH SIMPLIFIED PRODUCT_STOCK
--- Phiên bản hoàn chỉnh cho database MỚI với cấu trúc Product_Stock đơn giản hóa
--- Bao gồm: Schema + Triggers + Views + Product.Quantity sync
--- ============================================
--- Author: System Update
--- Date: 2025-01-14
--- ============================================
-
 IF DB_ID(N'QuanLyKho') IS NULL
 BEGIN
     CREATE DATABASE [QuanLyKho];
 END;
 GO
 USE [QuanLyKho];
-GO
-
-PRINT 'Creating QuanLyKho database with simplified Product_Stock structure...';
 GO
 
 -- ============================================
@@ -95,8 +83,6 @@ GO
 
 -- ============================================
 -- PRODUCT TABLE
--- Chứa sản phẩm công khai cho khách hàng
--- Product.Quantity = Tổng số lượng đã nhập (sẽ được sync bởi trigger)
 -- ============================================
 IF OBJECT_ID(N'dbo.Product', N'U') IS NULL
 BEGIN
@@ -106,14 +92,14 @@ CREATE TABLE dbo.Product(
     Color nvarchar(50) NULL,
     Speed varchar(50) NULL,
     Battery_Capacity varchar(100) NULL,
-    Quantity int NOT NULL CONSTRAINT DF_Product_Quantity DEFAULT(0),  -- Tổng đã nhập (sync by trigger)
+    Quantity int NOT NULL CONSTRAINT DF_Product_Quantity DEFAULT(0),
     Category_ID varchar(50) NULL,
     Sup_ID varchar(100) NULL,
     Image varchar(255) NULL,
-    Price decimal(10,2) NULL,                -- Giá bán hiện tại
-    List_Price_Before decimal(10,2) NULL,    -- Giá niêm yết cũ
-    List_Price_After  decimal(10,2) NULL,    -- Giá niêm yết mới
-    Warehouse_Item_ID varchar(50) NULL,      -- Link về kho
+    Price decimal(10,2) NULL,              
+    List_Price_Before decimal(10,2) NULL,   
+    List_Price_After  decimal(10,2) NULL,    
+    Warehouse_Item_ID varchar(50) NULL,      
     CONSTRAINT PK_Product PRIMARY KEY CLUSTERED (Product_ID ASC)
 );
 END;
@@ -133,21 +119,19 @@ GO
 
 -- ============================================
 -- WAREHOUSE STOCK TABLE (Product_Stock) - SIMPLIFIED VERSION
--- Đây là bảng KHO chứa sản phẩm đã nhập - CHỈ CÁC THUỘC TÍNH CƠ BẢN
--- Độc lập với Product, không cần Product tồn tại trước
 -- ============================================
 IF OBJECT_ID(N'dbo.Product_Stock', N'U') IS NULL
 BEGIN
 CREATE TABLE dbo.Product_Stock(
-    Warehouse_Item_ID varchar(50) NOT NULL,       -- ID kho (độc lập)
-    Product_Name nvarchar(255) NOT NULL,          -- Tên khi nhập
-    Category_ID varchar(50) NOT NULL,             -- Loại sản phẩm
-    Sup_ID varchar(100) NOT NULL,                 -- Nhà cung cấp
-    Quantity_Stock int NOT NULL DEFAULT(0),       -- Tồn kho hiện tại (trigger update)
-    Unit_Price_Import decimal(18,2) NOT NULL,     -- GIÁ NHẬP (không công khai)
-    Created_Date date NOT NULL,                   -- Ngày nhập
-    Created_Time time(7) NOT NULL,                -- Giờ nhập
-    Is_In_Product bit NOT NULL DEFAULT(0),        -- Đã thêm vào Product?
+    Warehouse_Item_ID varchar(50) NOT NULL,       
+    Product_Name nvarchar(255) NOT NULL,         
+    Category_ID varchar(50) NOT NULL,            
+    Sup_ID varchar(100) NOT NULL,               
+    Quantity_Stock int NOT NULL DEFAULT(0),       
+    Unit_Price_Import decimal(18,2) NOT NULL,     
+    Created_Date date NOT NULL,                  
+    Created_Time time(7) NOT NULL,                
+    Is_In_Product bit NOT NULL DEFAULT(0),        
     CONSTRAINT PK_Product_Stock PRIMARY KEY CLUSTERED (Warehouse_Item_ID ASC)
 );
 END;
@@ -236,14 +220,13 @@ GO
 
 -- ============================================
 -- BILL_IMPORTED_DETAILS TABLE
--- Reference Warehouse_Item_ID (Product_Stock), KHÔNG phải Product_ID
 -- ============================================
 IF OBJECT_ID(N'dbo.Bill_Imported_Details', N'U') IS NULL
 BEGIN
 CREATE TABLE dbo.Bill_Imported_Details(
     Invoice_No varchar(50) NOT NULL,
     Admin_ID varchar(20) NOT NULL,
-    Warehouse_Item_ID varchar(50) NOT NULL,       -- Link đến Product_Stock
+    Warehouse_Item_ID varchar(50) NOT NULL,       
     Quantity int NOT NULL,
     Unit_Price_Import decimal(18,2) NOT NULL CONSTRAINT DF_BID_UnitPriceImport DEFAULT(0.00),
     Total_Price decimal(18,2) NOT NULL,
@@ -305,7 +288,6 @@ GO
 
 -- ============================================
 -- BILL_EXPORTED_DETAILS TABLE
--- Chứa giá bán trước KM, sau KM, và % khuyến mãi
 -- ============================================
 IF OBJECT_ID(N'dbo.Bill_Exported_Details', N'U') IS NULL
 BEGIN
@@ -405,7 +387,7 @@ END;
 GO
 
 -- ============================================
--- INSURANCE TABLE
+-- INSURANCE TABLE 
 -- ============================================
 IF OBJECT_ID(N'dbo.Insurance', N'U') IS NULL
 BEGIN
@@ -413,6 +395,7 @@ CREATE TABLE dbo.Insurance(
     Insurance_No varchar(50) NOT NULL,
     Admin_ID varchar(20) NOT NULL,
     Customer_ID varchar(50) NULL,
+    Invoice_No varchar(50) NULL,              
     Describle_customer varchar(50) NULL,
     Start_Date_Insurance date NOT NULL,
     End_Date_Insurance date NOT NULL,
@@ -430,6 +413,14 @@ BEGIN
 ALTER TABLE dbo.Insurance WITH CHECK
 ADD CONSTRAINT FK_Insurance_Customer FOREIGN KEY(Customer_ID) REFERENCES dbo.Customer(Customer_ID) ON UPDATE CASCADE ON DELETE CASCADE;
 END;
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Insurance_BillExported')
+BEGIN
+ALTER TABLE dbo.Insurance WITH CHECK
+ADD CONSTRAINT FK_Insurance_BillExported 
+FOREIGN KEY(Invoice_No, Admin_ID) 
+REFERENCES dbo.Bill_Exported(Invoice_No, Admin_ID) 
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+END;
 GO
 
 -- ============================================
@@ -441,6 +432,7 @@ CREATE TABLE dbo.Insurance_Details(
     Insurance_No varchar(50) NOT NULL,
     Admin_ID varchar(20) NOT NULL,
     Customer_ID varchar(50) NULL,
+    Invoice_No varchar(50) NULL,            
     Product_ID varchar(50) NOT NULL,
     Description nvarchar(255) NULL,
     Date_Insurance date NOT NULL,
@@ -453,6 +445,14 @@ IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_InsuranceDetails_I
 BEGIN
 ALTER TABLE dbo.Insurance_Details WITH CHECK
 ADD CONSTRAINT FK_InsuranceDetails_Insurance FOREIGN KEY(Insurance_No,Admin_ID) REFERENCES dbo.Insurance(Insurance_No,Admin_ID) ON DELETE CASCADE;
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_InsuranceDetails_BillExported')
+BEGIN
+ALTER TABLE dbo.Insurance_Details WITH CHECK
+ADD CONSTRAINT FK_InsuranceDetails_BillExported 
+FOREIGN KEY(Invoice_No, Admin_ID) 
+REFERENCES dbo.Bill_Exported(Invoice_No, Admin_ID) 
+ON UPDATE NO ACTION ON DELETE NO ACTION;
 END;
 GO
 
@@ -483,8 +483,6 @@ GO
 -- ============================================
 -- SEED DATA
 -- ============================================
-PRINT 'Inserting seed data...';
-
 MERGE dbo.Supplier AS t
 USING (VALUES
 ('NIJIA', N'CÔNG TY NIJIA',  N'QL1A, Quất Động, Thường Tín, Hà Nội', '0936281080'),
@@ -500,8 +498,6 @@ GO
 -- ============================================
 -- VIEWS
 -- ============================================
-PRINT 'Creating views...';
-
 -- View 1: Tổng hợp số lượng nhập, bán, tồn
 IF OBJECT_ID(N'dbo.v_Product_Quantity_InOut', N'V') IS NOT NULL DROP VIEW dbo.v_Product_Quantity_InOut;
 GO
@@ -636,10 +632,85 @@ FROM dbo.Product p
 LEFT JOIN dbo.Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID;
 GO
 
+-- View 7: Insurance với thông tin Export Bill
+IF OBJECT_ID(N'dbo.v_Insurance_With_Export', N'V') IS NOT NULL DROP VIEW dbo.v_Insurance_With_Export;
+GO
+CREATE VIEW dbo.v_Insurance_With_Export AS
+SELECT 
+    i.Insurance_No,
+    i.Admin_ID,
+    i.Customer_ID,
+    i.Invoice_No,
+    i.Describle_customer,
+    i.Start_Date_Insurance,
+    i.End_Date_Insurance,
+    be.Total_Product,
+    be.Description AS Export_Description,
+    be.Promotion_Code,
+    c.Full_Name AS Customer_Name,
+    c.Contact AS Customer_Contact,
+    c.Address AS Customer_Address
+FROM dbo.Insurance i
+LEFT JOIN dbo.Bill_Exported be ON i.Invoice_No = be.Invoice_No AND i.Admin_ID = be.Admin_ID
+LEFT JOIN dbo.Customer c ON i.Customer_ID = c.Customer_ID;
+GO
+
+-- View 8: Insurance Details với thông tin Product
+IF OBJECT_ID(N'dbo.v_Insurance_Details_With_Product', N'V') IS NOT NULL DROP VIEW dbo.v_Insurance_Details_With_Product;
+GO
+CREATE VIEW dbo.v_Insurance_Details_With_Product AS
+SELECT 
+    id.Insurance_No,
+    id.Admin_ID,
+    id.Customer_ID,
+    id.Invoice_No,
+    id.Product_ID,
+    id.Description,
+    id.Date_Insurance,
+    id.Time_Insurance,
+    p.Product_Name,
+    p.Color,
+    p.Speed,
+    p.Battery_Capacity,
+    p.Price,
+    bed.Quantity AS Sold_Quantity,
+    bed.Unit_Price_Sell_After AS Sold_Price,
+    bed.Date_Exported AS Sale_Date
+FROM dbo.Insurance_Details id
+LEFT JOIN dbo.Product p ON id.Product_ID = p.Product_ID
+LEFT JOIN dbo.Bill_Exported_Details bed ON id.Invoice_No = bed.Invoice_No 
+    AND id.Admin_ID = bed.Admin_ID 
+    AND id.Product_ID = bed.Product_ID;
+GO
+
+-- View 9: Available Export Bills for Insurance
+IF OBJECT_ID(N'dbo.v_Available_Export_Bills_For_Insurance', N'V') IS NOT NULL DROP VIEW dbo.v_Available_Export_Bills_For_Insurance;
+GO
+CREATE VIEW dbo.v_Available_Export_Bills_For_Insurance AS
+SELECT 
+    be.Invoice_No,
+    be.Admin_ID,
+    be.Customer_ID,
+    be.Total_Product,
+    be.Description,
+    be.Promotion_Code,
+    c.Full_Name AS Customer_Name,
+    c.Contact AS Customer_Contact,
+    c.Address AS Customer_Address,
+    CASE 
+        WHEN i.Insurance_No IS NULL THEN 'Available for Insurance'
+        ELSE 'Already Insured'
+    END AS Insurance_Status,
+    i.Insurance_No AS Existing_Insurance_No
+FROM dbo.Bill_Exported be
+LEFT JOIN dbo.Customer c ON be.Customer_ID = c.Customer_ID
+LEFT JOIN dbo.Insurance i ON be.Invoice_No = i.Invoice_No AND be.Admin_ID = i.Admin_ID
+WHERE be.Invoice_No IS NOT NULL;
+GO
+
 -- ============================================
 -- TRIGGERS FOR PRODUCT_STOCK (Inventory)
 -- ============================================
-PRINT 'Creating triggers for Product_Stock...';
 
 -- Drop old triggers if exist
 IF OBJECT_ID(N'dbo.trg_BID_AI_Stock', N'TR') IS NOT NULL DROP TRIGGER dbo.trg_BID_AI_Stock;
@@ -742,9 +813,7 @@ GO
 
 -- ============================================
 -- TRIGGERS FOR PRODUCT.QUANTITY SYNC
--- Đồng bộ Product.Quantity = Tổng đã nhập
 -- ============================================
-PRINT 'Creating triggers for Product.Quantity sync...';
 
 IF OBJECT_ID(N'dbo.trg_Sync_Product_Quantity_On_Import', N'TR') IS NOT NULL 
     DROP TRIGGER dbo.trg_Sync_Product_Quantity_On_Import;
@@ -800,9 +869,104 @@ END;
 GO
 
 -- ============================================
+-- STORED PROCEDURES FOR INSURANCE
+-- ============================================
+
+-- Stored Procedure: Get Export Bill Details for Insurance
+IF OBJECT_ID(N'dbo.sp_GetExportBillDetailsForInsurance', N'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_GetExportBillDetailsForInsurance;
+GO
+
+CREATE PROCEDURE dbo.sp_GetExportBillDetailsForInsurance
+    @InvoiceNo varchar(50),
+    @AdminID varchar(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        be.Invoice_No,
+        be.Admin_ID,
+        be.Customer_ID,
+        be.Total_Product,
+        be.Description,
+        be.Promotion_Code,
+        c.Full_Name AS Customer_Name,
+        c.Contact AS Customer_Contact,
+        c.Address AS Customer_Address,
+        c.Email AS Customer_Email,
+        bed.Product_ID,
+        p.Product_Name,
+        p.Color,
+        p.Speed,
+        p.Battery_Capacity,
+        p.Price,
+        bed.Quantity,
+        bed.Unit_Price_Sell_After AS Sold_Price,
+        bed.Date_Exported AS Sale_Date,
+        bed.Time_Exported AS Sale_Time
+    FROM dbo.Bill_Exported be
+    LEFT JOIN dbo.Customer c ON be.Customer_ID = c.Customer_ID
+    LEFT JOIN dbo.Bill_Exported_Details bed ON be.Invoice_No = bed.Invoice_No AND be.Admin_ID = bed.Admin_ID
+    LEFT JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
+    WHERE be.Invoice_No = @InvoiceNo AND be.Admin_ID = @AdminID;
+END;
+GO
+
+-- Stored Procedure: Create Insurance from Export Bill
+IF OBJECT_ID(N'dbo.sp_CreateInsuranceFromExportBill', N'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_CreateInsuranceFromExportBill;
+GO
+
+CREATE PROCEDURE dbo.sp_CreateInsuranceFromExportBill
+    @InsuranceNo varchar(50),
+    @InvoiceNo varchar(50),
+    @AdminID varchar(20),
+    @CustomerID varchar(50),
+    @Description nvarchar(255),
+    @StartDate date,
+    @EndDate date
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    
+    BEGIN TRY
+        -- Insert into Insurance table
+        INSERT INTO dbo.Insurance (
+            Insurance_No, Admin_ID, Customer_ID, Invoice_No, 
+            Describle_customer, Start_Date_Insurance, End_Date_Insurance
+        )
+        VALUES (
+            @InsuranceNo, @AdminID, @CustomerID, @InvoiceNo,
+            @Description, @StartDate, @EndDate
+        );
+        
+        -- Insert into Insurance_Details table for each product in the export bill
+        INSERT INTO dbo.Insurance_Details (
+            Insurance_No, Admin_ID, Customer_ID, Invoice_No, Product_ID,
+            Description, Date_Insurance, Time_Insurance
+        )
+        SELECT 
+            @InsuranceNo, @AdminID, @CustomerID, @InvoiceNo, bed.Product_ID,
+            @Description, GETDATE(), GETDATE()
+        FROM dbo.Bill_Exported_Details bed
+        WHERE bed.Invoice_No = @InvoiceNo AND bed.Admin_ID = @AdminID;
+        
+        COMMIT TRANSACTION;
+        SELECT 'SUCCESS' AS Result, 'Insurance created successfully' AS Message;
+        
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        SELECT 'ERROR' AS Result, ERROR_MESSAGE() AS Message;
+    END CATCH;
+END;
+GO
+
+-- ============================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================
-PRINT 'Creating indexes...';
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_BID_WarehouseItem' AND object_id=OBJECT_ID('dbo.Bill_Imported_Details'))
     CREATE INDEX IX_BID_WarehouseItem ON dbo.Bill_Imported_Details(Warehouse_Item_ID);
@@ -812,12 +976,15 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Product_WarehouseItem' A
     CREATE INDEX IX_Product_WarehouseItem ON dbo.Product(Warehouse_Item_ID);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_PS_CategorySup' AND object_id=OBJECT_ID('dbo.Product_Stock'))
     CREATE INDEX IX_PS_CategorySup ON dbo.Product_Stock(Category_ID, Sup_ID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Insurance_InvoiceNo' AND object_id=OBJECT_ID('dbo.Insurance'))
+    CREATE INDEX IX_Insurance_InvoiceNo ON dbo.Insurance(Invoice_No, Admin_ID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_InsuranceDetails_InvoiceNo' AND object_id=OBJECT_ID('dbo.Insurance_Details'))
+    CREATE INDEX IX_InsuranceDetails_InvoiceNo ON dbo.Insurance_Details(Invoice_No, Admin_ID);
 GO
 
 -- ============================================
 -- FINAL UPDATES
 -- ============================================
-PRINT 'Running final updates...';
 
 UPDATE p SET p.Price = p.List_Price_After FROM dbo.Product p;
 GO
@@ -833,50 +1000,3 @@ UPDATE d SET d.Total_Price_After = d.Unit_Price_Sell_After * d.Quantity * (1 - I
 FROM dbo.Bill_Exported_Details d;
 GO
 
--- ============================================
--- SUCCESS MESSAGE
--- ============================================
-PRINT '';
-PRINT '========================================';
-PRINT 'Database QuanLyKho created successfully!';
-PRINT '========================================';
-PRINT '';
-PRINT 'Features:';
-PRINT '  ✓ Warehouse-Product separation';
-PRINT '  ✓ Simplified Product_Stock structure (no Color, Speed, Battery)';
-PRINT '  ✓ Product.Quantity auto-sync with imports';
-PRINT '  ✓ Stock tracking: Imported = Sold + Stock';
-PRINT '  ✓ Price separation: Import ≠ Sell ≠ After Discount';
-PRINT '  ✓ All triggers and views created';
-PRINT '';
-PRINT 'Product_Stock Structure (Simplified):';
-PRINT '  - Warehouse_Item_ID (PK)';
-PRINT '  - Product_Name';
-PRINT '  - Category_ID (FK)';
-PRINT '  - Sup_ID (FK)';
-PRINT '  - Quantity_Stock';
-PRINT '  - Unit_Price_Import';
-PRINT '  - Created_Date';
-PRINT '  - Created_Time';
-PRINT '  - Is_In_Product';
-PRINT '';
-PRINT '3 Types of Prices:';
-PRINT '  1. Import Price (Product_Stock.Unit_Price_Import)';
-PRINT '  2. Selling Price (Product.Price)';
-PRINT '  3. After Discount Price (Bill_Exported_Details.Unit_Price_Sell_After)';
-PRINT '';
-PRINT '3 Types of Quantities:';
-PRINT '  1. Current Stock (Product_Stock.Quantity_Stock)';
-PRINT '  2. Total Imported (Product.Quantity)';
-PRINT '  3. Total Sold (Product.Quantity - Product_Stock.Quantity_Stock)';
-PRINT '';
-PRINT 'Formula: Total_Imported = Total_Sold + Current_Stock';
-PRINT 'Example: 100 = 30 + 70';
-PRINT '';
-PRINT 'Test queries:';
-PRINT '  SELECT * FROM v_Product_Full_Info;';
-PRINT '  SELECT * FROM v_Product_Quantity_Check;';
-PRINT '  SELECT * FROM v_Inventory_Report;';
-PRINT '';
-PRINT 'Ready for use! 🚀';
-GO

@@ -22,7 +22,7 @@ import com.Admin.product.GUI.EditProduct;
 
 public class Menu extends JPanel {
     
-    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblExport, lblStatistics, lblExit, lblMenu, lblInventory, lblInsurance, lblPromotion;
+    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblInventory, lblExport, lblStatistics, lblExit, lblMenu, lblInsurance, lblPromotion;
     private JPanel menuPanel; // Panel chứa tất cả label
     private JLabel lastHoveredLabel = null; // Lưu label được hover trước đó
     private boolean isMenuExpanded = false;
@@ -79,8 +79,8 @@ public class Menu extends JPanel {
         lblInventory= createLabel("Inventory", "import.png", 390);
         lblExport= createLabel("Export", "export.png", 450);
         lblInsurance= createLabel("Insurance", "insurance.png", 510);
-        lblPromotion= createLabel("Promotion", "pie_chart.png", 565);
-        lblStatistics= createLabel("Statistics", "statistics.png", 625);
+        lblPromotion= createLabel("Promotion", "pie_chart.png", 570);
+        lblStatistics= createLabel("Statistics", "statistics.png", 630);
         lblExit= createLabel("Exit", "exit.png", 690);
         
         

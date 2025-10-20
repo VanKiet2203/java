@@ -207,12 +207,14 @@ public class ControlCategory {
      public void importFile(File file) {
         String insertSQL = "INSERT INTO Category (Category_ID, Category_Name, Sup_ID) VALUES (?, ?, ?)";
         String checkSupplierSQL = "SELECT COUNT(*) FROM Supplier WHERE Sup_ID = ?";
+        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ?";
+
+        int successCount = 0;
+        int errorCount = 0;
+        StringBuilder errors = new StringBuilder();
 
         try (FileInputStream fis = new FileInputStream(file);
-             XSSFWorkbook workbook = new XSSFWorkbook(fis);
-             Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(insertSQL);
-             PreparedStatement checkStmt = conn.prepareStatement(checkSupplierSQL)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
@@ -222,55 +224,134 @@ public class ControlCategory {
                 rowIterator.next();
             }
 
+            // Process each row
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
+                int rowNum = row.getRowNum() + 1; // +1 because we skipped header
 
                 if (row.getPhysicalNumberOfCells() >= 3) {
                     String categoryID = getCellValue(row.getCell(0));
                     String categoryName = getCellValue(row.getCell(1));
                     String supID = getCellValue(row.getCell(2));
 
-                    // Kiểm tra Sup_ID có tồn tại trong bảng Supplier không
-                    checkStmt.setString(1, supID);
-                    try (ResultSet rs = checkStmt.executeQuery()) {
-                        if (rs.next() && rs.getInt(1) > 0) {
-                            // Sup_ID tồn tại, tiến hành insert
-                            pstmt.setString(1, categoryID);
-                            pstmt.setString(2, categoryName);
-                            pstmt.setString(3, supID);
-                            pstmt.executeUpdate();
-                        } else {
-                            System.err.println("Bỏ qua: Sup_ID không tồn tại trong bảng Supplier - " + supID);
-                        }
+                    // Validate required fields
+                    if (categoryID == null || categoryID.trim().isEmpty() ||
+                        categoryName == null || categoryName.trim().isEmpty() ||
+                        supID == null || supID.trim().isEmpty()) {
+                        errors.append("Row ").append(rowNum).append(": Missing required data\n");
+                        errorCount++;
+                        continue;
                     }
+
+                    try (Connection conn = getConnection()) {
+                        conn.setAutoCommit(false);
+                        
+                        try (PreparedStatement checkSupplierStmt = conn.prepareStatement(checkSupplierSQL);
+                             PreparedStatement checkCategoryStmt = conn.prepareStatement(checkCategorySQL);
+                             PreparedStatement insertStmt = conn.prepareStatement(insertSQL)) {
+
+                            // Check if Supplier exists
+                            checkSupplierStmt.setString(1, supID);
+                            try (ResultSet supplierRs = checkSupplierStmt.executeQuery()) {
+                                if (!supplierRs.next() || supplierRs.getInt(1) == 0) {
+                                    errors.append("Row ").append(rowNum).append(": Supplier ID '").append(supID).append("' does not exist\n");
+                                    errorCount++;
+                                    continue;
+                                }
+                            }
+
+                            // Check if Category ID already exists
+                            checkCategoryStmt.setString(1, categoryID);
+                            try (ResultSet categoryRs = checkCategoryStmt.executeQuery()) {
+                                if (categoryRs.next() && categoryRs.getInt(1) > 0) {
+                                    errors.append("Row ").append(rowNum).append(": Category ID '").append(categoryID).append("' already exists\n");
+                                    errorCount++;
+                                    continue;
+                                }
+                            }
+
+                            // Insert new category
+                            insertStmt.setString(1, categoryID);
+                            insertStmt.setString(2, categoryName);
+                            insertStmt.setString(3, supID);
+                            insertStmt.executeUpdate();
+                            
+                            conn.commit();
+                            successCount++;
+                            
+                        } catch (SQLException e) {
+                            conn.rollback();
+                            errors.append("Row ").append(rowNum).append(": ").append(e.getMessage()).append("\n");
+                            errorCount++;
+                        } finally {
+                            conn.setAutoCommit(true);
+                        }
+                        
+                    } catch (SQLException e) {
+                        errors.append("Row ").append(rowNum).append(": Database connection error - ").append(e.getMessage()).append("\n");
+                        errorCount++;
+                    }
+                } else {
+                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 3 columns)\n");
+                    errorCount++;
                 }
             }
-            CustomDialog.showSuccess("File imported successfully !");
-            System.out.println("Import file thành công!");
-        } catch (IOException | SQLException e) {
+
+            // Show results
+            String message = String.format("Import completed!\nSuccess: %d categories\nErrors: %d rows", 
+                                         successCount, errorCount);
+            if (errorCount > 0) {
+                message += "\n\nErrors:\n" + errors.toString();
+            }
+            
+            if (errorCount == 0) {
+                CustomDialog.showSuccess(message);
+            } else if (successCount > 0) {
+                CustomDialog.showError(message);
+            } else {
+                CustomDialog.showError("Import failed!\n\n" + errors.toString());
+            }
+            
+        } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Import file thất bại: " + e.getMessage());
+            CustomDialog.showError("Error reading Excel file: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Unexpected error during import: " + e.getMessage());
         }
     }
 
       // Hàm phụ để xử lý giá trị của Cell thành String
       private String getCellValue(Cell cell) {
-          if (cell == null) return "";
+          if (cell == null) return null;
           switch (cell.getCellType()) {
               case STRING:
-                  return cell.getStringCellValue().trim();
+                  String stringValue = cell.getStringCellValue();
+                  return stringValue != null ? stringValue.trim() : null;
               case NUMERIC:
                   if (DateUtil.isCellDateFormatted(cell)) {
                       return cell.getDateCellValue().toString();
                   } else {
-                      return String.valueOf((long) cell.getNumericCellValue()); // Ép về long nếu cần
+                      // Handle both integer and decimal numbers
+                      double numValue = cell.getNumericCellValue();
+                      if (numValue == (long) numValue) {
+                          return String.valueOf((long) numValue);
+                      } else {
+                          return String.valueOf(numValue);
+                      }
                   }
               case BOOLEAN:
                   return String.valueOf(cell.getBooleanCellValue());
               case FORMULA:
-                  return cell.getCellFormula();
+                  try {
+                      return cell.getStringCellValue();
+                  } catch (Exception e) {
+                      return String.valueOf(cell.getNumericCellValue());
+                  }
+              case BLANK:
+                  return null;
               default:
-                  return "";
+                  return null;
           }
       }
       

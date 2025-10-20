@@ -66,8 +66,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
      
            // 1️⃣ Tên cột
         String[] columnNames = {
-            "Invoice.No", "Admin.ID", "Customer.ID", "Product.ID", 
-            "IMei.No", "Unit Price", "Quantity" , "Discount Values", "Total Price Before",
+            "Invoice.No", "Admin.ID", "Customer.ID", "Product.ID", "Unit Price", "Quantity" , "Promotion Code", "Promotion Name", "Discount %", "Total Price Before",
             "Total Price After", "Date Exported", "Time Exported"
         };
 
@@ -95,7 +94,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
        
             // TextField search
             txtSearch = new MyTextField();
-            txtSearch.setHint("Nhập từ khóa tìm kiếm...");
+            txtSearch.setHint("Search something...");
             txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
             bg.add(txtSearch, "pos 510 75, w 300!, h 35!");
             
@@ -147,7 +146,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         });
         bg.add(bntSearch, "pos 820 75, w 120!, h 35");
         
-          bntRefresh = new MyButton("Làm mới", 20);
+          bntRefresh = new MyButton("Refresh", 20);
           styleInfoButton(bntRefresh);
           bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
           bntRefresh.addActionListener((e) -> {
@@ -176,6 +175,20 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
 
        // Thêm dữ liệu mới từ danh sách DTO
        for (DTO_BillExportedDetail detail : billDetails) {
+           // Get promotion name
+           String promotionName = "N/A";
+           if (detail.getPromotionCode() != null && !detail.getPromotionCode().isEmpty()) {
+               try {
+                   com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
+                   com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.getPromotionByCode(detail.getPromotionCode());
+                   if (promotion != null) {
+                       promotionName = promotion.getPromotionName();
+                   }
+               } catch (Exception e) {
+                   // Use default value if error
+               }
+           }
+           
            Object[] rowData = new Object[]{
                detail.getInvoiceNo(),
                detail.getAdminId(),
@@ -183,6 +196,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
                detail.getProductId(),
                detail.getUnitPrice(),
                detail.getQuantity(),
+               detail.getPromotionCode() != null ? detail.getPromotionCode() : "N/A",
+               promotionName,
                detail.getDiscountPercent() + "%",
                detail.getTotalPriceBefore(),
                detail.getTotalPriceAfter(),
@@ -202,7 +217,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
            // 1️⃣ Tên cột
         String[] columnNames = {
             "Invoice.No", "Admin.ID", "Customer.ID", "Product.ID", 
-            "IMei.No", "Unit Price", "Quantity" , "Discount Values", "Total Price Before",
+            "Unit Price", "Quantity" , "Promotion Code", "Promotion Name", "Discount %", "Total Price Before",
             "Total Price After", "Date Exported", "Time Exported"
         };
         model.setRowCount(0);
@@ -212,6 +227,20 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
         for (DTO_BillExportedDetail detail : data) {
+            // Get promotion name
+            String promotionName = "N/A";
+            if (detail.getPromotionCode() != null && !detail.getPromotionCode().isEmpty()) {
+                try {
+                    com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
+                    com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.getPromotionByCode(detail.getPromotionCode());
+                    if (promotion != null) {
+                        promotionName = promotion.getPromotionName();
+                    }
+                } catch (Exception e) {
+                    // Use default value if error
+                }
+            }
+            
             Object[] row = new Object[]{
                 detail.getInvoiceNo(),
                 detail.getAdminId(),
@@ -219,6 +248,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
                 detail.getProductId(),
                 detail.getUnitPrice(),
                 detail.getQuantity(),
+                detail.getPromotionCode() != null ? detail.getPromotionCode() : "N/A",
+                promotionName,
                 detail.getDiscountPercent()+"%",
                 detail.getTotalPriceBefore(),
                 detail.getTotalPriceAfter(),
@@ -230,11 +261,11 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             if (row.length == model.getColumnCount()) {
                 model.addRow(row);
             } else {
-                System.err.println("Số lượng cột không khớp: " + row.length + " vs " + model.getColumnCount());
+                System.err.println("The number of columns does not match: " + row.length + " vs " + model.getColumnCount());
             }
         }
 
-        // Đảm bảo không có ô nào đang edit khi cập nhật
+      
         if (tableBillDetail.getCellEditor() != null) {
             tableBillDetail.getCellEditor().stopCellEditing();
         }
@@ -270,7 +301,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             return numbersOnly.substring(0, 2) + "/" + numbersOnly.substring(2, 4) + "/" + numbersOnly.substring(4, 8);
         }
 
-        return dateString; // Trả về nguyên bản nếu không thể chuẩn hóa
+        return dateString; 
     }
     
     // ============================================
@@ -308,7 +339,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
     }
   
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    
     private void initComponents() {
 
         bg = new javax.swing.JLayeredPane();
@@ -345,11 +376,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
+        
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {

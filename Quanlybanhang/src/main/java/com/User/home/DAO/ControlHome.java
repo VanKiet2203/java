@@ -21,9 +21,9 @@ public class ControlHome {
                 p.Battery_Capacity,
                 p.Speed,
                 p.Price,
-                p.Quantity,
+                ISNULL(ps.Quantity_Stock, 0) AS Quantity,
                 CASE 
-                    WHEN p.Quantity = 0 THEN 'Unavailable'
+                    WHEN ISNULL(ps.Quantity_Stock, 0) = 0 THEN 'Unavailable'
                     ELSE 'Available'
                 END AS Status,
                 c.Category_ID,
@@ -31,6 +31,7 @@ public class ControlHome {
             FROM 
                 Product p
             LEFT JOIN Category c ON p.Category_ID = c.Category_ID
+            LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID
             """ + (condition != null && !condition.trim().isEmpty() ? " WHERE " + condition : "");
 
         try (
@@ -73,9 +74,9 @@ public class ControlHome {
                 p.Battery_Capacity,
                 p.Speed,
                 p.Price,
-                p.Quantity,
+                ISNULL(ps.Quantity_Stock, 0) AS Quantity,
                 CASE 
-                    WHEN p.Quantity = 0 THEN 'Unavailable'
+                    WHEN ISNULL(ps.Quantity_Stock, 0) = 0 THEN 'Unavailable'
                     ELSE 'Available'
                 END AS Status,
                 p.Category_ID,
@@ -84,6 +85,7 @@ public class ControlHome {
             FROM Product p
             JOIN Category c ON p.Category_ID = c.Category_ID
             JOIN Supplier s ON c.Sup_ID = s.Sup_ID
+            LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID
             WHERE p.Product_ID = ?
         """;
 

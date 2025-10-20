@@ -4,6 +4,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
@@ -41,17 +42,26 @@ public class Form_Customer extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(null);
-        setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
-        setBackground(Color.WHITE); // Kiểm tra hiển thị
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(1200, 700)); // Giảm kích thước cho màn hình nhỏ
+        setBackground(Color.WHITE);
     }
 
     private void init() {
-        panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
-        panel.setBackground(Color.WHITE); // Màu xanh dương
-        add(panel);
+        // Tạo main panel với scroll
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(null);
+        mainPanel.setPreferredSize(new Dimension(1200, 900)); // Kích thước lớn hơn để scroll
+        mainPanel.setBackground(Color.WHITE);
+        
+        // Tạo scroll pane
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        
+        add(scrollPane, BorderLayout.CENTER);
+        panel = mainPanel; // Gán panel để sử dụng trong các method khác
 
         // 1️⃣ Tên cột
         String[] columnNames = {
@@ -67,14 +77,14 @@ public class Form_Customer extends JPanel {
         Customner = createStyledTable(model);
         Customner.setRowHeight(30);
 
-        JScrollPane scrollPane = MyTable.createScrollPane(Customner, 20, 200, 1490, 630);
+        JScrollPane tableScrollPane = MyTable.createScrollPane(Customner, 20, 200, 1160, 400);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
-        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-        scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+        tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+        tableScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
 
-        // 8️⃣ Thêm scrollPane vào panel
-        panel.add(scrollPane);
+        // 8️⃣ Thêm tableScrollPane vào panel
+        panel.add(tableScrollPane);
 
         // 9️⃣ Repaint panel sau khi thêm
         panel.revalidate();
@@ -118,7 +128,7 @@ public class Form_Customer extends JPanel {
                 FONT_TITLE_SMALL,
                 PRIMARY_COLOR
             ));
-            panelSearch.setBounds(20, 60, 1490, 80);
+            panelSearch.setBounds(20, 60, 1160, 80);
             
             // ComboBox search
             String[] items = {"Customer.ID", "Customer Name", "Email", "Contact"};
@@ -327,17 +337,17 @@ public class Form_Customer extends JPanel {
         if (Customner == null) return;
         
         TableColumnModel columnModel = Customner.getColumnModel();
-        int totalWidth = 1490; // Chiều rộng tổng của table
+        int totalWidth = 1160; // Chiều rộng tổng của table (tối ưu cho màn hình nhỏ)
         int columnCount = Customner.getColumnCount();
         
-        // Định nghĩa tỷ lệ chiều rộng cho từng cột
+        // Định nghĩa tỷ lệ chiều rộng cho từng cột (tối ưu cho màn hình nhỏ)
         double[] columnRatios = {
-            0.12,  // Customer.ID - 12%
-            0.20,  // Full Name - 20%
+            0.10,  // Customer.ID - 10%
+            0.18,  // Full Name - 18%
             0.08,  // Gender - 8%
             0.12,  // Date Of Birth - 12%
-            0.18,  // Email - 18%
-            0.10,  // Contact - 10%
+            0.20,  // Email - 20%
+            0.12,  // Contact - 12%
             0.15,  // Address - 15%
             0.05   // Status - 5%
         };

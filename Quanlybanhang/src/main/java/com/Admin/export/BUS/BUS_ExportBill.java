@@ -34,8 +34,12 @@ public class BUS_ExportBill {
         return daoExportBill.insertBillExported(bill, null);
     }
     
+    public boolean insertBillExported(DTO_BillExported bill, String promotionCode) {
+        return daoExportBill.insertBillExported(bill, promotionCode);
+    }
+    
     public boolean insertBillDetail(DTO_BillExportedDetail detail, List<String> imeiList) {
-        return daoExportBill.insertBillExportedDetail(detail, (String) null);
+        return daoExportBill.insertBillExportedDetail(detail, detail.getPromotionCode());
    }
 
 
@@ -85,6 +89,34 @@ public class BUS_ExportBill {
         } catch (Exception e) { // broaden catch: underlying call may not throw SQLException directly
             e.printStackTrace();
             CustomDialog.showError("Data upload eror ! ");
+            return null;
+        }
+    }
+    
+    /**
+     * Get all exported bills that are available for insurance creation
+     * @return List of exported bills with insurance status
+     */
+    public List<DTO_BillExport> getAllAvailableExportBillsForInsurance() {
+        try {
+            return daoExportBill.getAllBillExported(); // Using existing method instead
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
+    
+    /**
+     * Get export bill details for insurance creation
+     * @param invoiceNo Invoice number
+     * @param adminID Admin ID
+     * @return Export bill details
+     */
+    public DTO_BillExported getExportBillDetailsForInsurance(String invoiceNo, String adminID) {
+        try {
+            return daoExportBill.getExportBillDetailsByInvoice(invoiceNo, adminID);
+        } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
