@@ -52,11 +52,11 @@ import javax.swing.SwingConstants;
 import net.miginfocom.swing.MigLayout;
 
 public class productDeteails extends javax.swing.JFrame {
-     public JLabel lblTitle, lblID, lblProductName, lblCPU, lblRam, lblGraphicCard, lblOperating, lblWarranty, lblCateID
+     public JLabel lblTitle, lblID, lblProductName, lblColor, lblBatteryCapacity, lblSpeed, lblOperating, lblWarranty, lblCateID
              , lblBrand, lblQuantity;
      public MyPanel panelTitle;
      public MyCombobox cmbGender;
-     public static MyTextField txtID, txtProductName, txtCPU, txtRam, txtGraphicCard, txtOperating, txtWarranty, txtCateID, txtBrand;
+     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtOperating, txtWarranty, txtCateID, txtBrand;
      private JDateChooser dateOfBirth;
      private JTextArea txtAddress;
      public JPanel panelUpload;
@@ -131,22 +131,22 @@ public class productDeteails extends javax.swing.JFrame {
     lblProductName.setForeground(Color.BLACK);
     bg.add(lblProductName, "pos 30 280, w 150!, h 50!");
      
-     lblCPU= new JLabel("Động cơ");
-     lblCPU.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblCPU.setForeground(Color.BLACK);
-     bg.add(lblCPU, "pos 30 340, w 400!, h 50!");
+     lblColor= new JLabel("Màu sắc");
+     lblColor.setFont(new Font("sansserif", Font.BOLD, 18));
+     lblColor.setForeground(Color.BLACK);
+     bg.add(lblColor, "pos 30 340, w 400!, h 50!");
      
        
-     lblRam= new JLabel("Dung lượng pin");
-     lblRam.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblRam.setForeground(Color.BLACK);
-     bg.add(lblRam, "pos 30 400, w 150!, h 50!");
+     lblBatteryCapacity= new JLabel("Dung lượng pin");
+     lblBatteryCapacity.setFont(new Font("sansserif", Font.BOLD, 18));
+     lblBatteryCapacity.setForeground(Color.BLACK);
+     bg.add(lblBatteryCapacity, "pos 30 400, w 150!, h 50!");
      
        
-     lblGraphicCard= new JLabel("Quãng đường (1 lần sạc)");
-     lblGraphicCard.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblGraphicCard.setForeground(Color.BLACK);
-     bg.add(lblGraphicCard, "pos 30 460, w 150!, h 50!");
+     lblSpeed= new JLabel("Tốc độ tối đa");
+     lblSpeed.setFont(new Font("sansserif", Font.BOLD, 18));
+     lblSpeed.setForeground(Color.BLACK);
+     bg.add(lblSpeed, "pos 30 460, w 150!, h 50!");
      
      lblOperating= new JLabel("Chế độ vận hành");
      lblOperating.setFont(new Font("sansserif", Font.BOLD, 18));
@@ -195,33 +195,33 @@ public class productDeteails extends javax.swing.JFrame {
      bg.add(txtProductName, "pos 150 290, w 480!, h 32!");
      
      
-     txtCPU = new MyTextField();
-     txtCPU.setBorder(null);
-     txtCPU.setTextColor(Color.BLACK); // Đặt màu mong muốn
-     txtCPU.setLocked(true);
-     txtCPU.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-     txtCPU.setBackgroundColor(Color.WHITE);
+     txtColor = new MyTextField();
+     txtColor.setBorder(null);
+     txtColor.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtColor.setLocked(true);
+     txtColor.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtColor.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtCPU, "pos 100 350, w 480!, h 32!");
+     bg.add(txtColor, "pos 100 350, w 480!, h 32!");
      
-     txtRam = new MyTextField();
-     txtRam.setBorder(null);
-     txtRam.setTextColor(Color.BLACK); // Đặt màu mong muốn
-     txtRam.setLocked(true);
-     txtRam.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-     txtRam.setBackgroundColor(Color.WHITE);
+     txtBatteryCapacity = new MyTextField();
+     txtBatteryCapacity.setBorder(null);
+     txtBatteryCapacity.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtBatteryCapacity.setLocked(true);
+     txtBatteryCapacity.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtBatteryCapacity.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtRam, "pos 100 410, w 130!, h 32!");
+     bg.add(txtBatteryCapacity, "pos 100 410, w 130!, h 32!");
      
      
-     txtGraphicCard = new MyTextField();
-     txtGraphicCard.setBorder(null);
-     txtGraphicCard.setTextColor(Color.BLACK); // Đặt màu mong muốn
-     txtGraphicCard.setLocked(true);
-     txtGraphicCard.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-     txtGraphicCard.setBackgroundColor(Color.WHITE);
+     txtSpeed = new MyTextField();
+     txtSpeed.setBorder(null);
+     txtSpeed.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtSpeed.setLocked(true);
+     txtSpeed.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtSpeed.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtGraphicCard, "pos 180 470, w 450!, h 32!");
+     bg.add(txtSpeed, "pos 180 470, w 450!, h 32!");
      
      txtOperating = new MyTextField();
      txtOperating.setBorder(null);
@@ -281,8 +281,10 @@ public class productDeteails extends javax.swing.JFrame {
             int quantity = (int) spinnerQuantity.getValue();
 
             String customerID = Dashboard_user.customerID;
+            System.out.println("🔍 DEBUG - Customer ID from Dashboard: " + customerID);
 
             if (customerID == null || customerID.isEmpty()) {
+                System.out.println("❌ Customer ID is null or empty!");
                 CustomDialog.showError("Customer is not logged in!");
                 return;
             }
@@ -351,9 +353,9 @@ public class productDeteails extends javax.swing.JFrame {
         // Hiển thị thông tin sản phẩm
         txtID.setText(product.getProductID());
         txtProductName.setText(product.getProductName());
-        txtCPU.setText(product.getCpu());
-        txtRam.setText(product.getRam());
-        txtGraphicCard.setText(product.getGraphicsCard());
+        txtColor.setText(product.getColor());
+        txtBatteryCapacity.setText(product.getBatteryCapacity());
+        txtSpeed.setText(product.getSpeed());
         txtOperating.setText(product.getOperatingSystem());
         txtWarranty.setText(product.getWarrantyPeriod());
         txtCateID.setText(product.getCategoryID());

@@ -5,6 +5,7 @@ import com.Admin.inventory.DTO.DTOInventory;
 import com.ComponentandDatabase.Components.CustomDialog;
 import javax.swing.table.DefaultTableModel;
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,12 +50,50 @@ public class BUSInventory {
         }
     }
     
+    public boolean importInventory(File excelFile) {
+        try {
+            return daoInventory.importInventoryFromExcel(excelFile);
+        } catch (Exception e) {
+            CustomDialog.showError("Import failed: " + e.getMessage());
+            return false;
+        }
+    }
+    
     public void exportToExcel(String filePath) {
         try {
             daoInventory.exportInventoryToExcel(filePath);
-            CustomDialog.showSuccess("Inventory exported to Excel successfully!");
         } catch (Exception e) {
             CustomDialog.showError("Export failed: " + e.getMessage());
+        }
+    }
+    
+    // Method để đồng bộ số lượng toàn hệ thống
+    public void syncAllQuantities() {
+        try {
+            daoInventory.checkAndSyncAllQuantities();
+            CustomDialog.showSuccess("All quantities synchronized successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to sync quantities: " + e.getMessage());
+        }
+    }
+    
+    // Method để đồng bộ số lượng Product
+    public void syncProductQuantities() {
+        try {
+            daoInventory.syncProductQuantities();
+            CustomDialog.showSuccess("Product quantities synchronized successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to sync product quantities: " + e.getMessage());
+        }
+    }
+    
+    // Method để reset và đồng bộ lại tất cả số lượng (sửa lỗi nhân đôi)
+    public void resetAndSyncAllQuantities() {
+        try {
+            daoInventory.resetAndSyncAllQuantities();
+            CustomDialog.showSuccess("All quantities reset and synchronized successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to reset and sync quantities: " + e.getMessage());
         }
     }
     
@@ -144,6 +183,63 @@ public class BUSInventory {
             daoInventory.ensureSampleDataExists();
         } catch (Exception e) {
             System.err.println("Failed to ensure sample data exists: " + e.getMessage());
+        }
+    }
+    
+    public boolean createProductFromWarehouse(String warehouseItemId, String color, String speed, 
+                                            String batteryCapacity, BigDecimal price) {
+        try {
+            return daoInventory.createProductFromWarehouse(warehouseItemId, color, speed, batteryCapacity, price);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to create product from warehouse: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    
+    public void exportExcelBillImport(String filePath) {
+        try {
+            daoInventory.exportExcelBillImport(filePath);
+            CustomDialog.showSuccess("Excel bill import exported successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Excel bill export failed: " + e.getMessage());
+        }
+    }
+    
+    public void exportInventory(String filePath) {
+        try {
+            daoInventory.exportInventoryToExcel(filePath);
+            CustomDialog.showSuccess("Inventory exported successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Export failed: " + e.getMessage());
+        }
+    }
+    
+    public void exportPDFBillImport(String filePath) {
+        try {
+            daoInventory.exportPDFBillImport(filePath);
+            CustomDialog.showSuccess("PDF bill export successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("PDF bill export failed: " + e.getMessage());
+        }
+    }
+    
+    // Method để nhập lại Warehouse Item (cộng thêm số lượng)
+    public boolean reimportWarehouseItem(String warehouseItemId, int additionalQuantity, java.math.BigDecimal unitPrice) {
+        try {
+            boolean result = daoInventory.reimportWarehouseItem(warehouseItemId, additionalQuantity, unitPrice);
+            if (result) {
+                CustomDialog.showSuccess("Warehouse item reimported successfully!\n" +
+                    "Warehouse ID: " + warehouseItemId + "\n" +
+                    "Additional Quantity: " + additionalQuantity);
+            } else {
+                CustomDialog.showError("Failed to reimport warehouse item!\n" +
+                    "Please check if Warehouse ID exists: " + warehouseItemId);
+            }
+            return result;
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to reimport warehouse item: " + e.getMessage());
+            return false;
         }
     }
 }

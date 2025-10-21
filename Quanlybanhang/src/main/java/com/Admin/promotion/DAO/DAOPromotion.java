@@ -66,7 +66,7 @@ public class DAOPromotion {
      */
     public List<DTOPromotion> searchPromotions(String searchBy, String keyword) throws SQLException {
         List<DTOPromotion> list = new ArrayList<>();
-        String sql = "SELECT Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent FROM Promotion WHERE ";
+        String sql = "SELECT Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent FROM Promotion WHERE Status = 'Available' AND ";
         
         switch (searchBy) {
             case "Code":
@@ -118,7 +118,7 @@ public class DAOPromotion {
      * Kiểm tra mã giảm giá có hiệu lực
      */
     public boolean isPromotionActive(String code, LocalDate onDate) throws SQLException {
-        String sql = "SELECT 1 FROM Promotion WHERE Promotion_Code=? AND Start_Date<=? AND End_Date>=?";
+        String sql = "SELECT 1 FROM Promotion WHERE Promotion_Code=? AND Start_Date<=? AND End_Date>=? AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, code);
@@ -137,8 +137,8 @@ public class DAOPromotion {
      * Thêm mã giảm giá mới
      */
     public boolean addPromotion(DTOPromotion promotion) throws SQLException {
-        String sql = "INSERT INTO Promotion (Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent) "
-                   + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Promotion (Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent, Status) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -148,6 +148,7 @@ public class DAOPromotion {
             ps.setDate(3, Date.valueOf(promotion.getStartDate()));
             ps.setDate(4, Date.valueOf(promotion.getEndDate()));
             ps.setBigDecimal(5, promotion.getDiscountPercent());
+            ps.setString(6, "Available");
             
             return ps.executeUpdate() > 0;
         }
@@ -182,10 +183,10 @@ public class DAOPromotion {
     // ============================================
     
     /**
-     * Xóa mã giảm giá
+     * Xóa mã giảm giá (Soft delete)
      */
     public boolean deletePromotion(String code) throws SQLException {
-        String sql = "DELETE FROM Promotion WHERE Promotion_Code=?";
+        String sql = "UPDATE Promotion SET Status = 'Unavailable' WHERE Promotion_Code=?";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -203,7 +204,7 @@ public class DAOPromotion {
      * Kiểm tra mã giảm giá đã tồn tại chưa
      */
     public boolean isPromotionCodeExists(String code) throws SQLException {
-        String sql = "SELECT 1 FROM Promotion WHERE Promotion_Code=?";
+        String sql = "SELECT 1 FROM Promotion WHERE Promotion_Code=? AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, code);
@@ -216,7 +217,7 @@ public class DAOPromotion {
      * Đếm số lượng mã giảm giá đang hoạt động
      */
     public int countActivePromotions() throws SQLException {
-        String sql = "SELECT COUNT(*) FROM Promotion WHERE GETDATE() BETWEEN Start_Date AND End_Date";
+        String sql = "SELECT COUNT(*) FROM Promotion WHERE GETDATE() BETWEEN Start_Date AND End_Date AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

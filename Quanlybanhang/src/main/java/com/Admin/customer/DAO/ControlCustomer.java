@@ -27,7 +27,7 @@ public class ControlCustomer {
 
    public List<DTOCustomer> getAllCustomers() {
         List<DTOCustomer> customerList = new ArrayList<>();
-        String query = "SELECT * FROM Customer";
+        String query = "SELECT * FROM Customer WHERE Record_Status = 'Available'";
 
         try (Connection conn = db.connect();
              PreparedStatement pstmt = conn.prepareStatement(query);
@@ -60,7 +60,7 @@ public class ControlCustomer {
         // Method to get Full_Name from Customer_ID
    public String getCustomerNameByID(String customerID) {
         String name = "this customer"; // fallback
-        String query = "SELECT Full_Name FROM Customer WHERE Customer_ID = ?";
+        String query = "SELECT Full_Name FROM Customer WHERE Customer_ID = ? AND Record_Status = 'Available'";
 
         try (Connection conn = db.connect();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -188,7 +188,7 @@ public class ControlCustomer {
                 dbColumn = ""; // Trường hợp không tìm theo cột
         }
 
-        StringBuilder sql = new StringBuilder("SELECT * FROM Customer WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT * FROM Customer WHERE Record_Status = 'Available'");
         List<Object> params = new ArrayList<>();
 
         // Nếu có từ khóa và cột hợp lệ thì thêm điều kiện
@@ -235,8 +235,8 @@ public class ControlCustomer {
        try {
            conn = db.connect();
            
-           // Chỉ update status thành "Inactive" thay vì xóa hẳn
-           String sqlUpdateStatus = "UPDATE Customer SET Status = 'Inactive' WHERE Customer_ID = ?";
+           // Soft delete: Chỉ update Record_Status thành "Unavailable" thay vì xóa hẳn
+           String sqlUpdateStatus = "UPDATE Customer SET Record_Status = 'Unavailable' WHERE Customer_ID = ?";
            pstmtUpdateStatus = conn.prepareStatement(sqlUpdateStatus);
            pstmtUpdateStatus.setString(1, customerID);
            

@@ -6,19 +6,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.math.BigDecimal;
 
 public class DAO_OrderDetail {
     
     public List<DTO_Oderdetails> getConfirmedOrderDetailsOldestFirst() throws SQLException {
         List<DTO_Oderdetails> orderDetails = new ArrayList<>();
-        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Quantity, "
+        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Sold_Quantity, "
                    + "Date_Order, Time_Order, Status FROM Orders_Details "
-                   + "WHERE Status = 'Confirmed' "  // Thêm điều kiện Status
+                   + "WHERE Status = 'Confirmed' AND Record_Status = 'Available' "  // Thêm điều kiện Record_Status
                    + "ORDER BY Date_Order ASC, Time_Order ASC"; // Cũ nhất lên đầu
 
         try (Connection conn = DatabaseConnection.connect();
@@ -35,9 +32,9 @@ public class DAO_OrderDetail {
 
     public List<DTO_Oderdetails> getConfirmedOrderDetailsByOrderNo(String orderNo) throws SQLException {
         List<DTO_Oderdetails> orderDetails = new ArrayList<>();
-        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Quantity, "
+        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Sold_Quantity, "
                    + "Date_Order, Time_Order, Status FROM Orders_Details "
-                   + "WHERE Order_No = ? AND Status = 'Confirmed' "  // Thêm điều kiện Status
+                   + "WHERE Order_No = ? AND Status = 'Confirmed' AND Record_Status = 'Available' "  // Thêm điều kiện Record_Status
                    + "ORDER BY Date_Order ASC, Time_Order ASC"; // Cũ nhất lên đầu
 
         try (Connection conn = DatabaseConnection.connect();
@@ -54,14 +51,14 @@ public class DAO_OrderDetail {
         return orderDetails;
     }
 
-    // Phương thức hỗ trợ ánh xạ ResultSet sang DTO (giữ nguyên)
+    // Phương thức hỗ trợ ánh xạ ResultSet sang DTO
     private DTO_Oderdetails mapResultSetToDTO(ResultSet rs) throws SQLException {
         DTO_Oderdetails detail = new DTO_Oderdetails();
         detail.setOrderNo(rs.getString("Order_No"));
         detail.setCustomerID(rs.getString("Customer_ID"));
         detail.setProductID(rs.getString("Product_ID"));
         detail.setPrice(rs.getBigDecimal("Price"));
-        detail.setQuantity(rs.getInt("Quantity"));
+        detail.setQuantity(rs.getInt("Sold_Quantity")); // Sử dụng đúng tên cột Sold_Quantity
         detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
         detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
         detail.setStatus(rs.getString("Status"));
@@ -70,9 +67,9 @@ public class DAO_OrderDetail {
     
    public List<DTO_Oderdetails> searchOrderDetails(String searchType, String keyword) throws SQLException {
       List<DTO_Oderdetails> orderDetails = new ArrayList<>();
-      String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Quantity, " +
+      String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Sold_Quantity, " +
                  "Date_Order, Time_Order, Status FROM Orders_Details " +
-                 "WHERE Status = 'Confirmed' AND ";
+                 "WHERE Status = 'Confirmed' AND Record_Status = 'Available' AND ";
 
       switch (searchType) {
           case "Order.No":
@@ -102,7 +99,7 @@ public class DAO_OrderDetail {
                   detail.setCustomerID(rs.getString("Customer_ID"));
                   detail.setProductID(rs.getString("Product_ID"));
                   detail.setPrice(rs.getBigDecimal("Price"));
-                  detail.setQuantity(rs.getInt("Quantity"));
+                  detail.setQuantity(rs.getInt("Sold_Quantity"));
                   detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
                   detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
                   detail.setStatus(rs.getString("Status"));
@@ -122,7 +119,7 @@ public class DAO_OrderDetail {
     
   public String getProductName(String productID) throws SQLException {
      String productName = null;
-     String sql = "SELECT Product_Name FROM Product WHERE Product_ID = ?";
+     String sql = "SELECT Product_Name FROM Product WHERE Product_ID = ? AND Status = 'Available'";
 
      try (Connection conn = DatabaseConnection.connect();
           PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -138,7 +135,7 @@ public class DAO_OrderDetail {
      return productName;
  }
     public boolean deleteOrderByOrderNo(String orderNo) {
-        String sql = "DELETE FROM Orders WHERE Order_No = ?";
+        String sql = "UPDATE Orders SET Status = 'Unavailable' WHERE Order_No = ?";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -158,7 +155,7 @@ public class DAO_OrderDetail {
    public String getPayment(String orderNo) throws SQLException {
         String payment = "Unknown"; // Giá trị mặc định nếu không tìm thấy
 
-        String sql = "SELECT Payment FROM Orders WHERE Order_No = ?";
+        String sql = "SELECT Payment FROM Orders WHERE Order_No = ? AND Status = 'Available'";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -176,6 +173,38 @@ public class DAO_OrderDetail {
         }
 
         return payment;
+    }
+    
+    /**
+     * Lấy tất cả order details theo OrderNo (không chỉ confirmed)
+     */
+    public List<DTO_Oderdetails> getOrderDetailsByOrderNo(String orderNo) throws SQLException {
+        List<DTO_Oderdetails> orderDetails = new ArrayList<>();
+        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Sold_Quantity, "
+                   + "Date_Order, Time_Order, Status FROM Orders_Details "
+                   + "WHERE Order_No = ? AND Record_Status = 'Available' "
+                   + "ORDER BY Date_Order ASC, Time_Order ASC";
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, orderNo);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    DTO_Oderdetails detail = new DTO_Oderdetails();
+                    detail.setOrderNo(rs.getString("Order_No"));
+                    detail.setCustomerID(rs.getString("Customer_ID"));
+                    detail.setProductID(rs.getString("Product_ID"));
+                    detail.setPrice(rs.getBigDecimal("Price"));
+                    detail.setQuantity(rs.getInt("Sold_Quantity"));
+                    detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
+                    detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
+                    detail.setStatus(rs.getString("Status"));
+                    orderDetails.add(detail);
+                }
+            }
+        }
+        return orderDetails;
     }
         
 }

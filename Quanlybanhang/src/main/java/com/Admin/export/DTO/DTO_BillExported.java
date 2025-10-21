@@ -4,6 +4,7 @@ public class DTO_BillExported {
     private String invoiceNo;
     private String adminId;
     private String customerId;
+    private String orderNo; // Thêm Order_No
     private int totalProduct;
     private String description;
     private String promotionCode;
@@ -49,6 +50,14 @@ public class DTO_BillExported {
 
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
+    }
+
+    public String getOrderNo() {
+        return orderNo;
+    }
+
+    public void setOrderNo(String orderNo) {
+        this.orderNo = orderNo;
     }
 
     public int getTotalProduct() {

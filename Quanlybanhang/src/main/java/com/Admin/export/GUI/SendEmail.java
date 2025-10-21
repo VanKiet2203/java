@@ -44,15 +44,13 @@ public class SendEmail {
       // 🔹 Check if customer.getEmail() returns null
       String customerEmail = customer.getEmail() != null ? customer.getEmail().trim() : "";
       if (customerEmail.isEmpty()) {
-          System.err.println("Error: Customer " + customer.getFullName() + " does not have an email");
-          CustomDialog.showError("The customer has not registered an email\nCannot send invoice via email");
+          System.err.println("Info: Customer " + customer.getFullName() + " does not have an email - skipping email send");
           return false;
       }
 
       // 2. Validate email format
       if (!isValidEmail(customerEmail)) {
-          System.err.println("Error: Invalid email: " + customerEmail);
-          CustomDialog.showError("Invalid customer email: " + customerEmail);
+          System.err.println("Info: Invalid email format: " + customerEmail + " - skipping email send");
           return false;
       }
 

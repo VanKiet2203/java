@@ -25,11 +25,12 @@ public class ControlCategory {
     }
 
     public boolean insertCategory(DTOCategory cate) {
-        String sql = "INSERT INTO Category (Category_ID, Category_Name, Sup_ID) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO Category (Category_ID, Category_Name, Sup_ID, Status) VALUES (?, ?, ?, ?)";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cate.getCategoryID());
             ps.setString(2, cate.getCategoryName());
             ps.setString(3, cate.getSupID());
+            ps.setString(4, "Available");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Insert category failed: " + e.getMessage());
@@ -52,7 +53,7 @@ public class ControlCategory {
     }
 
     public boolean deleteCategory(String cateID) {
-        String sql = "DELETE FROM Category WHERE Category_ID = ?";
+        String sql = "UPDATE Category SET Status = 'Unavailable' WHERE Category_ID = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cateID);
             return ps.executeUpdate() > 0;
@@ -65,7 +66,8 @@ public class ControlCategory {
     public List<DTOCategory> getAllCategories() {
         List<DTOCategory> list = new ArrayList<>();
         String sql = "SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact " +
-                     "FROM Category c JOIN Supplier s ON c.Sup_ID = s.Sup_ID";
+                     "FROM Category c JOIN Supplier s ON c.Sup_ID = s.Sup_ID " +
+                     "WHERE c.Status = 'Available' AND s.Status = 'Available'";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -97,7 +99,7 @@ public class ControlCategory {
 
      String sql = "SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact " +
                   "FROM Category c JOIN Supplier s ON c.Sup_ID = s.Sup_ID " +
-                  "WHERE " + column + " LIKE ?";
+                  "WHERE " + column + " LIKE ? AND c.Status = 'Available' AND s.Status = 'Available'";
 
      try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
          ps.setString(1, "%" + keyword + "%");
@@ -129,7 +131,7 @@ public class ControlCategory {
         }
 
     public boolean isDuplicateID(String cateID) {
-        String sql = "SELECT Category_ID FROM Category WHERE Category_ID = ?";
+        String sql = "SELECT Category_ID FROM Category WHERE Category_ID = ? AND Status = 'Available'";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cateID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -143,7 +145,7 @@ public class ControlCategory {
     
     public List<String> getAllSupplierIDs() {
       List<String> supIDList = new ArrayList<>();
-        String sql = "SELECT Sup_ID FROM Supplier";
+        String sql = "SELECT Sup_ID FROM Supplier WHERE Status = 'Available'";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 supIDList.add(rs.getString("Sup_ID"));
@@ -161,6 +163,7 @@ public class ControlCategory {
         SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact 
         FROM Category c
         JOIN Supplier s ON c.Sup_ID = s.Sup_ID
+        WHERE c.Status = 'Available' AND s.Status = 'Available'
     """;
     
     try (Connection conn = getConnection();
@@ -185,7 +188,7 @@ public class ControlCategory {
         DTOCategory cate = null;
         String sql = "SELECT c.Category_ID, c.Category_Name, s.Sup_ID, s.Sup_Name, s.Address, s.Contact " +
                      "FROM Category c JOIN Supplier s ON c.Sup_ID = s.Sup_ID " +
-                     "WHERE c.Category_ID = ?";
+                     "WHERE c.Category_ID = ? AND c.Status = 'Available' AND s.Status = 'Available'";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, categoryID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -206,8 +209,8 @@ public class ControlCategory {
 }
      public void importFile(File file) {
         String insertSQL = "INSERT INTO Category (Category_ID, Category_Name, Sup_ID) VALUES (?, ?, ?)";
-        String checkSupplierSQL = "SELECT COUNT(*) FROM Supplier WHERE Sup_ID = ?";
-        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ?";
+        String checkSupplierSQL = "SELECT COUNT(*) FROM Supplier WHERE Sup_ID = ? AND Status = 'Available'";
+        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ? AND Status = 'Available'";
 
         int successCount = 0;
         int errorCount = 0;
@@ -407,5 +410,6 @@ public class ControlCategory {
             }
         }
     }
+
 
 }

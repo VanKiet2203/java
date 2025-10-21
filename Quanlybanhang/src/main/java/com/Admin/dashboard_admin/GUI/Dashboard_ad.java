@@ -39,6 +39,11 @@ public class Dashboard_ad extends JFrame {
     
     public Dashboard_ad(String adminID) {
         Dashboard_ad.adminID = adminID;
+        
+        // Cập nhật SessionManager với Admin_ID hiện tại
+        com.ComponentandDatabase.Session.SessionManager sessionManager = com.ComponentandDatabase.Session.SessionManager.getInstance();
+        sessionManager.setCurrentAdmin(adminID, adminName);
+        
         initComponents();
         addKeyListener(new KeyAdapter() {
             @Override

@@ -1,6 +1,7 @@
 package com.User.Cart.DTO;
 
 public class DTOCart {
+    private String cartID;
     private String customerID;
     private String productID;
     private int quantity;
@@ -15,8 +16,24 @@ public class DTOCart {
         this.productID = productID;
         this.quantity = quantity;
     }
+    
+    // Constructor với Cart_ID
+    public DTOCart(String cartID, String customerID, String productID, int quantity) {
+        this.cartID = cartID;
+        this.customerID = customerID;
+        this.productID = productID;
+        this.quantity = quantity;
+    }
 
     // Getter & Setter
+    public String getCartID() {
+        return cartID;
+    }
+
+    public void setCartID(String cartID) {
+        this.cartID = cartID;
+    }
+
     public String getCustomerID() {
         return customerID;
     }
@@ -45,7 +62,8 @@ public class DTOCart {
     @Override
     public String toString() {
         return "DTOCart{" +
-                "customerID='" + customerID + '\'' +
+                "cartID='" + cartID + '\'' +
+                ", customerID='" + customerID + '\'' +
                 ", productID='" + productID + '\'' +
                 ", quantity=" + quantity +
                 '}';

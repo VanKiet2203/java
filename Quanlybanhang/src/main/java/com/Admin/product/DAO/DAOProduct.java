@@ -1,8 +1,6 @@
 package com.Admin.product.DAO;
-import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import com.ComponentandDatabase.Components.CustomDialog;
 import java.util.ArrayList;
@@ -10,7 +8,6 @@ import java.util.List;
 import java.util.Iterator;
 import java.sql.*;
 import java.math.BigDecimal;
-import java.awt.Font;
 import java.awt.Image;
 import javax.swing.table.DefaultTableModel;
 import org.apache.poi.ss.usermodel.*;
@@ -104,11 +101,11 @@ public class DAOProduct {
                 return imagePath; // ✅ Trả về đường dẫn ảnh đã lưu
 
             } else {
-                new CustomDialog().showError("Invalid image!");
+                CustomDialog.showError("Invalid image!");
             }
         } catch (IOException ex) {
             ex.printStackTrace();
-            new CustomDialog().showError("Cannot upload this image!");
+            CustomDialog.showError("Cannot upload this image!");
         }
     }
     return null; // Trường hợp không chọn ảnh hoặc xảy ra lỗi
@@ -149,7 +146,7 @@ public class DAOProduct {
     }
      
      public boolean isProductIDExists(String productID) {
-        String sql = "SELECT 1 FROM Product WHERE Product_ID = ?";
+        String sql = "SELECT 1 FROM Product WHERE Product_ID = ? AND Status = 'Available'";
         
         try (Connection conn = getConnection(); 
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -205,15 +202,26 @@ public class DAOProduct {
     public void uploadProductToTable(DefaultTableModel model) {
         model.setRowCount(0);
         
-        // Chỉ hiển thị sản phẩm từ kho (Product_Stock) đã được tạo Product
+        // Hiển thị sản phẩm với 3 loại số lượng: Tổng nhập, Tồn kho, Đã bán
         String sql = """
             SELECT p.Product_ID, p.Product_Name, p.Color, p.Speed, 
-                   p.Battery_Capacity, ISNULL(ps.Quantity_Stock, 0) AS Quantity, p.Price, 
-                   c.Category_ID, c.Category_Name 
+                   p.Battery_Capacity, 
+                   ISNULL(ps.Quantity_Stock, 0) AS Total_Imported,    -- Số lượng nhập (từ Inventory)
+                   p.Quantity AS Current_Stock,                        -- Số lượng tồn kho (Product)
+                   ISNULL(ps.Quantity_Stock, 0) - p.Quantity AS Sold_Quantity, -- Số lượng đã bán (Nhập - Tồn)
+                   ISNULL(p.Price, 0) AS Price,                        -- Giá bán (đảm bảo không null)
+                   c.Category_ID, c.Category_Name,
+                   CASE 
+                       WHEN ISNULL(ps.Quantity_Stock, 0) = p.Quantity + (ISNULL(ps.Quantity_Stock, 0) - p.Quantity)
+                       THEN N'✓ Cân bằng'
+                       ELSE N'✗ Lệch'
+                   END AS Balance_Status
             FROM Product p 
             JOIN Category c ON p.Category_ID = c.Category_ID
             LEFT JOIN Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
-            WHERE ps.Warehouse_Item_ID IS NOT NULL
+            WHERE p.Status = 'Available' 
+                AND c.Status = 'Available'
+                AND (ps.Status = 'Available' OR ps.Status IS NULL)
             ORDER BY p.Product_ID
         """;
 
@@ -223,7 +231,11 @@ public class DAOProduct {
 
             while (rs.next()) {
                 java.math.BigDecimal price = rs.getBigDecimal("Price");
-                double priceVal = price != null ? price.doubleValue() : 0.0;
+                // Format price để tránh scientific notation
+                String formattedPrice = "0.00";
+                if (price != null && price.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                    formattedPrice = String.format("%.2f", price.doubleValue());
+                }
 
                 Object[] row = new Object[]{
                     rs.getString("Product_ID"),
@@ -231,8 +243,10 @@ public class DAOProduct {
                     rs.getString("Color"),
                     rs.getString("Speed"),
                     rs.getString("Battery_Capacity"),
-                    rs.getInt("Quantity"),
-                    priceVal,
+                    rs.getInt("Total_Imported"),      // Tổng số lượng đã nhập
+                    rs.getInt("Current_Stock"),       // Số lượng tồn kho hiện tại
+                    rs.getInt("Sold_Quantity"),       // Số lượng đã bán
+                    formattedPrice,
                     rs.getString("Category_ID"),
                     rs.getString("Category_Name")
                 };
@@ -320,8 +334,8 @@ public class DAOProduct {
             conn = getConnection();
             conn.setAutoCommit(false); // Bắt đầu transaction
 
-            // Xóa trực tiếp product, các bảng liên quan sẽ tự động xóa nhờ ON DELETE CASCADE
-            String sql = "DELETE FROM Product WHERE Product_ID = ?";
+            // Soft delete: Chỉ thay đổi Status thành 'Unavailable' thay vì xóa thật
+            String sql = "UPDATE Product SET Status = 'Unavailable' WHERE Product_ID = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, productId);
                 int affectedRows = stmt.executeUpdate();
@@ -355,7 +369,7 @@ public class DAOProduct {
     }
 
     private boolean hasRelatedRecords(String productId) {
-        String sql = "SELECT 1 FROM Orders_Details WHERE Product_ID = ?";
+        String sql = "SELECT 1 FROM Orders_Details WHERE Product_ID = ? AND Record_Status = 'Available'";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -421,10 +435,14 @@ public class DAOProduct {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
+                    java.math.BigDecimal price = rs.getBigDecimal("Price");
+                    String formattedPrice = price != null ? 
+                        String.format("%.2f", price.doubleValue()) : "0.00";
+                        
                     Object[] row = new Object[]{
                         rs.getString("Product_ID"),
                         rs.getString("Product_Name"),
-                        rs.getBigDecimal("Price"),
+                        formattedPrice,
                         rs.getInt("Quantity"),
                         rs.getString("Status"),
                         rs.getString("Category_ID"),
@@ -444,7 +462,7 @@ public class DAOProduct {
     }
 
     public void exportProductToExcel(String filePath) {
-        String sql = "SELECT * FROM Product";
+        String sql = "SELECT * FROM Product WHERE Status = 'Available'";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -580,6 +598,9 @@ public class DAOProduct {
                 FROM Product 
                 WHERE Warehouse_Item_ID IS NOT NULL
             )
+                AND ps.Status = 'Available'
+                AND c.Status = 'Available'
+                AND s.Status = 'Available'
             ORDER BY ps.Created_Date DESC
         """;
         
@@ -617,23 +638,51 @@ public class DAOProduct {
             SELECT ?, Product_Name, ?, ?, ?, Quantity_Stock, Category_ID, Sup_ID, 
                    NULL, ?, ?, ?, Warehouse_Item_ID
             FROM Product_Stock 
+            WHERE Warehouse_Item_ID = ? AND Status = 'Available'
+        """;
+        
+        String updateWarehouseSQL = """
+            UPDATE Product_Stock 
+            SET Is_In_Product = 1 
             WHERE Warehouse_Item_ID = ?
         """;
         
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(insertSQL)) {
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            stmt.setString(1, warehouseItemId); // Product_ID = Warehouse_Item_ID
-            stmt.setString(2, color);
-            stmt.setString(3, speed);
-            stmt.setString(4, batteryCapacity);
-            stmt.setBigDecimal(5, price);
-            stmt.setBigDecimal(6, price.multiply(new BigDecimal("0.9"))); // List_Price_Before
-            stmt.setBigDecimal(7, price.multiply(new BigDecimal("0.8"))); // List_Price_After
-            stmt.setString(8, warehouseItemId);
-            
-            int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSQL);
+                 PreparedStatement updateStmt = conn.prepareStatement(updateWarehouseSQL)) {
+                
+                insertStmt.setString(1, warehouseItemId); // Product_ID = Warehouse_Item_ID
+                insertStmt.setString(2, color);
+                insertStmt.setString(3, speed);
+                insertStmt.setString(4, batteryCapacity);
+                insertStmt.setBigDecimal(5, price);
+                insertStmt.setBigDecimal(6, price.multiply(new BigDecimal("0.9"))); // List_Price_Before
+                insertStmt.setBigDecimal(7, price.multiply(new BigDecimal("0.8"))); // List_Price_After
+                insertStmt.setString(8, warehouseItemId);
+                
+                int rowsAffected = insertStmt.executeUpdate();
+                
+                if (rowsAffected > 0) {
+                    // Update Is_In_Product flag
+                    updateStmt.setString(1, warehouseItemId);
+                    updateStmt.executeUpdate();
+                    
+                    // Trigger sẽ tự động cập nhật Product.Quantity = Quantity_Stock
+                    conn.commit();
+                    return true;
+                } else {
+                    conn.rollback();
+                    return false;
+                }
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
             
         } catch (SQLException e) {
             e.printStackTrace();
@@ -641,11 +690,39 @@ public class DAOProduct {
         }
     }
 
+    // Lấy danh sách Warehouse Items có thể tạo Product
+    public List<String> getAvailableWarehouseItems() {
+        List<String> warehouseItems = new ArrayList<>();
+        String sql = """
+            SELECT Warehouse_Item_ID, Product_Name 
+            FROM Product_Stock 
+            WHERE Status = 'Available' 
+            AND Is_In_Product = 0
+            ORDER BY Warehouse_Item_ID
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                String warehouseId = rs.getString("Warehouse_Item_ID");
+                String productName = rs.getString("Product_Name");
+                warehouseItems.add(warehouseId + " - " + productName);
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return warehouseItems;
+    }
+    
     // Import products from Excel file
     public void importProductFromExcel(File excelFile) {
         String insertSQL = "INSERT INTO Product (Product_ID, Product_Name, Color, Speed, Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ?";
-        String checkProductSQL = "SELECT COUNT(*) FROM Product WHERE Product_ID = ?";
+        String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ? AND Status = 'Available'";
+        String checkProductSQL = "SELECT COUNT(*) FROM Product WHERE Product_ID = ? AND Status = 'Available'";
 
         int successCount = 0;
         int errorCount = 0;
@@ -813,4 +890,85 @@ public class DAOProduct {
                 return 0.0;
         }
     }
+    
+    // Method để đồng bộ lại tất cả số lượng Product
+    public void syncAllProductQuantities() {
+        String syncSQL = "EXEC sp_SyncAllProductQuantities";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(syncSQL)) {
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    System.out.println("Sync result: " + rs.getString("Result") + " - " + rs.getString("Message"));
+                }
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error syncing product quantities: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Method để kiểm tra tính đúng đắn của số lượng
+    public void checkQuantityBalance() {
+        String checkSQL = "EXEC sp_CheckQuantityBalance";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(checkSQL)) {
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                System.out.println("=== QUANTITY BALANCE CHECK ===");
+                System.out.printf("%-15s %-30s %-10s %-10s %-10s %-15s %-10s%n", 
+                    "Product_ID", "Product_Name", "Imported", "Current", "Sold", "Balance_Status", "Difference");
+                System.out.println("-".repeat(100));
+                
+                while (rs.next()) {
+                    System.out.printf("%-15s %-30s %-10d %-10d %-10d %-15s %-10d%n",
+                        rs.getString("Product_ID"),
+                        rs.getString("Product_Name").substring(0, Math.min(30, rs.getString("Product_Name").length())),
+                        rs.getInt("Total_Imported"),
+                        rs.getInt("Current_Stock"),
+                        rs.getInt("Total_Sold"),
+                        rs.getString("Balance_Status"),
+                        rs.getInt("Difference")
+                    );
+                }
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error checking quantity balance: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Method để sửa dữ liệu hiện tại
+    public void fixCurrentData() {
+        String fixSQL = """
+            -- Cập nhật Is_In_Product = 1 cho các Product đã tồn tại
+            UPDATE Product_Stock 
+            SET Is_In_Product = 1 
+            WHERE Warehouse_Item_ID IN (
+                SELECT Warehouse_Item_ID 
+                FROM Product 
+                WHERE Warehouse_Item_ID IS NOT NULL
+            )
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(fixSQL)) {
+            
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Fixed Is_In_Product flag for " + rowsAffected + " warehouse items");
+            
+            // Đồng bộ số lượng
+            syncAllProductQuantities();
+            
+        } catch (SQLException e) {
+            System.err.println("Error fixing current data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    
 }

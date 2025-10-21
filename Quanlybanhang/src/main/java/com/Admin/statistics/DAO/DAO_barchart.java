@@ -90,8 +90,10 @@ public class DAO_barchart {
         Map<String, Integer> data = new LinkedHashMap<>();
         String sql = "SELECT s.Sup_ID, COUNT(*) as count FROM Bill_Exported_Details bed " +
                      "JOIN Product p ON bed.Product_ID = p.Product_ID " +
-                     "JOIN Category c ON p.Category_ID = c.Category_ID " +
-                     "JOIN Supplier s ON c.Sup_ID = s.Sup_ID " +
+                     "JOIN Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID " +
+                     "JOIN Category c ON ps.Category_ID = c.Category_ID " +
+                     "JOIN Supplier s ON ps.Sup_ID = s.Sup_ID " +
+                     "WHERE bed.Status = 'Available' AND p.Status = 'Available' AND ps.Status = 'Available' AND c.Status = 'Available' AND s.Status = 'Available' " +
                      "GROUP BY s.Sup_ID ORDER BY count DESC";
 
         try {

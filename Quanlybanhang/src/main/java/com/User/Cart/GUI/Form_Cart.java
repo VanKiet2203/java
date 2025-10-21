@@ -340,10 +340,17 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           }
 
           try {
+              // Lấy Cart_ID từ cartItems (lấy Cart_ID đầu tiên)
+              String cartID = null;
+              if (cartItems != null && !cartItems.isEmpty()) {
+                  cartID = cartItems.get(0).getCartID();
+              }
+              
               // Tạo và thêm Order trước
               DTO_Order order = new DTO_Order();
               order.setOrderNo(orderNo);
               order.setCustomerID(currentCustomerID);
+              order.setCartID(cartID);  // Set Cart_ID
               order.setTotalQuantityProduct(totalQuantity);
               order.setTotalPrice(totalPrice);
               order.setPayment(paymentMethod);  // Sử dụng paymentMethod đã lấy

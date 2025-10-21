@@ -24,12 +24,13 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
+import java.awt.FlowLayout;
 import static com.ComponentandDatabase.Components.UIConstants.*;
 
 public class Form_Order extends JPanel {
     private JPanel panel, panelSearch;;
     private JLabel lblStatus; 
-    private MyButton bntSearch, bntExportFile, bntDetails, bntRefresh, bntUpdate;
+    private MyButton bntSearch, bntExportFile, bntDetails, bntRefresh, bntUpdate, bntViewConfirmed;
     private MyTextField txtSearch;
     private MyCombobox<String> cmbSearch, cmbStatus;
     private MyTable tableOrder;
@@ -129,7 +130,7 @@ public class Form_Order extends JPanel {
         lblStatus.setBounds(650, 5, 100, 35);
         panelSearch.add(lblStatus);
 
-        String[] items_status = {"Waiting", "Confirmed"};
+        String[] items_status = {"Waiting", "Confirmed", "Cancelled"};
         cmbStatus = new MyCombobox<>(items_status);
         cmbStatus.setBounds(650, 30, 110, 35);
         cmbStatus.setCustomFont(new Font("Times New Roman", Font.PLAIN, 15));
@@ -215,6 +216,20 @@ public class Form_Order extends JPanel {
             }
         });
         panel.add(bntExportFile);
+        
+        // Button View Confirmed Orders
+        bntViewConfirmed = new MyButton("View Confirmed", 20);
+        bntViewConfirmed.setBackgroundColor(SUCCESS_COLOR);
+        bntViewConfirmed.setHoverColor(SUCCESS_HOVER);
+        bntViewConfirmed.setPressedColor(SUCCESS_HOVER.darker());
+        bntViewConfirmed.setFont(FONT_BUTTON_MEDIUM);
+        bntViewConfirmed.setForeground(Color.WHITE);
+        bntViewConfirmed.setBounds(540, 150, 150, 35);
+        bntViewConfirmed.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\order.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntViewConfirmed.addActionListener(e -> {
+            viewConfirmedOrders();
+        });
+        panel.add(bntViewConfirmed);
 
            // 1️⃣ Tên cột
         String[] columnNames = {
@@ -392,6 +407,112 @@ public class Form_Order extends JPanel {
             expandTableColumns();
         } else {
             CustomDialog.showError("Failed to update status!");
+        }
+    }
+    
+    /**
+     * Hiển thị danh sách các Order đã confirmed để có thể chuyển sang Export
+     */
+    private void viewConfirmedOrders() {
+        List<DTO_order> confirmedOrders = busOrder.getConfirmedOrders();
+        if (confirmedOrders.isEmpty()) {
+            CustomDialog.showSuccess("No confirmed orders found!");
+            return;
+        }
+        
+        // Tạo dialog để hiển thị danh sách confirmed orders
+        JDialog dialog = new JDialog();
+        dialog.setTitle("Confirmed Orders - Ready for Export");
+        dialog.setSize(1000, 600);
+        dialog.setLocationRelativeTo(null);
+        dialog.setModal(true);
+        
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Tạo bảng cho confirmed orders
+        String[] columnNames = {
+            "Order.No", "Customer.ID", "Customer Name", "Address", 
+            "Contact", "Total Product", "Total Price", "Payment", "Date Order", "Time Order", "Status"
+        };
+        
+        DefaultTableModel confirmedModel = new DefaultTableModel(columnNames, 0);
+        JTable confirmedTable = new JTable(confirmedModel);
+        
+        // Đổ dữ liệu vào bảng
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        for (DTO_order order : confirmedOrders) {
+            Object[] rowData = {
+                order.getOrderNo(),
+                order.getCustomerID(),
+                order.getCustomerName(),
+                order.getAddress(),
+                order.getContact(),
+                order.getTotalQuantityProduct(),
+                order.getTotalPrice(),
+                order.getPayment(),
+                order.getDateOrder().format(dateFormatter),
+                order.getTimeOrder(),
+                order.getStatus()
+            };
+            confirmedModel.addRow(rowData);
+        }
+        
+        JScrollPane tableScrollPane = new JScrollPane(confirmedTable);
+        mainPanel.add(tableScrollPane, BorderLayout.CENTER);
+        
+        // Panel buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        
+        MyButton btnCreateExport = new MyButton("Create Export Bill", 20);
+        btnCreateExport.setBackgroundColor(PRIMARY_COLOR);
+        btnCreateExport.setHoverColor(PRIMARY_HOVER);
+        btnCreateExport.setPressedColor(PRIMARY_HOVER.darker());
+        btnCreateExport.setFont(FONT_BUTTON_MEDIUM);
+        btnCreateExport.setForeground(Color.WHITE);
+        btnCreateExport.addActionListener(e -> {
+            int selectedRow = confirmedTable.getSelectedRow();
+            if (selectedRow < 0) {
+                CustomDialog.showError("Please select an order to create export bill!");
+                return;
+            }
+            
+            String selectedOrderNo = (String) confirmedModel.getValueAt(selectedRow, 0);
+            String selectedCustomerID = (String) confirmedModel.getValueAt(selectedRow, 1);
+            
+            // Mở form Export với thông tin Order đã chọn
+            openExportForm(selectedOrderNo, selectedCustomerID);
+            dialog.dispose();
+        });
+        
+        MyButton btnClose = new MyButton("Close", 20);
+        btnClose.setBackgroundColor(WARNING_COLOR);
+        btnClose.setHoverColor(WARNING_HOVER);
+        btnClose.setPressedColor(WARNING_HOVER.darker());
+        btnClose.setFont(FONT_BUTTON_MEDIUM);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(btnCreateExport);
+        buttonPanel.add(btnClose);
+        
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Mở form Export với thông tin Order đã chọn
+     */
+    private void openExportForm(String orderNo, String customerID) {
+        try {
+            // Import form Export
+            Class<?> exportFormClass = Class.forName("com.Admin.export.GUI.Form_Export");
+            java.lang.reflect.Constructor<?> constructor = exportFormClass.getConstructor(String.class, String.class);
+            JFrame exportFrame = (JFrame) constructor.newInstance(orderNo, customerID);
+            exportFrame.setVisible(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Cannot open Export form: " + e.getMessage());
         }
     }
     

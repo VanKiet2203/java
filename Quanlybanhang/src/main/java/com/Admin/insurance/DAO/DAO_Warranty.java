@@ -22,8 +22,8 @@ import java.sql.Time;
 public class DAO_Warranty {
 
     public boolean insertBillWarranty(DTO_Insurance insurance) throws SQLException {
-        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Describle_customer, Start_Date_Insurance, End_Date_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Describle_customer, Start_Date_Insurance, End_Date_Insurance, Status) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -35,6 +35,7 @@ public class DAO_Warranty {
             pst.setString(5, insurance.getDescribleCustomer());
             pst.setDate(6, java.sql.Date.valueOf(insurance.getStartDateInsurance()));
             pst.setDate(7, java.sql.Date.valueOf(insurance.getEndDateInsurance()));
+            pst.setString(8, "Available"); // Set default status
 
             int rowsAffected = pst.executeUpdate();
             return rowsAffected > 0;
@@ -45,8 +46,8 @@ public class DAO_Warranty {
     }
     
     public boolean insertBillWarrantyDetails(DTO_InsuranceDetails insuranceDetails) throws SQLException {
-        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Product_ID, Description, Date_Insurance, Time_Insurance) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Insurance_Details (Insurance_No, Admin_ID, Customer_ID, Invoice_No, Product_ID, Description, Date_Insurance, Time_Insurance, Status) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -59,6 +60,7 @@ public class DAO_Warranty {
             pst.setString(6, insuranceDetails.getDescription());
             pst.setDate(7, Date.valueOf(insuranceDetails.getDateInsurance()));
             pst.setTime(8, Time.valueOf(insuranceDetails.getTimeInsurance()));
+            pst.setString(9, "Available"); // Set default status
 
             int rowsAffected = pst.executeUpdate();
             return rowsAffected > 0; // Trả về `true` nếu thành công, `false` nếu thất bại
@@ -69,7 +71,7 @@ public class DAO_Warranty {
     }
     
     public List<DTO_Insurance> getAllInsurance() throws SQLException {
-        String sql = "SELECT * FROM Insurance";
+        String sql = "SELECT * FROM Insurance WHERE Status = 'Available'";
         List<DTO_Insurance> insuranceList = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.connect();
@@ -99,7 +101,15 @@ public class DAO_Warranty {
     }
 
     public List<DTO_Insurance> getAllInsuranceWithExportInfo() throws SQLException {
-        String sql = "SELECT i.*, be.Invoice_No FROM Insurance i LEFT JOIN Bill_Exported be ON i.Invoice_No = be.Invoice_No AND i.Admin_ID = be.Admin_ID";
+        String sql = """
+            SELECT DISTINCT i.*, bed.Invoice_No, bed.Product_ID, p.Product_Name
+            FROM Insurance i 
+            LEFT JOIN Bill_Exported_Details bed ON i.Invoice_No = bed.Invoice_No AND i.Admin_ID = bed.Admin_ID
+            LEFT JOIN Product p ON bed.Product_ID = p.Product_ID
+            WHERE i.Status = 'Available' 
+                AND (bed.Status = 'Available' OR bed.Status IS NULL)
+                AND (p.Status = 'Available' OR p.Status IS NULL)
+        """;
         List<DTO_Insurance> insuranceList = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.connect();
@@ -130,7 +140,7 @@ public class DAO_Warranty {
 
     
     public List<DTO_InsuranceDetails> getAllInsuranceDetails() throws SQLException {
-        String sql = "SELECT * FROM Insurance_Details";
+        String sql = "SELECT * FROM Insurance_Details WHERE Status = 'Available'";
         List<DTO_InsuranceDetails> insuranceDetailsList = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.connect();
@@ -170,19 +180,19 @@ public class DAO_Warranty {
         // Xây dựng câu SQL tùy thuộc vào loại tìm kiếm
         switch (searchType) {
             case "Invoice.No":
-                sql = "SELECT * FROM Insurance_Details WHERE Insurance_No LIKE ?";
+                sql = "SELECT * FROM Insurance_Details WHERE Insurance_No LIKE ? AND Status = 'Available'";
                 break;
             case "Admin.ID":
-                sql = "SELECT * FROM Insurance_Details WHERE Admin_ID LIKE ?";
+                sql = "SELECT * FROM Insurance_Details WHERE Admin_ID LIKE ? AND Status = 'Available'";
                 break;
             case "Customer.ID":
-                sql = "SELECT * FROM Insurance_Details WHERE Customer_ID LIKE ?";
+                sql = "SELECT * FROM Insurance_Details WHERE Customer_ID LIKE ? AND Status = 'Available'";
                 break;
             case "Product.ID":
-                sql = "SELECT * FROM Insurance_Details WHERE Product_ID LIKE ?";
+                sql = "SELECT * FROM Insurance_Details WHERE Product_ID LIKE ? AND Status = 'Available'";
                 break;
             case "Date":
-                sql = "SELECT * FROM Insurance_Details WHERE Date_Insurance = ?";
+                sql = "SELECT * FROM Insurance_Details WHERE Date_Insurance = ? AND Status = 'Available'";
                 break;
             default:
                 throw new IllegalArgumentException("Invalid search type: " + searchType);
@@ -405,7 +415,7 @@ public class DAO_Warranty {
      * @return Insurance record
      */
     public DTO_Insurance getInsuranceByNo(String insuranceNo) throws SQLException {
-        String sql = "SELECT * FROM Insurance WHERE Insurance_No = ?";
+        String sql = "SELECT * FROM Insurance WHERE Insurance_No = ? AND Status = 'Available'";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -439,7 +449,7 @@ public class DAO_Warranty {
      * @return List of insurance details
      */
     public List<DTO_InsuranceDetails> getInsuranceDetailsByNo(String insuranceNo) throws SQLException {
-        String sql = "SELECT * FROM Insurance_Details WHERE Insurance_No = ?";
+        String sql = "SELECT * FROM Insurance_Details WHERE Insurance_No = ? AND Status = 'Available'";
         List<DTO_InsuranceDetails> detailsList = new ArrayList<>();
         
         try (Connection conn = DatabaseConnection.connect();
@@ -468,6 +478,99 @@ public class DAO_Warranty {
         }
         
         return detailsList;
+    }
+    
+    /**
+     * Get insurance details by invoice number
+     * @param invoiceNo Invoice number
+     * @param adminId Admin ID
+     * @return List of insurance details
+     */
+    public List<DTO_InsuranceDetails> getInsuranceDetailsByInvoice(String invoiceNo, String adminId) throws SQLException {
+        String sql = "SELECT * FROM Insurance_Details WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'";
+        List<DTO_InsuranceDetails> detailsList = new ArrayList<>();
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, invoiceNo);
+            pst.setString(2, adminId);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    DTO_InsuranceDetails details = new DTO_InsuranceDetails(
+                        rs.getString("Insurance_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getString("Invoice_No"),
+                        rs.getString("Product_ID"),
+                        rs.getString("Description"),
+                        rs.getDate("Date_Insurance").toLocalDate(),
+                        rs.getTime("Time_Insurance").toLocalTime()
+                    );
+                    detailsList.add(details);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting insurance details by invoice: " + e.getMessage());
+            throw e;
+        }
+        
+        return detailsList;
+    }
+    
+    /**
+     * Search insurance records
+     * @param searchType Type of search
+     * @param keyword Search keyword
+     * @return List of matching insurance records
+     */
+    public List<DTO_Insurance> searchInsurance(String searchType, String keyword) throws SQLException {
+        String sql;
+        List<DTO_Insurance> searchResults = new ArrayList<>();
+
+        switch (searchType) {
+            case "Insurance No":
+                sql = "SELECT * FROM Insurance WHERE Insurance_No LIKE ? AND Status = 'Available'";
+                break;
+            case "Invoice No":
+                sql = "SELECT * FROM Insurance WHERE Invoice_No LIKE ? AND Status = 'Available'";
+                break;
+            case "Customer ID":
+                sql = "SELECT * FROM Insurance WHERE Customer_ID LIKE ? AND Status = 'Available'";
+                break;
+            case "Admin ID":
+                sql = "SELECT * FROM Insurance WHERE Admin_ID LIKE ? AND Status = 'Available'";
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid search type: " + searchType);
+        }
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, "%" + keyword + "%");
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    DTO_Insurance insurance = new DTO_Insurance(
+                        rs.getString("Insurance_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getString("Invoice_No"),
+                        rs.getString("Describle_customer"),
+                        rs.getDate("Start_Date_Insurance").toLocalDate(),
+                        rs.getDate("End_Date_Insurance").toLocalDate()
+                    );
+                    searchResults.add(insurance);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error searching insurance: " + e.getMessage());
+            throw e;
+        }
+
+        return searchResults;
     }
 }
 

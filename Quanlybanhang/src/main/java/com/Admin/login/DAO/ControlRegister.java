@@ -51,7 +51,7 @@ public class ControlRegister {
         }
 
         try {
-            String checkSql = "SELECT COUNT(*) FROM Admin WHERE Admin_ID = ?";
+            String checkSql = "SELECT COUNT(*) FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
                 checkStmt.setString(1, idCard);
                 ResultSet rs = checkStmt.executeQuery();

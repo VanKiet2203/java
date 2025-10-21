@@ -277,17 +277,39 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                }
            });
            panelSearch.add(bntImportFile);
+           
+    
+           
+           // Sync Quantities button
+           MyButton bntSyncQuantities = new MyButton("Sync Quantities", 20);
+           bntSyncQuantities.setBackgroundColor(Color.decode("#4CAF50"));
+           bntSyncQuantities.setPressedColor(Color.decode("#3D8B40"));
+           bntSyncQuantities.setHoverColor(Color.decode("#45A049"));
+           bntSyncQuantities.setBounds(670, 70, 120, 35); // Next to Debug button
+           bntSyncQuantities.setForeground(Color.WHITE);
+           bntSyncQuantities.addActionListener((e) -> {
+               busProduct = new BusProduct();
+               busProduct.syncAllProductQuantities();
+               // Refresh table after sync
+               DefaultTableModel model = (DefaultTableModel) tableProduct.getModel();
+               model.setRowCount(0);
+               busProduct.uploadProduct(model);
+               tableProduct.adjustColumnWidths();
+           });
+           panelSearch.add(bntSyncQuantities);
 
                     // 1️⃣ Tên cột
          String[] columnNames = {
              "Product ID", 
              "Product Name", 
-             "Color",
-             "Speed",
-             "Battery Capacity",
-             "Quantity",
-             "Price",
-             "Category ID",
+             "Color", 
+             "Speed", 
+             "Battery Capacity", 
+             "Total Imported",    // Số lượng nhập
+             "Current Stock",      // Số lượng tồn kho
+             "Sold Quantity",      // Số lượng đã bán
+             "Price", 
+             "Category ID", 
              "Category Name"
          };
 
@@ -407,15 +429,17 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
         
         // Định nghĩa tỷ lệ chiều rộng cho từng cột (tối ưu cho màn hình nhỏ)
         double[] columnRatios = {
-            0.12,  // Product ID - 12%
-            0.22,  // Product Name - 22%
-            0.08,  // Color - 8%
-            0.08,  // Speed - 8%
-            0.12,  // Battery Capacity - 12%
-            0.08,  // Quantity - 8%
-            0.10,  // Price - 10%
-            0.10,  // Category ID - 10%
-            0.10   // Category Name - 10%
+            0.10,  // Product ID - 10%
+            0.18,  // Product Name - 18%
+            0.07,  // Color - 7%
+            0.07,  // Speed - 7%
+            0.10,  // Battery Capacity - 10%
+            0.08,  // Total Imported - 8%
+            0.08,  // Current Stock - 8%
+            0.08,  // Sold Quantity - 8%
+            0.08,  // Price - 8%
+            0.08,  // Category ID - 8%
+            0.09   // Category Name - 9%
         };
         
         // Áp dụng tỷ lệ cho từng cột

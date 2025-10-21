@@ -134,6 +134,9 @@ public class BusProduct {
         try {
             boolean success = daoProduct.createProductFromWarehouse(warehouseItemId, color, speed, batteryCapacity, price);
             if (success) {
+                // KHÔNG cần gọi syncAllProductQuantities() vì trigger đã tự động cập nhật
+                // Trigger trg_Set_Product_Quantity_On_Create sẽ set Quantity = Quantity_Stock
+                // Trigger trg_Update_Product_Stock_On_Import sẽ tính lại khi có dữ liệu nhập
                 CustomDialog.showSuccess("Product created from warehouse item successfully!");
             } else {
                 CustomDialog.showError("Failed to create product from warehouse item!");
@@ -144,6 +147,39 @@ public class BusProduct {
             return false;
         }
     }
+    
+    // Lấy danh sách Warehouse Items có thể tạo Product
+    public List<String> getAvailableWarehouseItems() {
+        try {
+            return daoProduct.getAvailableWarehouseItems();
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to load warehouse items: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    
+    
+    // Method để đồng bộ tất cả số lượng Product
+    public void syncAllProductQuantities() {
+        try {
+            daoProduct.syncAllProductQuantities();
+            CustomDialog.showSuccess("All product quantities synchronized successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to sync product quantities: " + e.getMessage());
+        }
+    }
+    
+    // Method để kiểm tra tính đúng đắn của số lượng
+    public void checkQuantityBalance() {
+        try {
+            daoProduct.checkQuantityBalance();
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to check quantity balance: " + e.getMessage());
+        }
+    }
+    
+    
 }
 
 

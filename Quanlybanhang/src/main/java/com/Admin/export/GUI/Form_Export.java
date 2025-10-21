@@ -64,6 +64,17 @@ public class Form_Export extends JPanel {
         initComponents();
         init();
     }
+    
+    /**
+     * Constructor với tham số để nhận OrderNo và CustomerID từ Order form
+     */
+    public Form_Export(String orderNo, String customerID) {
+        Form_Export.orderNo = orderNo;
+        initComponents();
+        init();
+        // Tự động load dữ liệu cho Order đã chọn
+        loadSpecificOrderData(orderNo, customerID);
+    }
 
     private void initComponents() {
         setLayout(null);
@@ -455,6 +466,47 @@ public class Form_Export extends JPanel {
             };
             model.addRow(row);
         }
+   }
+   
+   /**
+    * Load dữ liệu cho Order cụ thể được chọn từ Order form
+    */
+   private void loadSpecificOrderData(String orderNo, String customerID) {
+       try {
+           busOrderDetail = new BUS_OrderDetail();
+           List<DTO_Oderdetails> specificOrderDetails = busOrderDetail.getOrderDetailsByOrderNo(orderNo);
+           
+           if (specificOrderDetails.isEmpty()) {
+               CustomDialog.showError("No confirmed order details found for Order: " + orderNo);
+               return;
+           }
+           
+           DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+           model.setRowCount(0); // Xóa dữ liệu cũ
+           
+           for (DTO_Oderdetails detail : specificOrderDetails) {
+               Object[] row = {
+                   detail.getOrderNo(),
+                   detail.getCustomerID(),
+                   detail.getProductID(),
+                   detail.getPrice(),
+                   detail.getQuantity(),
+                   detail.getDateOrder().format(dateFormatter),
+                   detail.getTimeOrder().toString(),
+                   detail.getStatus()
+               };
+               model.addRow(row);
+           }
+           
+           // Tự động chọn tất cả các dòng của Order này
+           tableOrderDetails.selectAll();
+           
+           CustomDialog.showSuccess("Loaded order details for Order: " + orderNo);
+           
+       } catch (Exception e) {
+           e.printStackTrace();
+           CustomDialog.showError("Error loading specific order data: " + e.getMessage());
+       }
    }
 
     private void displaySearchResults(List<DTO_Oderdetails> results) {
@@ -879,15 +931,21 @@ public class Form_Export extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    // Gửi email
-                    SendEmail.sendInvoiceEmail(
-                        customer, 
-                        orderItems, 
-                        0.0, // No discount spinner, use promotion code instead
-                        invoiceNo
-                    );
+                    // Kiểm tra email trước khi gửi
+                    final boolean emailSent;
+                    if (customer != null && customer.getEmail() != null && !customer.getEmail().trim().isEmpty()) {
+                        // Thử gửi email
+                        emailSent = SendEmail.sendInvoiceEmail(
+                            customer, 
+                            orderItems, 
+                            0.0, // No discount spinner, use promotion code instead
+                            invoiceNo
+                        );
+                    } else {
+                        emailSent = false;
+                    }
 
-                    // Xuất PDF
+                    // Xuất PDF (luôn thực hiện)
                     String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : "";
                     double pdfDiscount = currentPromotion != null ? currentPromotion.getDiscountPercent().doubleValue() : 0.0;
                     PDFExporter exporter = new PDFExporter(
@@ -899,12 +957,24 @@ public class Form_Export extends JPanel {
                     );
                     exporter.exportToPDF();
 
-                    // Xử lý dữ liệu sau khi email đã được gửi
+                    // Xử lý dữ liệu (luôn thực hiện)
                     processExportData(orderItems, imeis);
                     Refresh();
+                    
+                    // Hiển thị thông báo kết quả
+                    SwingUtilities.invokeLater(() -> {
+                        if (emailSent) {
+                            CustomDialog.showSuccess("Export completed successfully!\nInvoice sent to customer email: " + customer.getEmail());
+                        } else {
+                            CustomDialog.showSuccess("Export completed successfully!\nNote: Invoice was not sent via email (customer email not available)");
+                        }
+                    });
+                    
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.err.println("❌ Unexpected error while sending email.");
+                    SwingUtilities.invokeLater(() -> {
+                        CustomDialog.showError("Export failed: " + e.getMessage());
+                    });
                 }
                 return null;
             }

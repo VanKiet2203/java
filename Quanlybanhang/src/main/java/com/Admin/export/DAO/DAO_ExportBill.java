@@ -9,7 +9,6 @@ import com.Admin.promotion.BUS.BUSPromotion;
 import com.Admin.promotion.DTO.DTOPromotion;
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
 
-import java.util.ArrayList;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.*;
@@ -24,16 +23,17 @@ public class DAO_ExportBill {
 
     // Insert Export Bill (header) with optional promotion code
     public boolean insertBillExported(DTO_BillExported bill, String promotionCode) {
-        String sql = "INSERT INTO Bill_Exported (Invoice_No, Admin_ID, Customer_ID, Total_Product, Promotion_Code) "
-                   + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Bill_Exported (Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Promotion_Code) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, bill.getInvoiceNo());
             pstmt.setString(2, bill.getAdminId());
             pstmt.setString(3, bill.getCustomerId());
-            pstmt.setInt(4, bill.getTotalProduct());
-            if (promotionCode == null || promotionCode.isBlank()) pstmt.setNull(5, Types.VARCHAR);
-            else pstmt.setString(5, promotionCode);
+            pstmt.setString(4, bill.getOrderNo()); // Thêm Order_No
+            pstmt.setInt(5, bill.getTotalProduct());
+            if (promotionCode == null || promotionCode.isBlank()) pstmt.setNull(6, Types.VARCHAR);
+            else pstmt.setString(6, promotionCode);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error inserting bill exported: " + e.getMessage());
@@ -49,11 +49,10 @@ public class DAO_ExportBill {
         try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
 
-            // 1) Validate stock against current warehouse stock (Product_Stock)
-            String stockSql = "SELECT ISNULL(ps.Quantity_Stock, 0) AS Current_Stock "
+            // 1) Validate stock against current product stock (Product.Quantity)
+            String stockSql = "SELECT p.Quantity AS Current_Stock "
                             + "FROM Product p "
-                            + "LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID "
-                            + "WHERE p.Product_ID = ?";
+                            + "WHERE p.Product_ID = ? AND p.Status = 'Available'";
             try (PreparedStatement ps = conn.prepareStatement(stockSql)) {
                 ps.setString(1, detail.getProductId());
                 ResultSet rs = ps.executeQuery();
@@ -112,7 +111,7 @@ public class DAO_ExportBill {
     public java.util.List<DTO_BillExportedDetail> getAllBillDetails() throws SQLException {
         java.util.List<DTO_BillExportedDetail> ls = new java.util.ArrayList<>();
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Bill_Exported_Details");
+             PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Bill_Exported_Details WHERE Status = 'Available'");
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 DTO_BillExportedDetail d = new DTO_BillExportedDetail(
@@ -121,7 +120,7 @@ public class DAO_ExportBill {
                     rs.getString("Customer_ID"),
                     rs.getString("Product_ID"),
                     rs.getBigDecimal("Unit_Price_Sell_After"),
-                    rs.getInt("Quantity"),
+                    rs.getInt("Sold_Quantity"),
                     rs.getBigDecimal("Discount_Percent"),
                     rs.getBigDecimal("Total_Price_Before"),
                     rs.getBigDecimal("Total_Price_After"),
@@ -137,7 +136,7 @@ public class DAO_ExportBill {
     // Minimal implementations to satisfy BUS usage
     public java.util.List<com.Admin.export.DTO.DTO_BillExport> getAllBillExported() throws SQLException {
         java.util.List<com.Admin.export.DTO.DTO_BillExport> list = new java.util.ArrayList<>();
-        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Total_Product, Description FROM Bill_Exported";
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description FROM Bill_Exported WHERE Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -167,7 +166,7 @@ public class DAO_ExportBill {
 
     // Compatibility methods for existing BUS layer signatures
     public DTOProfile_cus getCustomerInfoByID(String customerID) throws SQLException {
-        String sql = "SELECT Customer_ID, Full_Name, Address, Contact FROM Customer WHERE Customer_ID = ?";
+        String sql = "SELECT Customer_ID, Full_Name, Address, Contact FROM Customer WHERE Customer_ID = ? AND Record_Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, customerID);
@@ -199,7 +198,7 @@ public class DAO_ExportBill {
     }
 
     public DTO_BillExported getExportBillDetailsByInvoice(String invoiceNo, String adminID) throws SQLException {
-        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Total_Product, Description, Promotion_Code FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ?";
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, Promotion_Code FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, invoiceNo);
@@ -218,5 +217,37 @@ public class DAO_ExportBill {
             }
         }
         return null;
+    }
+    
+    /**
+     * Get all exported bills that are available for insurance creation
+     * Uses the view v_Available_Export_Bills_For_Insurance
+     */
+    public java.util.List<com.Admin.export.DTO.DTO_BillExport> getAllAvailableExportBillsForInsurance() throws SQLException {
+        java.util.List<com.Admin.export.DTO.DTO_BillExport> list = new java.util.ArrayList<>();
+        String sql = "SELECT DISTINCT bed.Invoice_No, bed.Admin_ID, bed.Customer_ID, " +
+                    "COUNT(bed.Product_ID) as Total_Product, " +
+                    "MIN(bed.Date_Exported) as Date_Exported " +
+                    "FROM Bill_Exported_Details bed " +
+                    "LEFT JOIN Insurance i ON bed.Invoice_No = i.Invoice_No AND bed.Admin_ID = i.Admin_ID " +
+                    "WHERE bed.Status = 'Available' AND i.Insurance_No IS NULL " +
+                    "GROUP BY bed.Invoice_No, bed.Admin_ID, bed.Customer_ID " +
+                    "ORDER BY bed.Date_Exported DESC";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                com.Admin.export.DTO.DTO_BillExport dto = new com.Admin.export.DTO.DTO_BillExport(
+                    rs.getString("Invoice_No"),
+                    rs.getString("Admin_ID"),
+                    rs.getString("Customer_ID"),
+                    rs.getInt("Total_Product"),
+                    "Available for Insurance"
+                );
+                list.add(dto);
+            }
+        }
+        return list;
     }
 }

@@ -89,5 +89,17 @@ public class BUS_OrderDetail {
             return "N/A"; // Xử lý fallback nếu DAO bị lỗi
         }
     }
+    
+    /**
+     * Lấy tất cả order details theo OrderNo (không chỉ confirmed)
+     */
+    public List<DTO_Oderdetails> getOrderDetailsByOrderNo(String orderNo) {
+        try {
+            return daoOrderDetail.getOrderDetailsByOrderNo(orderNo);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
      
 }

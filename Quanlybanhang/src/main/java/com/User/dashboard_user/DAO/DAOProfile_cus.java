@@ -133,6 +133,8 @@ public class DAOProfile_cus {
         ResultSet rs = null;
         String customerID = null;
 
+        System.out.println("🔍 DEBUG - Getting Customer ID for email: " + email);
+
         try {
             conn = DatabaseConnection.connect();
             String sql = "SELECT Customer_ID FROM Customer WHERE Email = ?";
@@ -142,9 +144,13 @@ public class DAOProfile_cus {
 
             if (rs.next()) {
                 customerID = rs.getString("Customer_ID");
+                System.out.println("✅ Found Customer ID: " + customerID);
+            } else {
+                System.out.println("❌ No customer found with email: " + email);
             }
 
         } catch (SQLException ex) {
+            System.out.println("❌ SQL Error getting Customer ID: " + ex.getMessage());
             ex.printStackTrace();
         } finally {
             // Đóng tài nguyên

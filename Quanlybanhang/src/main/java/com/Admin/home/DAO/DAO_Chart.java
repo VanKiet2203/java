@@ -61,8 +61,8 @@ public class DAO_Chart {
     }
 
     private void refreshData() {
-        String sqlImport = "SELECT SUM(Quantity) AS total_import FROM Bill_Imported_Details";
-        String sqlExport = "SELECT SUM(Quantity) AS total_export FROM Bill_Exported_Details";
+        String sqlImport = "SELECT SUM(Quantity) AS total_import FROM Bill_Imported_Details WHERE Status = 'Available'";
+        String sqlExport = "SELECT SUM(Quantity) AS total_export FROM Bill_Exported_Details WHERE Status = 'Available'";
 
         dataset.clear(); // Xóa dữ liệu cũ
 

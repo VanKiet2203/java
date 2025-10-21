@@ -19,7 +19,7 @@ import java.util.List;
 
 public class Form_Inventory extends JPanel {
     private JPanel panel, panelSearch;
-    private MyButton bntRefresh, bntSearch, bntImportNew, bntImportExisting, bntCreateBill, bntViewBills, bntExportExcel, bntExportPDF;
+    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntDebugBill;
     private MyTextField txtSearch;
     private MyCombobox<String> cmbSearch, cmbCategory, cmbSupplier;
     private JTable tableInventory, tableBills;
@@ -137,52 +137,49 @@ public class Form_Inventory extends JPanel {
         ));
         actionPanel.setBounds(20, 190, 1160, 80);
         
-        // Add New Item button
-        MyButton bntAddNew = new MyButton("Add New Item", 20);
+        // 1. Add New Item button
+        bntAddNew = new MyButton("Add New Item", 20);
         styleSuccessButton(bntAddNew);
         bntAddNew.setBounds(20, 30, 150, 35);
         bntAddNew.addActionListener(e -> addNewInventoryItem());
         actionPanel.add(bntAddNew);
         
-        // Import buttons
-        bntImportNew = new MyButton("Import New Items", 20);
-        styleSuccessButton(bntImportNew);
-        bntImportNew.setBounds(180, 30, 150, 35);
-        bntImportNew.addActionListener(e -> importNewItems());
+        // 2. Import Inventory button
+        bntImportInventory = new MyButton("Import Inventory", 20);
+        styleSuccessButton(bntImportInventory);
+        bntImportInventory.setBounds(180, 30, 150, 35);
+        bntImportInventory.addActionListener(e -> importInventory());
+        actionPanel.add(bntImportInventory);
         
-        bntImportExisting = new MyButton("Import Existing", 20);
-        styleWarningButton(bntImportExisting);
-        bntImportExisting.setBounds(340, 30, 150, 35);
-        bntImportExisting.addActionListener(e -> importExistingItems());
+        // 3. Export Inventory button
+        bntExportInventory = new MyButton("Export Inventory", 20);
+        styleInfoButton(bntExportInventory);
+        bntExportInventory.setBounds(340, 30, 150, 35);
+        bntExportInventory.addActionListener(e -> exportInventory());
+        actionPanel.add(bntExportInventory);
         
+        // 4. Export Excel Bill Import button
+        bntExportExcelBill = new MyButton("Export Excel Bill", 20);
+        styleInfoButton(bntExportExcelBill);
+        bntExportExcelBill.setBounds(500, 30, 150, 35);
+        bntExportExcelBill.addActionListener(e -> exportExcelBillImport());
+        actionPanel.add(bntExportExcelBill);
         
-        // Export buttons
-        bntExportExcel = new MyButton("Export Excel", 20);
-        styleInfoButton(bntExportExcel);
-        bntExportExcel.setBounds(500, 30, 150, 35);
-        bntExportExcel.addActionListener(e -> exportToExcel());
+        // 5. Export PDF Bill Import button
+        bntExportPDFBill = new MyButton("Export PDF Bill", 20);
+        styleDangerButton(bntExportPDFBill);
+        bntExportPDFBill.setBounds(660, 30, 150, 35);
+        bntExportPDFBill.addActionListener(e -> exportPDFBillImport());
+        actionPanel.add(bntExportPDFBill);
         
-        bntExportPDF = new MyButton("Export PDF", 20);
-        styleDangerButton(bntExportPDF);
-        bntExportPDF.setBounds(660, 30, 150, 35);
-        bntExportPDF.addActionListener(e -> exportToPDF());
-        // Create Bill button
-        bntCreateBill = new MyButton("Create Import Bill", 20);
-        styleSuccessButton(bntCreateBill);
-        bntCreateBill.setBounds(820, 30, 150, 35);
-        bntCreateBill.addActionListener(e -> createImportBill());
-        // View bills button
-        bntViewBills = new MyButton("View Bills", 20);
-        stylePrimaryButton(bntViewBills);
-        bntViewBills.setBounds(980, 30, 150, 35);
-        bntViewBills.addActionListener(e -> viewBills());
+           // 6. View Bills button
+           bntViewBills = new MyButton("View Bills", 20);
+           stylePrimaryButton(bntViewBills);
+           bntViewBills.setBounds(820, 30, 150, 35);
+           bntViewBills.addActionListener(e -> viewBills());
+           actionPanel.add(bntViewBills);
+           
         
-        actionPanel.add(bntImportNew);
-        actionPanel.add(bntImportExisting);
-        actionPanel.add(bntCreateBill);
-        actionPanel.add(bntExportExcel);
-        actionPanel.add(bntExportPDF);
-        actionPanel.add(bntViewBills);
         panel.add(actionPanel);
     }
     
@@ -280,18 +277,18 @@ public class Form_Inventory extends JPanel {
         }
     }
     
-    private void importNewItems() {
+    private void importInventory() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Choose Excel file to import new items");
+        fileChooser.setDialogTitle("Choose Excel file to import inventory");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
 
         int result = fileChooser.showOpenDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             try {
-                boolean success = busInventory.importNewItems(selectedFile);
+                boolean success = busInventory.importInventory(selectedFile);
                 if (success) {
-                    CustomDialog.showSuccess("New items imported successfully!");
+                    CustomDialog.showSuccess("Inventory imported successfully!");
                     refreshData();
                 }
             } catch (Exception e) {
@@ -300,29 +297,9 @@ public class Form_Inventory extends JPanel {
         }
     }
     
-    private void importExistingItems() {
+    private void exportInventory() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Choose Excel file to import existing items");
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
-
-        int result = fileChooser.showOpenDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            try {
-                boolean success = busInventory.importExistingItems(selectedFile);
-            if (success) {
-                    CustomDialog.showSuccess("Existing items updated successfully!");
-                    refreshData();
-                }
-            } catch (Exception e) {
-                CustomDialog.showError("Import failed: " + e.getMessage());
-            }
-        }
-    }
-    
-    private void exportToExcel() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Excel file");
+        fileChooser.setDialogTitle("Save inventory Excel file");
         
         int result = fileChooser.showSaveDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -331,17 +308,36 @@ public class Form_Inventory extends JPanel {
                 path += ".xlsx";
             }
             try {
-                busInventory.exportToExcel(path);
-                CustomDialog.showSuccess("Data exported successfully!");
+                busInventory.exportInventory(path);
+                CustomDialog.showSuccess("Inventory exported successfully!");
             } catch (Exception e) {
                 CustomDialog.showError("Export failed: " + e.getMessage());
             }
         }
     }
     
-    private void exportToPDF() {
+    private void exportExcelBillImport() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save PDF file");
+        fileChooser.setDialogTitle("Save Excel bill import file");
+        
+        int result = fileChooser.showSaveDialog(null);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            String path = fileChooser.getSelectedFile().getAbsolutePath();
+            if (!path.toLowerCase().endsWith(".xlsx")) {
+                path += ".xlsx";
+            }
+            try {
+                busInventory.exportExcelBillImport(path);
+                CustomDialog.showSuccess("Excel bill export successfully!");
+            } catch (Exception e) {
+                CustomDialog.showError("Excel export failed: " + e.getMessage());
+            }
+        }
+    }
+    
+    private void exportPDFBillImport() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save PDF bill import file");
         
         int result = fileChooser.showSaveDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -350,23 +346,11 @@ public class Form_Inventory extends JPanel {
                 path += ".pdf";
             }
             try {
-                busInventory.exportToPDF(path);
-                CustomDialog.showSuccess("PDF exported successfully!");
+                busInventory.exportPDFBillImport(path);
+                CustomDialog.showSuccess("PDF bill export successfully!");
             } catch (Exception e) {
                 CustomDialog.showError("PDF export failed: " + e.getMessage());
             }
-        }
-    }
-    
-    private void createImportBill() {
-        try {
-            String billId = busInventory.createImportBill();
-            if (billId != null) {
-                // Refresh inventory data after creating bill
-                refreshData();
-            }
-        } catch (Exception e) {
-            CustomDialog.showError("Failed to create import bill: " + e.getMessage());
         }
     }
     
@@ -384,6 +368,7 @@ public class Form_Inventory extends JPanel {
             CustomDialog.showError("Failed to load bills: " + e.getMessage());
         }
     }
+    
     
     private JTable createStyledTable(DefaultTableModel model) {
         JTable table = new JTable(model);
@@ -413,13 +398,6 @@ public class Form_Inventory extends JPanel {
         button.setFont(FONT_CONTENT_MEDIUM);
     }
     
-    private void styleWarningButton(MyButton button) {
-        button.setBackgroundColor(Color.decode("#FF9800"));
-        button.setHoverColor(Color.decode("#F57C00"));
-        button.setPressedColor(Color.decode("#E65100"));
-        button.setForeground(Color.WHITE);
-        button.setFont(FONT_CONTENT_MEDIUM);
-    }
     
     private void styleInfoButton(MyButton button) {
         button.setBackgroundColor(Color.decode("#2196F3"));
@@ -436,6 +414,7 @@ public class Form_Inventory extends JPanel {
         button.setForeground(Color.WHITE);
         button.setFont(FONT_CONTENT_MEDIUM);
     }
+    
     
     private void addNewInventoryItem() {
         try {

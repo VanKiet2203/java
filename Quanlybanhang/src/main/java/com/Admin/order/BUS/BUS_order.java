@@ -2,6 +2,7 @@ package com.Admin.order.BUS;
 
 import com.Admin.order.DAO.DAO_order;
 import com.Admin.order.DTO.DTO_order;
+import com.Admin.order.DTO.DTO_orderDetails;
 import java.util.List;
 import java.util.ArrayList;
 import java.sql.SQLException;
@@ -43,6 +44,29 @@ public class BUS_order {
     public List<DTO_order> searchOrders(String searchType, String keyword, String status) {
         try {
             return daoOrder.searchOrders(searchType, keyword, status);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+    
+    public boolean deleteOrder(String orderNo) {
+        return daoOrder.deleteOrder(orderNo);
+    }
+    
+    /**
+     * Lấy danh sách các Order đã confirmed để có thể chuyển sang Export
+     */
+    public List<DTO_order> getConfirmedOrders() {
+        return daoOrder.getConfirmedOrders();
+    }
+    
+    /**
+     * Lấy chi tiết Order đã confirmed để chuyển sang Export
+     */
+    public List<DTO_orderDetails> getConfirmedOrderDetails(String orderNo) {
+        try {
+            return daoOrder.getConfirmedOrderDetails(orderNo);
         } catch (SQLException e) {
             e.printStackTrace();
             return new ArrayList<>();

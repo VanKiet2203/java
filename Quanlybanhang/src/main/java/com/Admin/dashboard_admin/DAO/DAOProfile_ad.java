@@ -24,7 +24,7 @@ public class DAOProfile_ad {
 
         try {
             conn = DatabaseConnection.connect();
-            String sql = "SELECT Admin_ID, Admin_Name, Gender, Email, Contact, Image FROM Admin WHERE Admin_ID = ?";
+            String sql = "SELECT Admin_ID, Admin_Name, Gender, Email, Contact, Image FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
             ps = conn.prepareStatement(sql);
             ps.setString(1, adminID);
             rs = ps.executeQuery();
@@ -86,7 +86,7 @@ public class DAOProfile_ad {
       try {
           conn = DatabaseConnection.connect();
 
-          String query = "SELECT * FROM Admin WHERE Admin_ID = ?";
+          String query = "SELECT * FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
           pstmt = conn.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
           pstmt.setString(1, profile.getAdminID());
 
@@ -132,7 +132,7 @@ public class DAOProfile_ad {
 
         try {
             conn = DatabaseConnection.connect();
-            String sql = "SELECT Admin_Name FROM Admin WHERE Admin_ID = ?";
+            String sql = "SELECT Admin_Name FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
             ps = conn.prepareStatement(sql);
             ps.setString(1, adminID);
             rs = ps.executeQuery();

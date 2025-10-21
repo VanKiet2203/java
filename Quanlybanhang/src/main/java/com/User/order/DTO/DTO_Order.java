@@ -7,6 +7,7 @@ import java.time.LocalTime;
 public class DTO_Order {
     private String orderNo;
     private String customerID;
+    private String cartID;
     private int totalQuantityProduct;
     private BigDecimal totalPrice;
     private String payment;
@@ -17,11 +18,12 @@ public class DTO_Order {
     public DTO_Order() {}
 
     // Constructor đầy đủ
-    public DTO_Order(String orderNo, String customerID, int totalQuantityProduct,
+    public DTO_Order(String orderNo, String customerID, String cartID, int totalQuantityProduct,
                      BigDecimal totalPrice, String payment,
                      LocalDate dateOrder, LocalTime timeOrder) {
         this.orderNo = orderNo;
         this.customerID = customerID;
+        this.cartID = cartID;
         this.totalQuantityProduct = totalQuantityProduct;
         this.totalPrice = totalPrice;
         this.payment = payment;
@@ -44,6 +46,14 @@ public class DTO_Order {
 
     public void setCustomerID(String customerID) {
         this.customerID = customerID;
+    }
+
+    public String getCartID() {
+        return cartID;
+    }
+
+    public void setCartID(String cartID) {
+        this.cartID = cartID;
     }
 
     public int getTotalQuantityProduct() {
@@ -92,6 +102,7 @@ public class DTO_Order {
         return "DTO_Order{" +
                 "orderNo='" + orderNo + '\'' +
                 ", customerID='" + customerID + '\'' +
+                ", cartID='" + cartID + '\'' +
                 ", totalQuantityProduct=" + totalQuantityProduct +
                 ", totalPrice=" + totalPrice +
                 ", payment='" + payment + '\'' +

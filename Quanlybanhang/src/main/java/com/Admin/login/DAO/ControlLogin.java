@@ -52,7 +52,7 @@ public class ControlLogin {
         }
 
         try {
-            String sql = "SELECT * FROM Admin WHERE Admin_ID = ?";
+            String sql = "SELECT * FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, adminID);
                 ResultSet rs = pstmt.executeQuery();
@@ -96,7 +96,7 @@ public class ControlLogin {
           }
 
           try {
-              String sql = "SELECT Email FROM Admin WHERE Admin_ID = ?";
+              String sql = "SELECT Email FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
               PreparedStatement pstmt = conn.prepareStatement(sql);
               pstmt.setString(1, adminID);
               ResultSet rs = pstmt.executeQuery();

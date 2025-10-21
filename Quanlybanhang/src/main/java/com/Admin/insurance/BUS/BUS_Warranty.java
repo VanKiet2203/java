@@ -138,5 +138,35 @@ public class BUS_Warranty {
              return false;
          }
      }
+     
+     /**
+      * Search insurance records
+      * @param searchType Type of search
+      * @param keyword Search keyword
+      * @return List of matching insurance records
+      */
+     public List<DTO_Insurance> searchInsurance(String searchType, String keyword) {
+         try {
+             return daoWarranty.searchInsurance(searchType, keyword);
+         } catch (SQLException e) {
+             System.err.println("Error searching insurance: " + e.getMessage());
+             return null;
+         }
+     }
+     
+     /**
+      * Get insurance details by invoice number
+      * @param invoiceNo Invoice number
+      * @param adminId Admin ID
+      * @return List of insurance details
+      */
+     public List<DTO_InsuranceDetails> getInsuranceDetailsByInvoice(String invoiceNo, String adminId) {
+         try {
+             return daoWarranty.getInsuranceDetailsByInvoice(invoiceNo, adminId);
+         } catch (SQLException e) {
+             System.err.println("Error getting insurance details by invoice: " + e.getMessage());
+             return null;
+         }
+     }
 }
     

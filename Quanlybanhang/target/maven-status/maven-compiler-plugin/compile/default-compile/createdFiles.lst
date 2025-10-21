@@ -27,7 +27,6 @@ com\ComponentandDatabase\Components\MyRadioButton.class
 com\Admin\dashboard_admin\GUI\Menu$9.class
 com\User\Cart\DTO\DTOCart.class
 com\User\login_user\GUI\Login_User$2.class
-com\Admin\insurance\GUI\WarrantyDetails$1.class
 com\User\order\DTO\DTO_Order.class
 com\Admin\dashboard_admin\GUI\Dashboard_ad$1.class
 com\Admin\statistics\GUI\Form_PieChart.class
@@ -55,7 +54,6 @@ com\Admin\login\GUI\OTPFrame.class
 com\Admin\export\GUI\SendEmail$1.class
 com\Admin\customer\BUS\BusCustomer.class
 com\Admin\export\GUI\Form_Export$2.class
-com\Admin\product\GUI\EditProduct$5.class
 com\Admin\product\DTO\DTOProduct.class
 com\Admin\dashboard_admin\GUI\MyProfile$1.class
 com\Admin\order\DAO\DAO_order.class
@@ -69,6 +67,7 @@ com\User\dashboard_user\GUI\Menu_user$6.class
 com\Admin\product\GUI\EditProduct$2.class
 com\Admin\statistics\DAO\DAO_barchart.class
 com\Admin\insurance\DAO\DAOProductInfo.class
+com\Admin\product\DAO\DAOProduct$1.class
 com\User\login_user\BUS\BusAccount_cus.class
 com\Admin\export\BUS\BUS_OrderDetail.class
 com\User\login_user\DTO\DTOAccount_cus.class
@@ -92,7 +91,6 @@ com\User\login_user\DAO\ControlRegister_User.class
 com\User\dashboard_user\GUI\MyProfile_cus$1.class
 com\Admin\export\DTO\DTO_Oderdetails.class
 com\ComponentandDatabase\Components\MyTreeview$CustomTreeCellRenderer.class
-com\Admin\product\GUI\EditProduct$4.class
 com\User\order\GUI\OrderUpdateListener.class
 com\User\login_user\DAO\ControlLogin_cus$1.class
 com\Admin\insurance\DTO\DTO_Insurance.class
@@ -107,7 +105,6 @@ com\User\login_user\DAO\ControlLogin_cus.class
 com\User\home\DAO\ControlHome.class
 com\Admin\login\DAO\ControlLogin.class
 com\ComponentandDatabase\Components\MyCombobox$RoundedComboBoxUI.class
-com\Admin\insurance\GUI\WarrantyDetails.class
 com\Admin\order\BUS\BUS_order.class
 com\Admin\login\DAO\ControlRegister.class
 com\Admin\statistics\DTO\DTO_BillExportDetail.class
@@ -145,7 +142,6 @@ com\Admin\category\BUS\BusCategory.class
 com\Admin\order\GUI\Form_Order.class
 com\ComponentandDatabase\Components\MyTreeview.class
 com\Admin\export\GUI\SendEmail.class
-com\Admin\product\GUI\NewProduct$3.class
 com\ComponentandDatabase\Components\MyPanel.class
 com\ComponentandDatabase\Components\MyButton$1.class
 com\Admin\order\DTO\DTO_order.class
@@ -221,6 +217,7 @@ com\User\dashboard_user\GUI\Menu_user$2.class
 com\Admin\product\GUI\Form_Product.class
 com\Admin\home\DAO\DAO_Total.class
 com\Admin\statistics\GUI\Form_Statistics$1.class
+com\Admin\inventory\DAO\DAOInventory$1.class
 com\User\home\GUI\productDeteails$1.class
 com\Admin\export\GUI\Bill_ExportDetails.class
 com\Admin\login\GUI\Login$3.class

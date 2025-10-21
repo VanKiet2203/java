@@ -15,19 +15,20 @@ import java.math.BigDecimal;
 public class DAO_Order {
 
     public boolean insertOrder(DTO_Order order) {
-        String sql = "INSERT INTO [Orders] (Order_No, Customer_ID, Total_Quantity_Product, Total_Price, Payment, Date_Order, Time_Order) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO [Orders] (Order_No, Customer_ID, Cart_ID, Total_Quantity_Product, Total_Price, Payment, Date_Order, Time_Order) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, order.getOrderNo());
             stmt.setString(2, order.getCustomerID());
-            stmt.setInt(3, order.getTotalQuantityProduct());
-            stmt.setBigDecimal(4, order.getTotalPrice());
-            stmt.setString(5, order.getPayment());
-            stmt.setDate(6, java.sql.Date.valueOf(order.getDateOrder()));
-            stmt.setTime(7, java.sql.Time.valueOf(order.getTimeOrder()));
+            stmt.setString(3, order.getCartID());
+            stmt.setInt(4, order.getTotalQuantityProduct());
+            stmt.setBigDecimal(5, order.getTotalPrice());
+            stmt.setString(6, order.getPayment());
+            stmt.setDate(7, java.sql.Date.valueOf(order.getDateOrder()));
+            stmt.setTime(8, java.sql.Time.valueOf(order.getTimeOrder()));
 
             int rows = stmt.executeUpdate();
             return rows > 0;
@@ -56,7 +57,7 @@ public class DAO_Order {
                 Date dateOrder = rs.getDate("Date_Order");
                 Time timeOrder = rs.getTime("Time_Order");
 
-                DTO_Order order = new DTO_Order(orderNo, customerId, totalQuantity, totalPrice, payment, 
+                DTO_Order order = new DTO_Order(orderNo, customerId, null, totalQuantity, totalPrice, payment, 
                                                 dateOrder.toLocalDate(), timeOrder.toLocalTime());
                 orderList.add(order);
             }
@@ -71,7 +72,7 @@ public class DAO_Order {
     public ArrayList<DTO_Order> getSortedOrdersByCustomer(String customerID) {
         ArrayList<DTO_Order> orderList = new ArrayList<>();
         String sql = "SELECT * FROM Orders WHERE Customer_ID = ? "
-                   + "ORDER BY Date_Order DESC, Time_Order DESC"; // Sắp xếp ngày và giờ giảm dần
+                   + "ORDER BY Date_Order DESC, Time_Order DESC"; // Sap xep ngay va gio giam dan
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -88,7 +89,7 @@ public class DAO_Order {
                 Date dateOrder = rs.getDate("Date_Order");
                 Time timeOrder = rs.getTime("Time_Order");
 
-                DTO_Order order = new DTO_Order(orderNo, customerId, totalQuantity, totalPrice, payment, 
+                DTO_Order order = new DTO_Order(orderNo, customerId, null, totalQuantity, totalPrice, payment, 
                                               dateOrder.toLocalDate(), timeOrder.toLocalTime());
                 orderList.add(order);
             }

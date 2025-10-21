@@ -12,12 +12,14 @@ import java.time.LocalTime;
 public class DTO_order {
     private String orderNo;
     private String customerID;
+    private String cartID; // Thêm Cart_ID
     private int totalQuantityProduct;
     private BigDecimal totalPrice;
     private String payment;
     private LocalDate dateOrder;
     private LocalTime timeOrder;
     private String status;
+    private String recordStatus;
     private String customerName;
     private String address;
     private String contact;
@@ -57,6 +59,14 @@ public class DTO_order {
 
     public void setCustomerID(String customerID) {
         this.customerID = customerID;
+    }
+
+    public String getCartID() {
+        return cartID;
+    }
+
+    public void setCartID(String cartID) {
+        this.cartID = cartID;
     }
 
     public int getTotalQuantityProduct() {
@@ -131,7 +141,13 @@ public class DTO_order {
         this.contact = contact;
     }
     
-    
+    public String getRecordStatus() {
+        return recordStatus;
+    }
+
+    public void setRecordStatus(String recordStatus) {
+        this.recordStatus = recordStatus;
+    }
     
     // toString()
     @Override

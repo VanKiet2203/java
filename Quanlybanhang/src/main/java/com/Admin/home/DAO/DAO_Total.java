@@ -18,7 +18,7 @@ public class DAO_Total {
 
     public DTO_Product showTotalProduct() {
         DTO_Product productSummary = new DTO_Product();
-        String sql = "SELECT COUNT(*) AS total FROM Product";
+        String sql = "SELECT COUNT(*) AS total FROM Product WHERE Status = 'Available'";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -38,7 +38,7 @@ public class DAO_Total {
 
     public DTO_Customer showTotalCustomer() {
         DTO_Customer customerSummary = new DTO_Customer();
-        String sql = "SELECT COUNT(*) AS total FROM Customer";
+        String sql = "SELECT COUNT(*) AS total FROM Customer WHERE Record_Status = 'Available'";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -59,7 +59,7 @@ public class DAO_Total {
 
     public DTO_Orders showTotalOrder() {
         DTO_Orders orderSummary = new DTO_Orders();
-        String sql = "SELECT COUNT(*) AS total FROM Orders"; // Giả sử bảng lưu đơn hàng là "Orders"
+        String sql = "SELECT COUNT(*) AS total FROM Orders WHERE Status = 'Available'"; // Chỉ đếm orders có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -80,7 +80,7 @@ public class DAO_Total {
 
     public DTO_BillExported showTotalBillExport() {
         DTO_BillExported billExportSummary = new DTO_BillExported();
-        String sql = "SELECT COUNT(*) AS total FROM Bill_Exported"; // Giả sử bảng lưu hóa đơn xuất là "BillExported"
+        String sql = "SELECT COUNT(*) AS total FROM Bill_Exported WHERE Status = 'Available'"; // Chỉ đếm bills có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -101,7 +101,7 @@ public class DAO_Total {
 
     public DTO_Insurance showTotalInsurance() {
         DTO_Insurance insuranceSummary = new DTO_Insurance();
-        String sql = "SELECT COUNT(*) AS total FROM Insurance"; // Giả sử bảng lưu bảo hành là "Insurance"
+        String sql = "SELECT COUNT(*) AS total FROM Insurance WHERE Status = 'Available'"; // Chỉ đếm insurance có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -122,7 +122,7 @@ public class DAO_Total {
 
     public DTO_Supplier showTotalSupplier() {
         DTO_Supplier supplierSummary = new DTO_Supplier();
-        String sql = "SELECT COUNT(*) AS total FROM Supplier"; // Giả sử bảng lưu nhà cung cấp là "Supplier"
+        String sql = "SELECT COUNT(*) AS total FROM Supplier WHERE Status = 'Available'"; // Chỉ đếm suppliers có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -143,7 +143,7 @@ public class DAO_Total {
 
     public DTO_Category showTotalCategory() {
         DTO_Category categorySummary = new DTO_Category();
-        String sql = "SELECT COUNT(*) AS total FROM Category"; // Giả sử bảng lưu danh mục là "Category"
+        String sql = "SELECT COUNT(*) AS total FROM Category WHERE Status = 'Available'"; // Chỉ đếm categories có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);
@@ -164,7 +164,7 @@ public class DAO_Total {
     
     public DTO_BillImport showTotalBillImport() {
         DTO_BillImport billImportSummary = new DTO_BillImport();
-        String sql = "SELECT COUNT(*) AS total FROM Bill_Imported"; // Giả sử bảng lưu hóa đơn nhập là "BillImport"
+        String sql = "SELECT COUNT(*) AS total FROM Bill_Imported WHERE Status = 'Available'"; // Chỉ đếm bills có Status = 'Available'
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);

@@ -22,15 +22,13 @@ public class DAO_order {
   
     public List<DTO_order> getAllOrdersSorted() {
         List<DTO_order> orders = new ArrayList<>();
-        String sql = "SELECT o.Order_No, o.Customer_ID, o.Total_Quantity_Product, " +
+        String sql = "SELECT o.Order_No, o.Customer_ID, o.Cart_ID, o.Total_Quantity_Product, " +
                      "o.Total_Price, o.Payment, o.Date_Order, o.Time_Order, " +
-                     "od.Status, c.Full_Name, c.Address, c.Contact " +
+                     "o.Status, c.Full_Name, c.Address, c.Contact " +
                      "FROM Orders o " +
-                     "JOIN Orders_Details od ON o.Order_No = od.Order_No " +
                      "JOIN Customer c ON o.Customer_ID = c.Customer_ID " +
-                     "GROUP BY o.Order_No, o.Customer_ID, o.Total_Quantity_Product, " +
-                     "o.Total_Price, o.Payment, o.Date_Order, o.Time_Order, " +
-                     "c.Full_Name, c.Address, c.Contact, od.Status";
+                     "WHERE o.Status = 'Waiting' AND o.Record_Status = 'Available' AND c.Record_Status = 'Available' " +
+                     "ORDER BY o.Date_Order DESC, o.Time_Order DESC";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -40,6 +38,7 @@ public class DAO_order {
                 DTO_order order = new DTO_order();
                 order.setOrderNo(rs.getString("Order_No"));
                 order.setCustomerID(rs.getString("Customer_ID"));
+                order.setCartID(rs.getString("Cart_ID")); // Thêm Cart_ID
                 order.setTotalQuantityProduct(rs.getInt("Total_Quantity_Product"));
                 order.setTotalPrice(rs.getBigDecimal("Total_Price"));
                 order.setPayment(rs.getString("Payment"));
@@ -73,16 +72,50 @@ public class DAO_order {
     }
     
     public boolean updateOrderStatus(String orderNo, String newStatus) {
-        String sql = "UPDATE Orders_Details SET Status = ? WHERE Order_No = ?";
+        // Cập nhật Status trong bảng Orders (chính)
+        String updateOrdersSQL = "UPDATE Orders SET Status = ? WHERE Order_No = ?";
+        // Cập nhật Status trong bảng Orders_Details (chi tiết)
+        String updateOrderDetailsSQL = "UPDATE Orders_Details SET Status = ? WHERE Order_No = ?";
+        String updateStockSQL = """
+            UPDATE Product 
+            SET Quantity = Quantity + od.Sold_Quantity
+            FROM Product p
+            JOIN Orders_Details od ON p.Product_ID = od.Product_ID
+            WHERE od.Order_No = ? AND od.Status = 'Cancelled'
+        """;
 
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, newStatus);
-            stmt.setString(2, orderNo);
-
-            int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+        try (Connection conn = DatabaseConnection.connect()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement updateOrdersStmt = conn.prepareStatement(updateOrdersSQL);
+                 PreparedStatement updateOrderDetailsStmt = conn.prepareStatement(updateOrderDetailsSQL);
+                 PreparedStatement updateStockStmt = conn.prepareStatement(updateStockSQL)) {
+                
+                // Cập nhật trạng thái trong bảng Orders
+                updateOrdersStmt.setString(1, newStatus);
+                updateOrdersStmt.setString(2, orderNo);
+                int ordersRows = updateOrdersStmt.executeUpdate();
+                
+                // Cập nhật trạng thái trong bảng Orders_Details
+                updateOrderDetailsStmt.setString(1, newStatus);
+                updateOrderDetailsStmt.setString(2, orderNo);
+                int orderDetailsRows = updateOrderDetailsStmt.executeUpdate();
+                
+                // Nếu hủy đơn hàng, trả lại số lượng tồn kho
+                if ("Cancelled".equals(newStatus)) {
+                    updateStockStmt.setString(1, orderNo);
+                    updateStockStmt.executeUpdate();
+                }
+                
+                conn.commit();
+                return ordersRows > 0 && orderDetailsRows > 0;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -92,8 +125,18 @@ public class DAO_order {
     
     public List<DTO_orderDetails> getAllOrderDetails() throws SQLException {
         List<DTO_orderDetails> orderDetails = new ArrayList<>();
-        String sql = "SELECT Order_No, Customer_ID, Product_ID, Price, Quantity, "
-                   + "Date_Order, Time_Order, Status FROM Orders_Details";
+        String sql = """
+            SELECT od.Order_No, od.Customer_ID, od.Product_ID, od.Price, od.Sold_Quantity, 
+                   od.Date_Order, od.Time_Order, od.Status,
+                   p.Product_Name, p.Color, p.Speed, p.Battery_Capacity,
+                   ISNULL(ps.Quantity_Stock, 0) AS Total_Imported,
+                   p.Quantity AS Current_Stock,
+                   ISNULL(ps.Quantity_Stock, 0) - p.Quantity AS Total_Sold
+            FROM Orders_Details od
+            JOIN Product p ON od.Product_ID = p.Product_ID
+            LEFT JOIN Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
+            WHERE od.Record_Status = 'Available' AND od.Status = 'Waiting'
+        """;
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -105,7 +148,7 @@ public class DAO_order {
                 detail.setCustomerID(rs.getString("Customer_ID"));
                 detail.setProductID(rs.getString("Product_ID"));
                 detail.setPrice(rs.getBigDecimal("Price"));
-                detail.setQuantity(rs.getInt("Quantity"));
+                detail.setQuantity(rs.getInt("Sold_Quantity"));
                 detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
                 detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
                 detail.setStatus(rs.getString("Status"));
@@ -262,6 +305,101 @@ public class DAO_order {
            }
        }
        return orders;
+   }
+   
+    public boolean deleteOrder(String orderNo) {
+        String sql = "UPDATE Orders SET Record_Status = 'Unavailable' WHERE Order_No = ?";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+           
+           stmt.setString(1, orderNo);
+           int affectedRows = stmt.executeUpdate();
+           
+           return affectedRows > 0;
+           
+       } catch (SQLException e) {
+           e.printStackTrace();
+           return false;
+       }
+   }
+   
+   /**
+    * Lấy danh sách các Order đã confirmed để có thể chuyển sang Export
+    */
+   public List<DTO_order> getConfirmedOrders() {
+       List<DTO_order> orders = new ArrayList<>();
+       String sql = "SELECT o.Order_No, o.Customer_ID, o.Cart_ID, o.Total_Quantity_Product, " +
+                    "o.Total_Price, o.Payment, o.Date_Order, o.Time_Order, " +
+                    "o.Status, c.Full_Name, c.Address, c.Contact " +
+                    "FROM Orders o " +
+                    "JOIN Customer c ON o.Customer_ID = c.Customer_ID " +
+                    "WHERE o.Status = 'Confirmed' AND o.Record_Status = 'Available' AND c.Record_Status = 'Available' " +
+                    "ORDER BY o.Date_Order DESC, o.Time_Order DESC";
+       
+       try (Connection conn = DatabaseConnection.connect();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()) {
+           
+           while (rs.next()) {
+               DTO_order order = new DTO_order();
+               order.setOrderNo(rs.getString("Order_No"));
+               order.setCustomerID(rs.getString("Customer_ID"));
+               order.setCartID(rs.getString("Cart_ID"));
+               order.setTotalQuantityProduct(rs.getInt("Total_Quantity_Product"));
+               order.setTotalPrice(rs.getBigDecimal("Total_Price"));
+               order.setPayment(rs.getString("Payment"));
+               order.setDateOrder(rs.getDate("Date_Order").toLocalDate());
+               order.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
+               order.setStatus(rs.getString("Status"));
+               order.setCustomerName(rs.getString("Full_Name"));
+               order.setAddress(rs.getString("Address"));
+               order.setContact(rs.getString("Contact"));
+               
+               orders.add(order);
+           }
+           
+       } catch (SQLException e) {
+           e.printStackTrace();
+       }    
+       return orders;
+   }
+   
+   /**
+    * Lấy chi tiết Order đã confirmed để chuyển sang Export
+    */
+   public List<DTO_orderDetails> getConfirmedOrderDetails(String orderNo) throws SQLException {
+       List<DTO_orderDetails> orderDetails = new ArrayList<>();
+       String sql = """
+           SELECT od.Order_No, od.Customer_ID, od.Product_ID, od.Price, od.Sold_Quantity, 
+                  od.Date_Order, od.Time_Order, od.Status,
+                  p.Product_Name, p.Color, p.Speed, p.Battery_Capacity
+           FROM Orders_Details od
+           JOIN Product p ON od.Product_ID = p.Product_ID
+           WHERE od.Order_No = ? AND od.Record_Status = 'Available' AND od.Status = 'Confirmed'
+       """;
+
+       try (Connection conn = DatabaseConnection.connect();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+           
+           stmt.setString(1, orderNo);
+           try (ResultSet rs = stmt.executeQuery()) {
+               while (rs.next()) {
+                   DTO_orderDetails detail = new DTO_orderDetails();
+                   detail.setOrderNo(rs.getString("Order_No"));
+                   detail.setCustomerID(rs.getString("Customer_ID"));
+                   detail.setProductID(rs.getString("Product_ID"));
+                   detail.setPrice(rs.getBigDecimal("Price"));
+                   detail.setQuantity(rs.getInt("Sold_Quantity"));
+                   detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
+                   detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
+                   detail.setStatus(rs.getString("Status"));
+
+                   orderDetails.add(detail);
+               }
+           }
+       }
+       return orderDetails;
    }
 
 }

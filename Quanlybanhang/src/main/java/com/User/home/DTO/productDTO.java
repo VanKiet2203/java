@@ -6,30 +6,30 @@ public class productDTO {
 
     private String productID;
     private String productName;
-    private String cpu;
-    private String ram;
-    private String graphicsCard;
+    private String color;           // Thay thế cpu
+    private String batteryCapacity; // Thay thế ram  
+    private String speed;           // Thay thế graphicsCard
     private String operatingSystem;
     private BigDecimal price;
     private int quantity;
     private String warrantyPeriod;
     private String status;
     private String categoryID;
-    private String Brand;
+    private String brand;
     private String image;
 
     // Constructor mặc định
     public productDTO() {}
 
     // Constructor với tất cả các tham số
-    public productDTO(String productID, String productName, String cpu, String ram, String graphicsCard,
+    public productDTO(String productID, String productName, String color, String batteryCapacity, String speed,
                       String operatingSystem, BigDecimal price, int quantity, String warrantyPeriod, 
                       String status, String categoryID, String image) {
         this.productID = productID;
         this.productName = productName;
-        this.cpu = cpu;
-        this.ram = ram;
-        this.graphicsCard = graphicsCard;
+        this.color = color;
+        this.batteryCapacity = batteryCapacity;
+        this.speed = speed;
         this.operatingSystem = operatingSystem;
         this.price = price;
         this.quantity = quantity;
@@ -57,28 +57,28 @@ public class productDTO {
         this.productName = productName;
     }
 
-    public String getCpu() {
-        return cpu;
+    public String getColor() {
+        return color;
     }
 
-    public void setCpu(String cpu) {
-        this.cpu = cpu;
+    public void setColor(String color) {
+        this.color = color;
     }
 
-    public String getRam() {
-        return ram;
+    public String getBatteryCapacity() {
+        return batteryCapacity;
     }
 
-    public void setRam(String ram) {
-        this.ram = ram;
+    public void setBatteryCapacity(String batteryCapacity) {
+        this.batteryCapacity = batteryCapacity;
     }
 
-    public String getGraphicsCard() {
-        return graphicsCard;
+    public String getSpeed() {
+        return speed;
     }
 
-    public void setGraphicsCard(String graphicsCard) {
-        this.graphicsCard = graphicsCard;
+    public void setSpeed(String speed) {
+        this.speed = speed;
     }
 
     public String getOperatingSystem() {
@@ -129,6 +129,14 @@ public class productDTO {
         this.categoryID = categoryID;
     }
 
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
     public String getImage() {
         return image;
     }
@@ -142,15 +150,16 @@ public class productDTO {
         return "DTOProduct{" +
                 "productID='" + productID + '\'' +
                 ", productName='" + productName + '\'' +
-                ", cpu='" + cpu + '\'' +
-                ", ram='" + ram + '\'' +
-                ", graphicsCard='" + graphicsCard + '\'' +
+                ", color='" + color + '\'' +
+                ", batteryCapacity='" + batteryCapacity + '\'' +
+                ", speed='" + speed + '\'' +
                 ", operatingSystem='" + operatingSystem + '\'' +
                 ", price=" + price +
                 ", quantity=" + quantity +
                 ", warrantyPeriod='" + warrantyPeriod + '\'' +
                 ", status='" + status + '\'' +
                 ", categoryID='" + categoryID + '\'' +
+                ", brand='" + brand + '\'' +
                 ", image='" + image + '\'' +
                 '}';
     }

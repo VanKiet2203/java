@@ -6,6 +6,7 @@ import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.insurance.BUS.BUS_Warranty;
 import com.Admin.insurance.DTO.DTO_Insurance;
 import com.Admin.insurance.DTO.DTO_InsuranceDetails;
+import static com.ComponentandDatabase.Components.UIConstants.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -13,214 +14,93 @@ import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.ComponentandDatabase.Components.UIConstants.*;
-
 public class InsuranceDetailsDialog extends JDialog {
-    
-    private MyTable tableInsuranceDetails;
-    private DefaultTableModel modelInsuranceDetails;
-    private MyButton btnClose, btnExportPDF;
     private String insuranceNo;
-    private BUS_Warranty busWarranty;
+    private DTO_Insurance insurance;
+    private List<DTO_InsuranceDetails> insuranceDetails;
+    
+    private JPanel mainPanel;
+    private MyTable tableDetails;
+    private DefaultTableModel modelDetails;
+    private MyButton btnClose, btnExportPDF;
     
     public InsuranceDetailsDialog(JFrame parent, String insuranceNo) {
         super(parent, "Insurance Details", true);
         this.insuranceNo = insuranceNo;
-        this.busWarranty = new BUS_Warranty();
-        
         initComponents();
-        init();
         loadInsuranceDetails();
     }
     
     private void initComponents() {
         setSize(800, 600);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-        setResizable(true);
-    }
-    
-    private void init() {
-        // Header
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(PRIMARY_COLOR);
-        headerPanel.setPreferredSize(new Dimension(800, 60));
-        headerPanel.setLayout(new BorderLayout());
+        setLocationRelativeTo(getParent());
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         
+        mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        add(mainPanel);
+        
+        // Title
         JLabel lblTitle = new JLabel("Insurance Details - " + insuranceNo);
         lblTitle.setFont(FONT_TITLE_MEDIUM);
-        lblTitle.setForeground(Color.WHITE);
+        lblTitle.setForeground(PRIMARY_COLOR);
         lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
-        headerPanel.add(lblTitle, BorderLayout.CENTER);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        mainPanel.add(lblTitle, BorderLayout.NORTH);
         
-        add(headerPanel, BorderLayout.NORTH);
+        // Insurance info panel
+        createInsuranceInfoPanel();
         
-        // Main content
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Color.WHITE);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Details table
+        createDetailsTable();
         
-        // Insurance summary
-        JPanel summaryPanel = createSummaryPanel();
-        mainPanel.add(summaryPanel, BorderLayout.NORTH);
-        
-        // Products table
-        JPanel tablePanel = createTablePanel();
-        mainPanel.add(tablePanel, BorderLayout.CENTER);
-        
-        // Buttons
-        JPanel buttonPanel = createButtonPanel();
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        add(mainPanel, BorderLayout.CENTER);
+        // Button panel
+        createButtonPanel();
     }
     
-    private JPanel createSummaryPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
-            "Insurance Summary",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
+    private void createInsuranceInfoPanel() {
+        JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+            "Insurance Information",
+            0, 0,
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
         
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
+        // Add info labels (will be populated when data is loaded)
+        infoPanel.add(new JLabel("Insurance No:"));
+        infoPanel.add(new JLabel(""));
+        infoPanel.add(new JLabel("Invoice No:"));
+        infoPanel.add(new JLabel(""));
+        infoPanel.add(new JLabel("Customer ID:"));
+        infoPanel.add(new JLabel(""));
+        infoPanel.add(new JLabel("Start Date:"));
+        infoPanel.add(new JLabel(""));
+        infoPanel.add(new JLabel("End Date:"));
+        infoPanel.add(new JLabel(""));
+        infoPanel.add(new JLabel("Status:"));
+        infoPanel.add(new JLabel(""));
         
-        // Load insurance data
-        try {
-            DTO_Insurance insurance = busWarranty.getInsuranceByNo(insuranceNo);
-            if (insurance != null) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                
-                // Insurance No
-                gbc.gridx = 0; gbc.gridy = 0;
-                panel.add(new JLabel("Insurance No:"), gbc);
-                gbc.gridx = 1;
-                panel.add(new JLabel(insurance.getInsuranceNo()), gbc);
-                
-                // Invoice No
-                gbc.gridx = 2; gbc.gridy = 0;
-                panel.add(new JLabel("Invoice No:"), gbc);
-                gbc.gridx = 3;
-                panel.add(new JLabel(insurance.getInvoiceNo()), gbc);
-                
-                // Start Date
-                gbc.gridx = 0; gbc.gridy = 1;
-                panel.add(new JLabel("Start Date:"), gbc);
-                gbc.gridx = 1;
-                panel.add(new JLabel(insurance.getStartDateInsurance().format(formatter)), gbc);
-                
-                // End Date
-                gbc.gridx = 2; gbc.gridy = 1;
-                panel.add(new JLabel("End Date:"), gbc);
-                gbc.gridx = 3;
-                panel.add(new JLabel(insurance.getEndDateInsurance().format(formatter)), gbc);
-                
-                // Description
-                gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4;
-                panel.add(new JLabel("Description: " + insurance.getDescribleCustomer()), gbc);
-            }
-        } catch (Exception e) {
-            panel.add(new JLabel("Error loading insurance details: " + e.getMessage()), gbc);
-        }
-        
-        return panel;
+        mainPanel.add(infoPanel, BorderLayout.NORTH);
     }
     
-    private JPanel createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
-            "Insured Products",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            FONT_TITLE_SMALL,
-            PRIMARY_COLOR
-        ));
+    private void createDetailsTable() {
+        String[] columnNames = {
+            "Product ID", "Product Name", "Description", "Date Insurance", 
+            "Time Insurance", "Status"
+        };
         
-        // Create table
-        String[] columns = {"Product ID", "Product Name", "Warranty Period", 
-                           "Start Date", "End Date", "Status"};
-        modelInsuranceDetails = new DefaultTableModel(columns, 0) {
+        modelDetails = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // Read-only table
             }
         };
         
-        tableInsuranceDetails = createStyledTable(modelInsuranceDetails);
-        JScrollPane scrollPane = new JScrollPane(tableInsuranceDetails);
-        scrollPane.setPreferredSize(new Dimension(750, 300));
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        panel.setBackground(Color.WHITE);
-        
-        btnExportPDF = new MyButton("Export PDF", 20);
-        btnExportPDF.setBackgroundColor(PRIMARY_COLOR);
-        btnExportPDF.setHoverColor(PRIMARY_HOVER);
-        btnExportPDF.setForeground(Color.WHITE);
-        btnExportPDF.setPreferredSize(new Dimension(120, 35));
-        btnExportPDF.addActionListener(e -> exportToPDF());
-        panel.add(btnExportPDF);
-        
-        btnClose = new MyButton("Close", 20);
-        btnClose.setBackgroundColor(Color.decode("#6C757D"));
-        btnClose.setHoverColor(Color.decode("#5A6268"));
-        btnClose.setForeground(Color.WHITE);
-        btnClose.setPreferredSize(new Dimension(100, 35));
-        btnClose.addActionListener(e -> dispose());
-        panel.add(btnClose);
-        
-        return panel;
-    }
-    
-    private void loadInsuranceDetails() {
-        try {
-            List<DTO_InsuranceDetails> details = busWarranty.getInsuranceDetailsByNo(insuranceNo);
-            modelInsuranceDetails.setRowCount(0);
-            
-            if (details != null) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                for (DTO_InsuranceDetails detail : details) {
-                    Object[] row = {
-                        detail.getProductId(),
-                        "Product Name", // TODO: Load actual product name
-                        "12 months", // TODO: Calculate actual warranty period
-                        detail.getDateInsurance().format(formatter),
-                        "End Date", // TODO: Calculate end date
-                        "Active"
-                    };
-                    modelInsuranceDetails.addRow(row);
-                }
-            }
-        } catch (Exception e) {
-            CustomDialog.showError("Error loading insurance details: " + e.getMessage());
-        }
-    }
-    
-    private void exportToPDF() {
-        try {
-            // TODO: Implement PDF export
-            CustomDialog.showSuccess("PDF export functionality will be implemented!");
-        } catch (Exception e) {
-            CustomDialog.showError("Export failed: " + e.getMessage());
-        }
-    }
-    
-    private MyTable createStyledTable(DefaultTableModel model) {
-        return new MyTable(
-            model,
+        tableDetails = new MyTable(
+            modelDetails,
             Color.WHITE,
             TEXT_PRIMARY,
             Color.decode("#E8F5E9"),
@@ -230,5 +110,127 @@ public class InsuranceDetailsDialog extends JDialog {
             FONT_TABLE_CONTENT,
             FONT_TABLE_HEADER
         );
+        
+        tableDetails.setRowHeight(30);
+        
+        JScrollPane scrollPane = new JScrollPane(tableDetails);
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+            "Insurance Details",
+            0, 0,
+            FONT_TITLE_SMALL,
+            PRIMARY_COLOR
+        ));
+        
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+    }
+    
+    private void createButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        btnExportPDF = new MyButton("Export PDF", 20);
+        styleDangerButton(btnExportPDF);
+        btnExportPDF.addActionListener(e -> exportToPDF());
+        buttonPanel.add(btnExportPDF);
+        
+        btnClose = new MyButton("Close", 20);
+        stylePrimaryButton(btnClose);
+        btnClose.addActionListener(e -> dispose());
+        buttonPanel.add(btnClose);
+        
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    private void loadInsuranceDetails() {
+        try {
+            BUS_Warranty busWarranty = new BUS_Warranty();
+            
+            // Load insurance info
+            insurance = busWarranty.getInsuranceByNo(insuranceNo);
+            if (insurance != null) {
+                updateInsuranceInfo();
+            }
+            
+            // Load insurance details
+            insuranceDetails = busWarranty.getInsuranceDetailsByNo(insuranceNo);
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            
+            modelDetails.setRowCount(0);
+            
+            if (insuranceDetails != null && !insuranceDetails.isEmpty()) {
+                for (DTO_InsuranceDetails detail : insuranceDetails) {
+                    Object[] row = {
+                        detail.getProductId(),
+                        "Product Name", // Will be loaded from Product table
+                        detail.getDescription(),
+                        detail.getDateInsurance().format(dateFormatter),
+                        detail.getTimeInsurance().format(timeFormatter),
+                        "Active"
+                    };
+                    modelDetails.addRow(row);
+                }
+            }
+            
+            tableDetails.adjustColumnWidths();
+            
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to load insurance details: " + e.getMessage());
+        }
+    }
+    
+    private void updateInsuranceInfo() {
+        if (insurance != null) {
+            // Update the info panel with actual data
+            JPanel infoPanel = (JPanel) mainPanel.getComponent(0);
+            infoPanel.removeAll();
+            infoPanel.setLayout(new GridLayout(0, 2, 10, 5));
+            
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            
+            infoPanel.add(new JLabel("Insurance No:"));
+            infoPanel.add(new JLabel(insurance.getInsuranceNo()));
+            infoPanel.add(new JLabel("Invoice No:"));
+            infoPanel.add(new JLabel(insurance.getInvoiceNo()));
+            infoPanel.add(new JLabel("Customer ID:"));
+            infoPanel.add(new JLabel(insurance.getCustomerId()));
+            infoPanel.add(new JLabel("Start Date:"));
+            infoPanel.add(new JLabel(insurance.getStartDateInsurance().format(dateFormatter)));
+            infoPanel.add(new JLabel("End Date:"));
+            infoPanel.add(new JLabel(insurance.getEndDateInsurance().format(dateFormatter)));
+            infoPanel.add(new JLabel("Status:"));
+            infoPanel.add(new JLabel("Active"));
+            
+            infoPanel.revalidate();
+            infoPanel.repaint();
+        }
+    }
+    
+    private void exportToPDF() {
+        try {
+            InsurancePDFExporter pdfExporter = new InsurancePDFExporter();
+            pdfExporter.exportInsurancePDF(insuranceNo);
+        } catch (Exception e) {
+            CustomDialog.showError("PDF export failed: " + e.getMessage());
+        }
+    }
+    
+    // Button styling methods
+    private void stylePrimaryButton(MyButton button) {
+        button.setBackgroundColor(PRIMARY_COLOR);
+        button.setHoverColor(Color.decode("#1976D2"));
+        button.setPressedColor(Color.decode("#1565C0"));
+        button.setForeground(Color.WHITE);
+        button.setFont(FONT_CONTENT_MEDIUM);
+    }
+    
+    private void styleDangerButton(MyButton button) {
+        button.setBackgroundColor(Color.decode("#F44336"));
+        button.setHoverColor(Color.decode("#D32F2F"));
+        button.setPressedColor(Color.decode("#C62828"));
+        button.setForeground(Color.WHITE);
+        button.setFont(FONT_CONTENT_MEDIUM);
     }
 }
