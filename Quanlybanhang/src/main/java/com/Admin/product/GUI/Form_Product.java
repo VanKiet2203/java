@@ -289,8 +289,13 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
            bntSyncQuantities.setForeground(Color.WHITE);
            bntSyncQuantities.addActionListener((e) -> {
                busProduct = new BusProduct();
-               busProduct.syncAllProductQuantities();
-               // Refresh table after sync
+               // FIXED: Sử dụng method fix quantity issues thay vì sync
+               if (busProduct.fixQuantityIssues()) {
+                   CustomDialog.showSuccess("Quantity issues fixed successfully!");
+               } else {
+                   CustomDialog.showError("Failed to fix quantity issues!");
+               }
+               // Refresh table after fix
                DefaultTableModel model = (DefaultTableModel) tableProduct.getModel();
                model.setRowCount(0);
                busProduct.uploadProduct(model);
@@ -305,6 +310,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
              "Color", 
              "Speed", 
              "Battery Capacity", 
+             "Warranty (Months)",
              "Total Imported",    // Số lượng nhập
              "Current Stock",      // Số lượng tồn kho
              "Sold Quantity",      // Số lượng đã bán
@@ -434,6 +440,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             0.07,  // Color - 7%
             0.07,  // Speed - 7%
             0.10,  // Battery Capacity - 10%
+            0.08,  // Warranty (Months) - 8%
             0.08,  // Total Imported - 8%
             0.08,  // Current Stock - 8%
             0.08,  // Sold Quantity - 8%

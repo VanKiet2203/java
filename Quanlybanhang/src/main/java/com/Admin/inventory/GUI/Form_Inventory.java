@@ -19,7 +19,7 @@ import java.util.List;
 
 public class Form_Inventory extends JPanel {
     private JPanel panel, panelSearch;
-    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntDebugBill;
+    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntDebugBill, bntReimportItem, bntFixQuantity;
     private MyTextField txtSearch;
     private MyCombobox<String> cmbSearch, cmbCategory, cmbSupplier;
     private JTable tableInventory, tableBills;
@@ -172,12 +172,20 @@ public class Form_Inventory extends JPanel {
         bntExportPDFBill.addActionListener(e -> exportPDFBillImport());
         actionPanel.add(bntExportPDFBill);
         
-           // 6. View Bills button
-           bntViewBills = new MyButton("View Bills", 20);
-           stylePrimaryButton(bntViewBills);
-           bntViewBills.setBounds(820, 30, 150, 35);
-           bntViewBills.addActionListener(e -> viewBills());
-           actionPanel.add(bntViewBills);
+        // 6. Reimport Item button
+        bntReimportItem = new MyButton("Import Existing Item", 20);
+        styleWarningButton(bntReimportItem);
+        bntReimportItem.setBounds(820, 30, 150, 35);
+        bntReimportItem.addActionListener(e -> reimportExistingItem());
+        actionPanel.add(bntReimportItem);
+        
+        
+        // 7. View Bills button
+        bntViewBills = new MyButton("View Bills", 20);
+        stylePrimaryButton(bntViewBills);
+        bntViewBills.setBounds(980, 30, 150, 35);
+        bntViewBills.addActionListener(e -> viewBills());
+        actionPanel.add(bntViewBills);
            
         
         panel.add(actionPanel);
@@ -415,6 +423,14 @@ public class Form_Inventory extends JPanel {
         button.setFont(FONT_CONTENT_MEDIUM);
     }
     
+    private void styleWarningButton(MyButton button) {
+        button.setBackgroundColor(Color.decode("#FF9800"));
+        button.setHoverColor(Color.decode("#F57C00"));
+        button.setPressedColor(Color.decode("#EF6C00"));
+        button.setForeground(Color.WHITE);
+        button.setFont(FONT_CONTENT_MEDIUM);
+    }
+    
     
     private void addNewInventoryItem() {
         try {
@@ -428,4 +444,37 @@ public class Form_Inventory extends JPanel {
             CustomDialog.showError("Failed to open Add Inventory Item dialog: " + e.getMessage());
         }
     }
+    
+    private void reimportExistingItem() {
+        try {
+            // Kiểm tra xem có sản phẩm nào được chọn không
+            int selectedRow = tableInventory.getSelectedRow();
+            if (selectedRow == -1) {
+                CustomDialog.showError("Vui lòng chọn sản phẩm cần nhập thêm!");
+                return;
+            }
+            
+            // Lấy thông tin sản phẩm được chọn
+            String warehouseId = tableInventory.getValueAt(selectedRow, 0).toString();
+            String productName = tableInventory.getValueAt(selectedRow, 1).toString();
+            int currentQuantity = Integer.parseInt(tableInventory.getValueAt(selectedRow, 4).toString());
+            
+            // Mở dialog nhập thêm sản phẩm
+            ReimportItemDialog reimportDialog = new ReimportItemDialog(
+                (JFrame) SwingUtilities.getWindowAncestor(this),
+                warehouseId,
+                productName,
+                currentQuantity
+            );
+            reimportDialog.setVisible(true);
+            
+            // Refresh data after reimporting
+            refreshData();
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Failed to open Reimport Item dialog: " + e.getMessage());
+        }
+    }
+    
+ 
 }

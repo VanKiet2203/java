@@ -81,9 +81,10 @@ public class PDFExporter {
             addFooter(document);
 
             document.close();
+            CustomDialog.showSuccess("PDF exported successfully to: " + fileName);
             
         } catch (Exception e) {
-            CustomDialog.showError("Error exporting PDF !");
+            CustomDialog.showError("Error exporting PDF: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -130,6 +131,17 @@ public class PDFExporter {
         JPanel billContent = new JPanel(new BorderLayout());
         billContent.add(scrollPane, BorderLayout.CENTER);
 
+        // Create panelTitle if not exists
+        if (panelTitle == null) {
+            panelTitle = new JPanel();
+            panelTitle.setBackground(Color.decode("#1CB5E0"));
+            panelTitle.setPreferredSize(new Dimension(450, 30));
+            JLabel lblBillTitle = new JLabel("BILL FOR ORDER", JLabel.CENTER);
+            lblBillTitle.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
+            lblBillTitle.setForeground(Color.WHITE);
+            panelTitle.add(lblBillTitle);
+        }
+        
         panelBill.removeAll();
         panelBill.add(panelTitle, BorderLayout.NORTH);
         panelBill.add(billContent, BorderLayout.CENTER);
@@ -303,7 +315,7 @@ public class PDFExporter {
             String productId = item[2].toString();
             BigDecimal unitPrice = (BigDecimal) item[3];
             int quantity = (int) item[4];
-            String warranty= bus_ExportBill.getWarranry(productId);
+            String warranty= bus_ExportBill.getWarranty(productId);
             
             // Calculate item total without discount first
             BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));

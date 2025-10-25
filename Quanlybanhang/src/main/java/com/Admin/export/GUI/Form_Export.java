@@ -45,7 +45,7 @@ public class Form_Export extends JPanel {
     private JPanel panel, panelSearch,billBody;
     private MyPanel panelBill, panelTitle;
     private JLabel lblAdminID, lblAdminName, lblInvoice;
-    private MyButton bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport;
+    private MyButton bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport, bntWarranty, bntFixQuantity;
     private MyTextField txtSearchOrder, txtAdminID, txtAdminName;
     private MyCombobox<String> cmbSearchOrder;
     private MyTable tableOrderDetails;
@@ -127,6 +127,49 @@ public class Form_Export extends JPanel {
               billDetail.setVisible(true);
           });
           panelSearch.add(bntDetails);
+          
+          bntWarranty = new MyButton("Warranty", 20);
+          styleWarningButton(bntWarranty);
+          bntWarranty.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\insurance.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+          bntWarranty.setBounds(880, 30, 120, 35);
+          bntWarranty.addActionListener((e) -> {
+              WarrantyManagementForm warrantyForm = new WarrantyManagementForm();
+              JFrame warrantyFrame = new JFrame("Warranty Management");
+              warrantyFrame.setContentPane(warrantyForm);
+              warrantyFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+              warrantyFrame.setSize(1200, 700);
+              warrantyFrame.setLocationRelativeTo(null);
+              warrantyFrame.setVisible(true);
+          });
+          panelSearch.add(bntWarranty);
+          
+          bntFixQuantity = new MyButton("Fix Quantity", 20);
+          styleDangerButton(bntFixQuantity);
+          bntFixQuantity.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+          bntFixQuantity.setBounds(1010, 30, 120, 35);
+          bntFixQuantity.addActionListener((e) -> {
+              boolean confirm = CustomDialog.showOptionPane(
+                  "Fix Quantity Issues",
+                  "This will recalculate all product quantities. Continue?",
+                  UIManager.getIcon("OptionPane.questionIcon"),
+                  Color.decode("#FF9800")
+              );
+              if (confirm) {
+                  try {
+                      BUS_ExportBill busExportBill = new BUS_ExportBill();
+                      if (busExportBill.fixQuantityIssues()) {
+                          CustomDialog.showSuccess("Quantity issues fixed successfully!");
+                          Refresh();
+                      } else {
+                          CustomDialog.showError("Failed to fix quantity issues!");
+                      }
+                  } catch (Exception ex) {
+                      CustomDialog.showError("Error: " + ex.getMessage());
+                      ex.printStackTrace();
+                  }
+              }
+          });
+          panelSearch.add(bntFixQuantity);
           
           bntExportFile = new MyButton("Export", 20);
           bntExportFile.setBackgroundColor(Color.WHITE);
@@ -773,7 +816,7 @@ public class Form_Export extends JPanel {
             totalNetPay = totalNetPay.add(totalPrice);
             totalProducts += quantity;
             busExportBill= new BUS_ExportBill();
-            String warranty= busExportBill.getWarranry(productID);
+            String warranty= busExportBill.getWarranty(productID);
             model.addRow(new Object[]{
                 stt++,
                 productID,
@@ -1016,46 +1059,45 @@ public class Form_Export extends JPanel {
             int quantity = ((Number) item[4]).intValue();
             BigDecimal unitPrice = (BigDecimal) item[3];
 
-            // No IMEI handling; process per quantity
-            for (int i = 0; i < quantity; i++) {
-                processSingleImeiItem(
-                    item,
-                    null,
-                    discountPercent,
-                    unitPrice,
-                    productID,
-                    promotionCode
-                );
-            }
+            // Xử lý theo tổng số lượng của sản phẩm, không chia nhỏ
+            processProductItem(
+                item,
+                discountPercent,
+                unitPrice,
+                productID,
+                quantity,
+                promotionCode
+            );
         }
 
         cleanupAfterExport(imeis, orderItems.get(0)[0].toString());
     }
 
-    private void processSingleImeiItem(Object[] item, String imei, BigDecimal discountPercent, 
-                                     BigDecimal unitPrice, String productID, String promotionCode) throws Exception {
-        // Calculate discount for single item
-        BigDecimal discountAmount = unitPrice.multiply(discountPercent)
-                                           .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        BigDecimal priceAfterDiscount = unitPrice.subtract(discountAmount);
+    private void processProductItem(Object[] item, BigDecimal discountPercent, 
+                                   BigDecimal unitPrice, String productID, int quantity, String promotionCode) throws Exception {
+        // Calculate discount for total quantity
+        BigDecimal totalBefore = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal discountAmount = totalBefore.multiply(discountPercent)
+                                               .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalAfter = totalBefore.subtract(discountAmount);
 
-        // Create export detail
+        // Create export detail với tổng số lượng
         DTO_BillExportedDetail detail = createExportDetail(
             productID, 
-            imei, 
+            null, // No IMEI
             unitPrice, 
-            1, // Quantity per IMEI is always 1
-            discountPercent, // Original discount percentage
-            unitPrice,       // Price before discount for single item
-            priceAfterDiscount,
+            quantity, // Tổng số lượng thực tế
+            discountPercent,
+            totalBefore,
+            totalAfter,
             promotionCode
         );
 
-        if (!busExportBill.insertBillDetail(detail, Collections.emptyList()) || 
-            !busExportBill.updateProductQuantity(detail)) {
-            throw new Exception("Không thể xử lý sản phẩm");
+        if (!busExportBill.insertBillDetail(detail, Collections.emptyList())) {
+            throw new Exception("Không thể xử lý sản phẩm: " + productID + " với số lượng: " + quantity);
         }
     }
+
 
 
 
@@ -1075,13 +1117,19 @@ public class Form_Export extends JPanel {
                 totalAfter,
                 new java.sql.Date(System.currentTimeMillis()),
                 new java.sql.Time(System.currentTimeMillis()),
-                promotionCode
+                promotionCode,
+                new java.sql.Date(System.currentTimeMillis()), // Start_Date
+                new java.sql.Date(System.currentTimeMillis())  // End_Date (will be calculated by BUS layer)
             );
         }
 
     private void cleanupAfterExport(List<String> imeis, String orderNo) {
         // Xóa order
         busOrderDetail.deleteOrder(orderNo);
+        
+        // REMOVED: Không gọi fixQuantityIssues ở đây để tránh trùng lặp với trigger
+        // Trigger trg_BED_AI_Stock đã tự động cập nhật số lượng
+        
         CustomDialog.showSuccess("Export bill and update database successfully!");
     }
     
@@ -1101,6 +1149,22 @@ public class Form_Export extends JPanel {
         btn.setBackgroundColor(INFO_COLOR);
         btn.setHoverColor(INFO_HOVER);
         btn.setPressedColor(INFO_HOVER.darker());
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+    
+    private void styleWarningButton(MyButton btn) {
+        btn.setBackgroundColor(Color.decode("#FF9800"));
+        btn.setHoverColor(Color.decode("#F57C00"));
+        btn.setPressedColor(Color.decode("#EF6C00"));
+        btn.setFont(FONT_BUTTON_MEDIUM);
+        btn.setForeground(Color.WHITE);
+    }
+    
+    private void styleDangerButton(MyButton btn) {
+        btn.setBackgroundColor(Color.decode("#F44336"));
+        btn.setHoverColor(Color.decode("#D32F2F"));
+        btn.setPressedColor(Color.decode("#C62828"));
         btn.setFont(FONT_BUTTON_MEDIUM);
         btn.setForeground(Color.WHITE);
     }

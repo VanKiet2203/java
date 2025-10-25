@@ -76,20 +76,20 @@ public class DAO_order {
         String updateOrdersSQL = "UPDATE Orders SET Status = ? WHERE Order_No = ?";
         // Cập nhật Status trong bảng Orders_Details (chi tiết)
         String updateOrderDetailsSQL = "UPDATE Orders_Details SET Status = ? WHERE Order_No = ?";
-        String updateStockSQL = """
-            UPDATE Product 
-            SET Quantity = Quantity + od.Sold_Quantity
-            FROM Product p
-            JOIN Orders_Details od ON p.Product_ID = od.Product_ID
-            WHERE od.Order_No = ? AND od.Status = 'Cancelled'
-        """;
+        // KHÔNG cập nhật Product.Quantity thủ công vì trigger sẽ tự động xử lý
+        // String updateStockSQL = """
+        //     UPDATE Product 
+        //     SET Quantity = Quantity + od.Sold_Quantity
+        //     FROM Product p
+        //     JOIN Orders_Details od ON p.Product_ID = od.Product_ID
+        //     WHERE od.Order_No = ? AND od.Status = 'Cancelled'
+        // """;
 
         try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             
             try (PreparedStatement updateOrdersStmt = conn.prepareStatement(updateOrdersSQL);
-                 PreparedStatement updateOrderDetailsStmt = conn.prepareStatement(updateOrderDetailsSQL);
-                 PreparedStatement updateStockStmt = conn.prepareStatement(updateStockSQL)) {
+                 PreparedStatement updateOrderDetailsStmt = conn.prepareStatement(updateOrderDetailsSQL)) {
                 
                 // Cập nhật trạng thái trong bảng Orders
                 updateOrdersStmt.setString(1, newStatus);
@@ -101,11 +101,8 @@ public class DAO_order {
                 updateOrderDetailsStmt.setString(2, orderNo);
                 int orderDetailsRows = updateOrderDetailsStmt.executeUpdate();
                 
-                // Nếu hủy đơn hàng, trả lại số lượng tồn kho
-                if ("Cancelled".equals(newStatus)) {
-                    updateStockStmt.setString(1, orderNo);
-                    updateStockStmt.executeUpdate();
-                }
+                // KHÔNG cập nhật Product.Quantity thủ công vì trigger sẽ tự động xử lý
+                // Nếu cần trả lại số lượng khi cancel order, trigger sẽ xử lý
                 
                 conn.commit();
                 return ordersRows > 0 && orderDetailsRows > 0;

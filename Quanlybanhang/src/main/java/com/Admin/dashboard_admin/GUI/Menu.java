@@ -22,7 +22,7 @@ import com.Admin.product.GUI.EditProduct;
 
 public class Menu extends JPanel {
     
-    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblInventory, lblExport, lblStatistics, lblExit, lblMenu, lblInsurance, lblPromotion;
+    private JLabel lblProfile, lblHome, lblCustomer, lblOrder, lblCategory, lblProduct, lblInventory, lblExport, lblStatistics, lblExit, lblMenu, lblPromotion;
     private JPanel menuPanel; // Panel chứa tất cả label
     private JLabel lastHoveredLabel = null; // Lưu label được hover trước đó
     private boolean isMenuExpanded = false;
@@ -78,7 +78,6 @@ public class Menu extends JPanel {
         lblProduct= createLabel("Product", "product.png", 330);
         lblInventory= createLabel("Inventory", "import.png", 390);
         lblExport= createLabel("Export", "export.png", 450);
-        lblInsurance= createLabel("Insurance", "insurance.png", 510);
         lblPromotion= createLabel("Promotion", "pie_chart.png", 570);
         lblStatistics= createLabel("Statistics", "statistics.png", 630);
         lblExit= createLabel("Exit", "exit.png", 690);
@@ -93,10 +92,8 @@ public class Menu extends JPanel {
         addHoverEffectForExit(lblProduct);
         addHoverEffectForExit(lblInventory);
         addHoverEffectForExit(lblExport);
-        addHoverEffectForExit(lblInsurance);
         addHoverEffectForExit(lblPromotion);
         addHoverEffectForExit(lblStatistics);
-      
         addHoverEffectForExit(lblExit);
         addHoverEffectForExit(lblProfile);
 
@@ -109,7 +106,6 @@ public class Menu extends JPanel {
         menuPanel.add(lblProduct);
         menuPanel.add(lblInventory);
         menuPanel.add(lblExport);
-        menuPanel.add(lblInsurance);
         menuPanel.add(lblPromotion);
         menuPanel.add(lblStatistics);
         menuPanel.add(lblExit);
@@ -180,12 +176,7 @@ public class Menu extends JPanel {
             }
         });
         
-        lblInsurance.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                switchForm("Insurance");
-            }
-        });
+        
         
         lblPromotion.addMouseListener(new MouseAdapter() {
             @Override
@@ -365,7 +356,7 @@ public class Menu extends JPanel {
         lblProduct.setVisible(isVisible);
         lblInventory.setVisible(isVisible);
         lblExport.setVisible(isVisible);
-        lblInsurance.setVisible(isVisible);
+        lblPromotion.setVisible(isVisible);
         lblStatistics.setVisible(isVisible);
         lblExit.setVisible(isVisible);
         menuPanel.revalidate();

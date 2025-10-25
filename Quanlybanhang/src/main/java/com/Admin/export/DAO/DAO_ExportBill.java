@@ -8,18 +8,48 @@ import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.Admin.promotion.BUS.BUSPromotion;
 import com.Admin.promotion.DTO.DTOPromotion;
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
+import com.Admin.export.DTO.DTO_WarrantyInfo;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.*;
+import java.util.List;
+import java.util.ArrayList;
 // import java.time.LocalDate; // not used
-// import java.util.List; // not used
 
 public class DAO_ExportBill {
 
     // Existing methods omitted for brevity
 
-    public String getWarranty(String productID) { return "N/A"; }
+    public String getWarranty(String productID) {
+        String sql = "SELECT Warranty_Months FROM Product WHERE Product_ID = ? AND Status = 'Available'";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, productID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int warrantyMonths = rs.getInt("Warranty_Months");
+                return warrantyMonths + " tháng";
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting warranty: " + e.getMessage());
+        }
+        return "12 tháng"; // Default warranty
+    }
+    
+    public int getWarrantyMonths(String productID) {
+        String sql = "SELECT Warranty_Months FROM Product WHERE Product_ID = ? AND Status = 'Available'";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, productID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("Warranty_Months");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting warranty months: " + e.getMessage());
+        }
+        return 12; // Default warranty months
+    }
 
     // Insert Export Bill (header) with optional promotion code
     public boolean insertBillExported(DTO_BillExported bill, String promotionCode) {
@@ -49,16 +79,24 @@ public class DAO_ExportBill {
         try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
 
-            // 1) Validate stock against current product stock (Product.Quantity)
-            String stockSql = "SELECT p.Quantity AS Current_Stock "
-                            + "FROM Product p "
-                            + "WHERE p.Product_ID = ? AND p.Status = 'Available'";
-            try (PreparedStatement ps = conn.prepareStatement(stockSql)) {
+            // 1) Validate stock using stored procedure
+            String stockValidationSql = "EXEC sp_ValidateStockBeforeExport ?, ?";
+            try (PreparedStatement ps = conn.prepareStatement(stockValidationSql)) {
                 ps.setString(1, detail.getProductId());
+                ps.setInt(2, detail.getQuantity());
                 ResultSet rs = ps.executeQuery();
                 if (!rs.next()) { conn.rollback(); return false; }
-                int onHand = rs.getInt("Current_Stock");
-                if (onHand < detail.getQuantity()) { conn.rollback(); return false; }
+                
+                boolean isValid = rs.getBoolean("IsValid");
+                String result = rs.getString("Result");
+                
+                if (!isValid || !"SUCCESS".equals(result)) {
+                    System.err.println("Insufficient stock for product: " + detail.getProductId() + 
+                                     ", Requested: " + detail.getQuantity() + 
+                                     ", Available: " + rs.getInt("ProductStock"));
+                    conn.rollback(); 
+                    return false; 
+                }
             }
 
             // 2) Resolve promotion percent (if active)
@@ -72,33 +110,34 @@ public class DAO_ExportBill {
             }
             if (percent.compareTo(BigDecimal.ZERO) < 0) percent = BigDecimal.ZERO;
 
-            // 3) Compute totals
-            BigDecimal qty = new BigDecimal(detail.getQuantity());
-            BigDecimal totalBefore = detail.getUnitPrice().multiply(qty);
-            BigDecimal totalAfter = totalBefore.multiply(BigDecimal.ONE.subtract(percent.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP)));
-            totalAfter = totalAfter.setScale(2, RoundingMode.HALF_UP);
+            // 3) Sử dụng giá trị đã tính từ GUI layer (không tính lại)
+            // totalBefore và totalAfter đã được tính toán chính xác ở Form_Export.java
+            BigDecimal totalBefore = detail.getTotalPriceBefore();
+            BigDecimal totalAfter = detail.getTotalPriceAfter();
 
             // 4) Insert detail
-            String insertDetail = "INSERT INTO Bill_Exported_Details (Invoice_No, Admin_ID, Customer_ID, Product_ID, "
-                                + "Unit_Price_Sell_After, Quantity, Discount_Percent, Total_Price_Before, Total_Price_After, "
-                                + "Date_Exported, Time_Exported) "
-                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String insertDetail = "INSERT INTO Bill_Exported_Details (Invoice_No, Admin_ID, Product_ID, "
+                                + "Unit_Price_Sell_After, Sold_Quantity, Discount_Percent, Total_Price_Before, Total_Price_After, "
+                                + "Date_Exported, Time_Exported, Start_Date, End_Date) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertDetail)) {
                 ps.setString(1, detail.getInvoiceNo());
                 ps.setString(2, detail.getAdminId());
-                ps.setString(3, detail.getCustomerId());
-                ps.setString(4, detail.getProductId());
-                ps.setBigDecimal(5, detail.getUnitPrice());
-                ps.setInt(6, detail.getQuantity());
-                ps.setBigDecimal(7, percent);
-                ps.setBigDecimal(8, totalBefore);
-                ps.setBigDecimal(9, totalAfter);
-                ps.setDate(10, detail.getDateExported());
-                ps.setTime(11, detail.getTimeExported());
+                ps.setString(3, detail.getProductId());
+                ps.setBigDecimal(4, detail.getUnitPrice());
+                ps.setInt(5, detail.getQuantity());
+                ps.setBigDecimal(6, percent);
+                ps.setBigDecimal(7, totalBefore);
+                ps.setBigDecimal(8, totalAfter);
+                ps.setDate(9, detail.getDateExported());
+                ps.setTime(10, detail.getTimeExported());
+                ps.setDate(11, detail.getStartDate());
+                ps.setDate(12, detail.getEndDate());
                 ps.executeUpdate();
             }
 
             // 5) Do NOT manually decrease Product.Quantity here. Warehouse stock will be updated by DB triggers on Bill_Exported_Details.
+            // REMOVED: Không gọi sp_FixQuantityIssues ở đây để tránh trùng lặp với trigger
 
             conn.commit();
             return true;
@@ -125,7 +164,9 @@ public class DAO_ExportBill {
                     rs.getBigDecimal("Total_Price_Before"),
                     rs.getBigDecimal("Total_Price_After"),
                     rs.getDate("Date_Exported"),
-                    rs.getTime("Time_Exported")
+                    rs.getTime("Time_Exported"),
+                    rs.getDate("Start_Date"),
+                    rs.getDate("End_Date")
                 );
                 ls.add(d);
             }
@@ -196,6 +237,22 @@ public class DAO_ExportBill {
         // No-op: Stock is handled by DB triggers after inserting Bill_Exported_Details
         return true;
     }
+    
+    // FIXED: Method để sửa lỗi số lượng ngay lập tức
+    public boolean fixQuantityIssues() {
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement("EXEC sp_FixQuantityIssues")) {
+            
+            stmt.execute();
+            System.out.println("✅ Đã sửa lỗi số lượng thành công!");
+            return true;
+            
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi sửa lỗi số lượng: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     public DTO_BillExported getExportBillDetailsByInvoice(String invoiceNo, String adminID) throws SQLException {
         String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, Promotion_Code FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'";
@@ -249,5 +306,69 @@ public class DAO_ExportBill {
             }
         }
         return list;
+    }
+    
+    /**
+     * Lấy danh sách thông tin bảo hành từ view v_Warranty_Information
+     */
+    public List<DTO_WarrantyInfo> getWarrantyInformation() {
+        List<DTO_WarrantyInfo> warrantyList = new ArrayList<>();
+        String sql = "SELECT * FROM v_Warranty_Information ORDER BY Date_Exported DESC";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                DTO_WarrantyInfo warranty = new DTO_WarrantyInfo(
+                    rs.getString("Invoice_No"),
+                    rs.getString("Admin_ID"),
+                    rs.getString("Customer_ID"),
+                    rs.getString("Customer_Name"),
+                    rs.getString("Product_ID"),
+                    rs.getString("Product_Name"),
+                    rs.getInt("Sold_Quantity"),
+                    rs.getDate("Date_Exported"),
+                    rs.getDate("Start_Date"),
+                    rs.getDate("End_Date"),
+                    rs.getString("Warranty_Status"),
+                    rs.getInt("Warranty_Months")
+                );
+                warrantyList.add(warranty);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting warranty information: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return warrantyList;
+    }
+    
+    
+    /**
+     * RESET và đồng bộ lại tất cả số lượng (sửa lỗi nhân đôi)
+     */
+    public boolean resetAndSyncAllQuantities() {
+        String sql = "EXEC dbo.sp_FixQuantityIssues";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            System.out.println("=== RESET VÀ ĐỒNG BỘ SỐ LƯỢNG ===");
+            
+            // In kết quả kiểm tra
+            while (rs.next()) {
+                System.out.println("Info: " + rs.getString("Info") + 
+                                 ", Product: " + rs.getString("Product_ID") + 
+                                 ", Status: " + rs.getString("Balance_Status"));
+            }
+            
+            System.out.println("✅ RESET và đồng bộ số lượng thành công!");
+            return true;
+        } catch (SQLException e) {
+            System.err.println("❌ Error resetting and syncing quantities: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

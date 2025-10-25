@@ -169,9 +169,10 @@ public class DAOProduct {
     }
 
     // Nếu Product_ID không tồn tại, thực hiện lưu sản phẩm
+    // Quantity sẽ được trigger tự động tính toán, không cần set = 0
     String sql = "INSERT INTO Product(Product_ID, Product_Name, Color, Speed, " +
-                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID, Warranty_Months) " +
+                "VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -181,14 +182,15 @@ public class DAOProduct {
         stmt.setString(3, product.getColor());
         stmt.setString(4, product.getSpeed());
         stmt.setString(5, product.getBatteryCapacity());
-        stmt.setInt(6, product.getQuantity());
-        stmt.setString(7, product.getCategoryId());
-        stmt.setString(8, product.getSupId());
-        stmt.setString(9, product.getImage());
-        stmt.setBigDecimal(10, product.getPrice());
-        stmt.setBigDecimal(11, product.getListPriceBefore());
-        stmt.setBigDecimal(12, product.getListPriceAfter());
-        stmt.setString(13, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
+        // Set Quantity = 0, trigger sẽ tự động tính toán
+        stmt.setString(6, product.getCategoryId());
+        stmt.setString(7, product.getSupId());
+        stmt.setString(8, product.getImage());
+        stmt.setBigDecimal(9, product.getPrice());
+        stmt.setBigDecimal(10, product.getListPriceBefore());
+        stmt.setBigDecimal(11, product.getListPriceAfter());
+        stmt.setString(12, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
+        stmt.setInt(13, product.getWarrantyMonths());
 
         stmt.executeUpdate();
         CustomDialog.showSuccess("Product saved successfully!");
@@ -205,7 +207,7 @@ public class DAOProduct {
         // Hiển thị sản phẩm với 3 loại số lượng: Tổng nhập, Tồn kho, Đã bán
         String sql = """
             SELECT p.Product_ID, p.Product_Name, p.Color, p.Speed, 
-                   p.Battery_Capacity, 
+                   p.Battery_Capacity, p.Warranty_Months,
                    ISNULL(ps.Quantity_Stock, 0) AS Total_Imported,    -- Số lượng nhập (từ Inventory)
                    p.Quantity AS Current_Stock,                        -- Số lượng tồn kho (Product)
                    ISNULL(ps.Quantity_Stock, 0) - p.Quantity AS Sold_Quantity, -- Số lượng đã bán (Nhập - Tồn)
@@ -243,6 +245,7 @@ public class DAOProduct {
                     rs.getString("Color"),
                     rs.getString("Speed"),
                     rs.getString("Battery_Capacity"),
+                    rs.getInt("Warranty_Months"),
                     rs.getInt("Total_Imported"),      // Tổng số lượng đã nhập
                     rs.getInt("Current_Stock"),       // Số lượng tồn kho hiện tại
                     rs.getInt("Sold_Quantity"),       // Số lượng đã bán
@@ -262,7 +265,7 @@ public class DAOProduct {
     }
     public DTOProduct getProductById(String productId) {
     String sql = "SELECT Product_ID, Product_Name, Color, Speed, " +
-                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID " +
+                "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID, Warranty_Months " +
                 "FROM Product WHERE Product_ID = ?";
 
     try (Connection conn = getConnection();
@@ -284,7 +287,8 @@ public class DAOProduct {
                 rs.getString("Image"),
                 rs.getBigDecimal("Price"),
                 rs.getBigDecimal("List_Price_Before"),
-                rs.getBigDecimal("List_Price_After")
+                rs.getBigDecimal("List_Price_After"),
+                rs.getInt("Warranty_Months")
             );
             // Set Warehouse_Item_ID if available
             String warehouseItemId = rs.getString("Warehouse_Item_ID");
@@ -301,7 +305,7 @@ public class DAOProduct {
 }
     public boolean updateProduct(DTOProduct product) {
         String sql = "UPDATE Product SET Product_Name = ?, Color = ?, Speed = ?, " +
-                    "Battery_Capacity = ?, Quantity = ?, Category_ID = ?, Sup_ID = ?, " +
+                    "Battery_Capacity = ?, Category_ID = ?, Sup_ID = ?, " +
                     "Image = ?, Price = ?, List_Price_Before = ?, List_Price_After = ?, Warehouse_Item_ID = ? WHERE Product_ID = ?";
 
         try (Connection conn = getConnection();
@@ -311,15 +315,15 @@ public class DAOProduct {
             stmt.setString(2, product.getColor());
             stmt.setString(3, product.getSpeed());
             stmt.setString(4, product.getBatteryCapacity());
-            stmt.setInt(5, product.getQuantity());
-            stmt.setString(6, product.getCategoryId());
-            stmt.setString(7, product.getSupId());
-            stmt.setString(8, product.getImage());
-            stmt.setBigDecimal(9, product.getPrice());
-            stmt.setBigDecimal(10, product.getListPriceBefore());
-            stmt.setBigDecimal(11, product.getListPriceAfter());
-            stmt.setString(12, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
-            stmt.setString(13, product.getProductId());
+            // KHÔNG cập nhật Quantity ở đây vì trigger sẽ tự động tính toán
+            stmt.setString(5, product.getCategoryId());
+            stmt.setString(6, product.getSupId());
+            stmt.setString(7, product.getImage());
+            stmt.setBigDecimal(8, product.getPrice());
+            stmt.setBigDecimal(9, product.getListPriceBefore());
+            stmt.setBigDecimal(10, product.getListPriceAfter());
+            stmt.setString(11, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
+            stmt.setString(12, product.getProductId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -521,8 +525,8 @@ public class DAOProduct {
     }
     public boolean addProduct(DTOProduct product) {
         String sql = "INSERT INTO Product(Product_ID, Product_Name, Color, Speed, " +
-                    "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) " +
-                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID, Warranty_Months) " +
+                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, product.getProductId());
@@ -538,6 +542,7 @@ public class DAOProduct {
             ps.setBigDecimal(11, product.getListPriceBefore());
             ps.setBigDecimal(12, product.getListPriceAfter());
             ps.setString(13, product.getProductId()); // Warehouse_Item_ID = Product_ID (same ID)
+            ps.setInt(14, product.getWarrantyMonths());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

@@ -23,7 +23,7 @@ public class NewProduct extends javax.swing.JFrame {
     private MyTextField txtProductID, txtProductName, txtColor, txtBattery, txtSpeed, txtPrice;
     private MyCombobox<String> cmbOperate;
     private MyButton bntupload, bntSave, bntReset;
-    private JSpinner spinnerQuantity;
+    private JSpinner spinnerQuantity, spinnerWarranty;
     private String image;
     private BusProduct busProduct;
 
@@ -240,6 +240,14 @@ public class NewProduct extends javax.swing.JFrame {
         spinnerQuantity.setEnabled(false);
         panel.add(spinnerQuantity, "growx, wrap");
         
+        // Warranty Months (editable)
+        JLabel lblWarranty = new JLabel("Warranty (Months):");
+        lblWarranty.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblWarranty);
+        
+        spinnerWarranty = new JSpinner(new SpinnerNumberModel(12, 1, 120, 1));
+        panel.add(spinnerWarranty, "growx, wrap");
+        
         // Upload Image
         JLabel lblImage = new JLabel("Product Image *:");
         lblImage.setFont(new Font("Arial", Font.BOLD, 12));
@@ -306,6 +314,7 @@ public class NewProduct extends javax.swing.JFrame {
             cmbOperate.getSelectedItem().toString().split(" - ")[0] : "";
         String priceStr = txtPrice.getText().trim();
         int quantity = (int) spinnerQuantity.getValue();
+        int warrantyMonths = (int) spinnerWarranty.getValue();
         // Use GUI image field first, fall back to busProduct if set
         String imagePath = (image != null && !image.isEmpty()) ? image : busProduct.getImagePath();
 
@@ -357,7 +366,7 @@ public class NewProduct extends javax.swing.JFrame {
         
         DTOProduct product = new DTOProduct(
                 productId, productName, color, speed, batteryCapacity,
-                quantity, categoryId, supId, imagePath, priceDecimal
+                quantity, categoryId, supId, imagePath, priceDecimal, warrantyMonths
         );
 
         busProduct.saveProduct(product);
@@ -535,6 +544,7 @@ public class NewProduct extends javax.swing.JFrame {
         txtSpeed.setText("");
         txtPrice.setText("");
         spinnerQuantity.setValue(1);
+        spinnerWarranty.setValue(12);
         image = null;
         if (cmbOperate != null) cmbOperate.setSelectedIndex(0);
         

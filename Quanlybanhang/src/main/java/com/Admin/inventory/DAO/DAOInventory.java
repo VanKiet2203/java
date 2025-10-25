@@ -6,9 +6,11 @@ import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.*;
+import java.text.SimpleDateFormat;
+import java.text.DecimalFormat;
+import java.util.Locale;
+import java.util.Date;
 
 import javax.swing.table.DefaultTableModel;
 import java.io.*;
@@ -596,48 +598,230 @@ public class DAOInventory {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
-            Document document = new Document();
+            Document document = new Document(PageSize.A4, 40, 40, 50, 50);
             PdfWriter.getInstance(document, new FileOutputStream(filePath));
             document.open();
             
-            // Add title
-            com.itextpdf.text.Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Paragraph title = new Paragraph("INVENTORY REPORT", titleFont);
-            title.setAlignment(Element.ALIGN_CENTER);
-            document.add(title);
-            document.add(new Paragraph(" "));
+            // Add beautiful header
+            addInventoryHeader(document);
             
-            // Create table
-            PdfPTable table = new PdfPTable(8);
-            table.setWidthPercentage(100);
+            // Add summary info
+            addInventorySummary(document, rs);
             
-            // Add headers
-            String[] headers = {"Warehouse ID", "Product Name", "Category", "Supplier", 
-                              "Quantity", "Unit Price", "Total Value", "Created Date"};
-            for (String header : headers) {
-                PdfPCell cell = new PdfPCell(new Phrase(header));
-                cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
-                table.addCell(cell);
+            // Reset result set for data
+            try (PreparedStatement stmt2 = conn.prepareStatement(sql);
+                 ResultSet rs2 = stmt2.executeQuery()) {
+            
+            // Create beautiful table
+            addInventoryTable(document, rs2);
             }
             
-            // Add data
-            while (rs.next()) {
-                table.addCell(rs.getString("Warehouse_Item_ID"));
-                table.addCell(rs.getString("Product_Name"));
-                table.addCell(rs.getString("Category_Name"));
-                table.addCell(rs.getString("Sup_Name"));
-                table.addCell(String.valueOf(rs.getInt("Quantity_Stock")));
-                table.addCell(String.valueOf(rs.getDouble("Unit_Price_Import")));
-                table.addCell(String.valueOf(rs.getDouble("Total_Value")));
-                table.addCell(rs.getDate("Created_Date").toString());
-            }
+            // Add footer
+            addInventoryFooter(document);
             
-            document.add(table);
             document.close();
             
         } catch (SQLException | IOException | DocumentException e) {
             e.printStackTrace();
             throw new RuntimeException("PDF export failed", e);
+        }
+    }
+    
+    private void addInventoryHeader(Document document) throws DocumentException {
+        // Main title
+        com.itextpdf.text.Font titleFont = getVietnameseFont(18, com.itextpdf.text.Font.BOLD);
+        titleFont.setColor(BaseColor.BLUE);
+        Paragraph title = new Paragraph("INVENTORY REPORT", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(15f);
+        document.add(title);
+
+        // Date and time
+        com.itextpdf.text.Font infoFont = getVietnameseFont(12, com.itextpdf.text.Font.NORMAL);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.ENGLISH);
+        String formattedDate = dateFormat.format(new Date());
+        
+        Paragraph info = new Paragraph();
+        info.add(new Chunk("Generated on: " + formattedDate, infoFont));
+        info.setAlignment(Element.ALIGN_CENTER);
+        info.setSpacingAfter(20f);
+        document.add(info);
+        
+        addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+    }
+    
+    private void addInventorySummary(Document document, ResultSet rs) throws DocumentException {
+        try {
+            // Calculate totals
+            BigDecimal totalValue = BigDecimal.ZERO;
+            int totalItems = 0;
+            int totalQuantity = 0;
+            
+            while (rs.next()) {
+                totalValue = totalValue.add(rs.getBigDecimal("Total_Value"));
+                totalItems++;
+                totalQuantity += rs.getInt("Quantity_Stock");
+            }
+            
+            // Create summary table
+            PdfPTable summaryTable = new PdfPTable(2);
+            summaryTable.setWidthPercentage(60);
+            summaryTable.setSpacingBefore(10f);
+            summaryTable.setSpacingAfter(15f);
+            summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+            
+            // Header color
+            BaseColor headerBgColor = new BaseColor(0, 51, 102);
+            com.itextpdf.text.Font headerFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+            headerFont.setColor(BaseColor.WHITE);
+            
+            // Summary data
+            String[][] summaryData = {
+                {"Total Items:", String.valueOf(totalItems)},
+                {"Total Quantity:", String.valueOf(totalQuantity)},
+                {"Total Value:", formatCurrency(totalValue.toString())}
+            };
+            
+            for (String[] row : summaryData) {
+                // Label cell
+                PdfPCell labelCell = new PdfPCell(new Phrase(row[0], headerFont));
+                labelCell.setBackgroundColor(headerBgColor);
+                labelCell.setPadding(8);
+                labelCell.setBorder(Rectangle.BOX);
+                labelCell.setBorderWidth(0.5f);
+                summaryTable.addCell(labelCell);
+                
+                // Value cell
+                com.itextpdf.text.Font valueFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                valueFont.setColor(BaseColor.DARK_GRAY);
+                PdfPCell valueCell = new PdfPCell(new Phrase(row[1], valueFont));
+                valueCell.setPadding(8);
+                valueCell.setBorder(Rectangle.BOX);
+                valueCell.setBorderWidth(0.5f);
+                summaryTable.addCell(valueCell);
+            }
+            
+            document.add(summaryTable);
+            addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void addInventoryTable(Document document, ResultSet rs) throws DocumentException {
+        // Section title
+        com.itextpdf.text.Font sectionFont = getVietnameseFont(14, com.itextpdf.text.Font.BOLD);
+        sectionFont.setColor(BaseColor.DARK_GRAY);
+        Paragraph section = new Paragraph("INVENTORY DETAILS", sectionFont);
+        section.setSpacingAfter(10f);
+        document.add(section);
+        
+        // Create table with 8 columns
+        PdfPTable table = new PdfPTable(8);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(10f);
+        table.setSpacingAfter(15f);
+        
+        // Column widths
+        float[] columnWidths = {1.2f, 2.5f, 1.8f, 1.8f, 1.0f, 1.2f, 1.5f, 1.0f};
+        table.setWidths(columnWidths);
+        
+        // Table header
+        com.itextpdf.text.Font headerFont = getVietnameseFont(10, com.itextpdf.text.Font.BOLD);
+        headerFont.setColor(BaseColor.WHITE);
+        BaseColor headerBgColor = new BaseColor(0, 51, 102);
+        
+        String[] headers = {"No.", "Product Name", "Category", "Supplier", 
+                          "Quantity", "Unit Price", "Total Value", "Date"};
+        
+        for (String header : headers) {
+            PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
+            cell.setBackgroundColor(headerBgColor);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            cell.setPadding(6);
+            cell.setBorder(Rectangle.BOX);
+            cell.setBorderWidth(0.5f);
+            table.addCell(cell);
+        }
+        
+        // Add data rows
+        com.itextpdf.text.Font rowFont = getVietnameseFont(9, com.itextpdf.text.Font.NORMAL);
+        int rowNum = 1;
+        
+        try {
+            while (rs.next()) {
+                // Alternate row color
+                BaseColor rowColor = rowNum % 2 == 0 ? new BaseColor(248, 248, 248) : BaseColor.WHITE;
+                
+                table.addCell(createInventoryCell(String.valueOf(rowNum++), rowFont, rowColor, Element.ALIGN_CENTER));
+                table.addCell(createInventoryCell(rs.getString("Product_Name"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createInventoryCell(rs.getString("Category_Name"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createInventoryCell(rs.getString("Sup_Name"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createInventoryCell(String.valueOf(rs.getInt("Quantity_Stock")), rowFont, rowColor, Element.ALIGN_CENTER));
+                table.addCell(createInventoryCell(formatCurrency(rs.getBigDecimal("Unit_Price_Import").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createInventoryCell(formatCurrency(rs.getBigDecimal("Total_Value").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createInventoryCell(rs.getDate("Created_Date").toString(), rowFont, rowColor, Element.ALIGN_CENTER));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        document.add(table);
+    }
+    
+    private PdfPCell createInventoryCell(String text, com.itextpdf.text.Font font, BaseColor bgColor, int alignment) {
+        PdfPCell cell = new PdfPCell(new Phrase(text != null ? text : "", font));
+        cell.setBackgroundColor(bgColor);
+        cell.setPadding(5);
+        cell.setBorder(Rectangle.BOX);
+        cell.setBorderWidth(0.5f);
+        cell.setBorderColor(BaseColor.LIGHT_GRAY);
+        cell.setHorizontalAlignment(alignment);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        return cell;
+    }
+    
+    private void addInventoryFooter(Document document) throws DocumentException {
+        Paragraph footer = new Paragraph();
+        footer.add(new Chunk("Inventory Management System - Generated Report", 
+            getVietnameseFont(10, com.itextpdf.text.Font.ITALIC)));
+        footer.setAlignment(Element.ALIGN_CENTER);
+        footer.setSpacingBefore(20f);
+        document.add(footer);
+        
+        addLineSeparator(document, 0.5f, 50f, BaseColor.GRAY);
+    }
+    
+    private void addLineSeparator(Document document, float lineWidth, float percentage, BaseColor color) 
+            throws DocumentException {
+        Paragraph line = new Paragraph();
+        com.itextpdf.text.pdf.draw.LineSeparator ls = new com.itextpdf.text.pdf.draw.LineSeparator(lineWidth, percentage, color, Element.ALIGN_CENTER, -1);
+        line.add(new Chunk(ls));
+        line.setSpacingAfter(10f);
+        document.add(line);
+    }
+    
+    private String formatCurrency(String amount) {
+        try {
+            BigDecimal value = new BigDecimal(amount.replaceAll("[^\\d.]", ""));
+            DecimalFormat df = new DecimalFormat("0.00");
+            df.setDecimalSeparatorAlwaysShown(true);
+            df.setGroupingUsed(false);
+            return df.format(value);
+        } catch (Exception e) {
+            return amount;
+        }
+    }
+    
+    private static com.itextpdf.text.Font getVietnameseFont(float size, int style) {
+        try {
+            BaseFont baseFont = BaseFont.createFont("C:\\Windows\\Fonts\\Arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            return new com.itextpdf.text.Font(baseFont, size, style);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return FontFactory.getFont(FontFactory.HELVETICA, size, style);
         }
     }
     
@@ -1177,24 +1361,18 @@ public class DAOInventory {
         }
     }
     
-    // Method để reset và đồng bộ lại tất cả số lượng (sửa lỗi nhân đôi)
+    // Method để reset và đồng bộ lại tất cả số lượng (sửa lỗi nhân đôi) - FIXED
     public void resetAndSyncAllQuantities() {
-        String resetSQL = """
-            -- Reset tất cả Product.Quantity về 0
-            UPDATE Product SET Quantity = 0 WHERE Warehouse_Item_ID IS NOT NULL;
-            
-            -- Đồng bộ lại với logic đúng
-            EXEC sp_SyncAllProductQuantities;
-        """;
+        String fixSQL = "EXEC sp_FixQuantityIssues";
         
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(resetSQL)) {
+             PreparedStatement stmt = conn.prepareStatement(fixSQL)) {
             
             stmt.execute();
-            System.out.println("✅ Reset và đồng bộ số lượng thành công!");
+            System.out.println("✅ Đã sửa lỗi số lượng thành công!");
             
         } catch (SQLException e) {
-            System.err.println("❌ Lỗi reset và đồng bộ số lượng: " + e.getMessage());
+            System.err.println("❌ Lỗi sửa lỗi số lượng: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1247,13 +1425,13 @@ public class DAOInventory {
         }
     }
     
-    // Method để kiểm tra và đồng bộ toàn bộ hệ thống số lượng
+    // Method để kiểm tra và đồng bộ toàn bộ hệ thống số lượng - FIXED
     public void checkAndSyncAllQuantities() {
         System.out.println("=== KIỂM TRA VÀ ĐỒNG BỘ SỐ LƯỢNG TOÀN HỆ THỐNG ===");
         
-        // 1. Đồng bộ số lượng tồn kho
-        System.out.println("\n1. Đồng bộ số lượng tồn kho...");
-        syncProductQuantities();
+        // 1. Sử dụng stored procedure mới để fix lỗi
+        System.out.println("\n1. Sửa lỗi số lượng với stored procedure...");
+        resetAndSyncAllQuantities();
         
         // 2. Hiển thị báo cáo
         System.out.println("\n2. Báo cáo số lượng:");
@@ -1527,50 +1705,27 @@ public class DAOInventory {
             try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
                 
-                Document document = new Document();
+                Document document = new Document(PageSize.A4, 40, 40, 50, 50);
                 PdfWriter.getInstance(document, new FileOutputStream(filePath));
                 document.open();
                 
-                // Add title
-                com.itextpdf.text.Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-                Paragraph title = new Paragraph("Import Bills Report", titleFont);
-                title.setAlignment(Element.ALIGN_CENTER);
-                document.add(title);
-                document.add(new Paragraph(" ")); // Empty line
+                // Add beautiful header
+                addBillImportHeader(document);
                 
-                // Create table
-                PdfPTable table = new PdfPTable(11);
-                table.setWidthPercentage(100);
+                // Add summary info
+                addBillImportSummary(document, rs);
                 
-                // Add headers
-                String[] headers = {
-                    "Invoice No", "Admin ID", "Total Product", "Total Price",
-                    "Warehouse Item ID", "Product Name", "Quantity", 
-                    "Unit Price", "Line Total", "Date Imported", "Time Imported"
-                };
+                // Reset result set for data
+                try (PreparedStatement stmt2 = conn.prepareStatement(sql);
+                     ResultSet rs2 = stmt2.executeQuery()) {
                 
-                for (String header : headers) {
-                    PdfPCell cell = new PdfPCell(new Phrase(header));
-                    cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
-                    table.addCell(cell);
+                // Create beautiful table
+                addBillImportTable(document, rs2);
                 }
                 
-                // Add data rows
-                while (rs.next()) {
-                    table.addCell(rs.getString("Invoice_No"));
-                    table.addCell(rs.getString("Admin_ID"));
-                    table.addCell(String.valueOf(rs.getInt("Total_Product")));
-                    table.addCell(rs.getBigDecimal("Total_Price").toString());
-                    table.addCell(rs.getString("Warehouse_Item_ID"));
-                    table.addCell(rs.getString("Product_Name"));
-                    table.addCell(String.valueOf(rs.getInt("Quantity")));
-                    table.addCell(rs.getBigDecimal("Unit_Price_Import").toString());
-                    table.addCell(rs.getBigDecimal("Total_Price").toString());
-                    table.addCell(rs.getDate("Date_Imported").toString());
-                    table.addCell(rs.getTime("Time_Imported").toString());
-                }
+                // Add footer
+                addBillImportFooter(document);
                 
-                document.add(table);
                 document.close();
                 
             }
@@ -1578,6 +1733,183 @@ public class DAOInventory {
             e.printStackTrace();
             throw new RuntimeException("Failed to export PDF bill import: " + e.getMessage());
         }
+    }
+    
+    private void addBillImportHeader(Document document) throws DocumentException {
+        // Main title
+        com.itextpdf.text.Font titleFont = getVietnameseFont(18, com.itextpdf.text.Font.BOLD);
+        titleFont.setColor(BaseColor.BLUE);
+        Paragraph title = new Paragraph("IMPORT BILLS REPORT", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(15f);
+        document.add(title);
+
+        // Date and time
+        com.itextpdf.text.Font infoFont = getVietnameseFont(12, com.itextpdf.text.Font.NORMAL);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.ENGLISH);
+        String formattedDate = dateFormat.format(new Date());
+        
+        Paragraph info = new Paragraph();
+        info.add(new Chunk("Generated on: " + formattedDate, infoFont));
+        info.setAlignment(Element.ALIGN_CENTER);
+        info.setSpacingAfter(20f);
+        document.add(info);
+        
+        addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+    }
+    
+    private void addBillImportSummary(Document document, ResultSet rs) throws DocumentException {
+        try {
+            // Calculate totals
+            BigDecimal totalValue = BigDecimal.ZERO;
+            int totalBills = 0;
+            int totalItems = 0;
+            int totalQuantity = 0;
+            String currentInvoice = "";
+            
+            while (rs.next()) {
+                if (!currentInvoice.equals(rs.getString("Invoice_No"))) {
+                    totalBills++;
+                    currentInvoice = rs.getString("Invoice_No");
+                }
+                totalValue = totalValue.add(rs.getBigDecimal("Total_Price"));
+                totalItems++;
+                totalQuantity += rs.getInt("Quantity");
+            }
+            
+            // Create summary table
+            PdfPTable summaryTable = new PdfPTable(2);
+            summaryTable.setWidthPercentage(60);
+            summaryTable.setSpacingBefore(10f);
+            summaryTable.setSpacingAfter(15f);
+            summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+            
+            // Header color
+            BaseColor headerBgColor = new BaseColor(0, 51, 102);
+            com.itextpdf.text.Font headerFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+            headerFont.setColor(BaseColor.WHITE);
+            
+            // Summary data
+            String[][] summaryData = {
+                {"Total Bills:", String.valueOf(totalBills)},
+                {"Total Items:", String.valueOf(totalItems)},
+                {"Total Quantity:", String.valueOf(totalQuantity)},
+                {"Total Value:", formatCurrency(totalValue.toString())}
+            };
+            
+            for (String[] row : summaryData) {
+                // Label cell
+                PdfPCell labelCell = new PdfPCell(new Phrase(row[0], headerFont));
+                labelCell.setBackgroundColor(headerBgColor);
+                labelCell.setPadding(8);
+                labelCell.setBorder(Rectangle.BOX);
+                labelCell.setBorderWidth(0.5f);
+                summaryTable.addCell(labelCell);
+                
+                // Value cell
+                com.itextpdf.text.Font valueFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                valueFont.setColor(BaseColor.DARK_GRAY);
+                PdfPCell valueCell = new PdfPCell(new Phrase(row[1], valueFont));
+                valueCell.setPadding(8);
+                valueCell.setBorder(Rectangle.BOX);
+                valueCell.setBorderWidth(0.5f);
+                summaryTable.addCell(valueCell);
+            }
+            
+            document.add(summaryTable);
+            addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void addBillImportTable(Document document, ResultSet rs) throws DocumentException {
+        // Section title
+        com.itextpdf.text.Font sectionFont = getVietnameseFont(14, com.itextpdf.text.Font.BOLD);
+        sectionFont.setColor(BaseColor.DARK_GRAY);
+        Paragraph section = new Paragraph("IMPORT BILLS DETAILS", sectionFont);
+        section.setSpacingAfter(10f);
+        document.add(section);
+        
+        // Create table with 11 columns
+        PdfPTable table = new PdfPTable(11);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(10f);
+        table.setSpacingAfter(15f);
+        
+        // Column widths
+        float[] columnWidths = {1.0f, 1.0f, 0.8f, 1.2f, 1.2f, 2.0f, 0.8f, 1.0f, 1.2f, 1.0f, 1.0f};
+        table.setWidths(columnWidths);
+        
+        // Table header
+        com.itextpdf.text.Font headerFont = getVietnameseFont(9, com.itextpdf.text.Font.BOLD);
+        headerFont.setColor(BaseColor.WHITE);
+        BaseColor headerBgColor = new BaseColor(0, 51, 102);
+        
+        String[] headers = {"No.", "Invoice No", "Admin ID", "Total Product", "Total Price",
+                          "Warehouse ID", "Product Name", "Quantity", "Unit Price", "Line Total", "Date"};
+        
+        for (String header : headers) {
+            PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
+            cell.setBackgroundColor(headerBgColor);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            cell.setPadding(4);
+            cell.setBorder(Rectangle.BOX);
+            cell.setBorderWidth(0.5f);
+            table.addCell(cell);
+        }
+        
+        // Add data rows
+        com.itextpdf.text.Font rowFont = getVietnameseFont(8, com.itextpdf.text.Font.NORMAL);
+        int rowNum = 1;
+        
+        try {
+            while (rs.next()) {
+                // Alternate row color
+                BaseColor rowColor = rowNum % 2 == 0 ? new BaseColor(248, 248, 248) : BaseColor.WHITE;
+                
+                table.addCell(createBillImportCell(String.valueOf(rowNum++), rowFont, rowColor, Element.ALIGN_CENTER));
+                table.addCell(createBillImportCell(rs.getString("Invoice_No"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createBillImportCell(rs.getString("Admin_ID"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createBillImportCell(String.valueOf(rs.getInt("Total_Product")), rowFont, rowColor, Element.ALIGN_CENTER));
+                table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Total_Price").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createBillImportCell(rs.getString("Warehouse_Item_ID"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createBillImportCell(rs.getString("Product_Name"), rowFont, rowColor, Element.ALIGN_LEFT));
+                table.addCell(createBillImportCell(String.valueOf(rs.getInt("Quantity")), rowFont, rowColor, Element.ALIGN_CENTER));
+                table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Unit_Price_Import").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Total_Price").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createBillImportCell(rs.getDate("Date_Imported").toString(), rowFont, rowColor, Element.ALIGN_CENTER));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        document.add(table);
+    }
+    
+    private PdfPCell createBillImportCell(String text, com.itextpdf.text.Font font, BaseColor bgColor, int alignment) {
+        PdfPCell cell = new PdfPCell(new Phrase(text != null ? text : "", font));
+        cell.setBackgroundColor(bgColor);
+        cell.setPadding(3);
+        cell.setBorder(Rectangle.BOX);
+        cell.setBorderWidth(0.5f);
+        cell.setBorderColor(BaseColor.LIGHT_GRAY);
+        cell.setHorizontalAlignment(alignment);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        return cell;
+    }
+    
+    private void addBillImportFooter(Document document) throws DocumentException {
+        Paragraph footer = new Paragraph();
+        footer.add(new Chunk("Import Management System - Generated Report", 
+            getVietnameseFont(10, com.itextpdf.text.Font.ITALIC)));
+        footer.setAlignment(Element.ALIGN_CENTER);
+        footer.setSpacingBefore(20f);
+        document.add(footer);
+        
+        addLineSeparator(document, 0.5f, 50f, BaseColor.GRAY);
     }
     
     private void createSampleImportBills(Connection conn) {

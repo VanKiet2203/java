@@ -49,6 +49,20 @@ public class BusProduct {
     public List<DTOCategory> getAllCategoriesWithSupplier() {
         return daoProduct.getAllCategoriesWithSupplier();
     }
+    
+    // FIXED: Method để sửa lỗi số lượng
+    public boolean fixQuantityIssues() {
+        try {
+            // Gọi method từ inventory để fix lỗi số lượng
+            com.Admin.inventory.BUS.BUSInventory busInventory = new com.Admin.inventory.BUS.BUSInventory();
+            busInventory.resetAndSyncAllQuantities();
+            return true;
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to fix quantity issues: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
     // ✅ Hàm xử lý lưu sản phẩm
     public void saveProduct(DTOProduct product) {
         daoProduct.saveProduct(product);  // Gọi phương thức saveProduct của DAO để lưu vào DB

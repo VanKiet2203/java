@@ -104,6 +104,7 @@ CREATE TABLE dbo.Product(
     List_Price_Before decimal(10,2) NULL,   
     List_Price_After  decimal(10,2) NULL,    
     Warehouse_Item_ID varchar(50) NULL,
+    Warranty_Months int NOT NULL CONSTRAINT DF_Product_WarrantyMonths DEFAULT(12),
     Status varchar(20) NOT NULL CONSTRAINT DF_Product_Status DEFAULT('Available'),
     CONSTRAINT PK_Product PRIMARY KEY CLUSTERED (Product_ID ASC)
 );
@@ -190,7 +191,7 @@ GO
 IF OBJECT_ID(N'dbo.Cart', N'U') IS NULL
 BEGIN
 CREATE TABLE dbo.Cart(
-    Cart_ID varchar(50) NOT NULL,  -- Thêm Cart_ID làm primary key
+    Cart_ID varchar(50) NOT NULL, 
     Customer_ID varchar(50) NOT NULL,
     Product_ID varchar(50) NOT NULL,
     Quantity int NULL,
@@ -232,7 +233,7 @@ END;
 GO
 
 -- ============================================
--- BILL_IMPORTED_DETAILS TABLE
+-- BILL_IMPORTED_DETAILS TABLE (OPTIMIZED)
 -- ============================================
 IF OBJECT_ID(N'dbo.Bill_Imported_Details', N'U') IS NULL
 BEGIN
@@ -304,14 +305,13 @@ END;
 GO
 
 -- ============================================
--- BILL_EXPORTED_DETAILS TABLE
+-- BILL_EXPORTED_DETAILS TABLE (OPTIMIZED)
 -- ============================================
 IF OBJECT_ID(N'dbo.Bill_Exported_Details', N'U') IS NULL
 BEGIN
 CREATE TABLE dbo.Bill_Exported_Details(
     Invoice_No varchar(50) NOT NULL,
     Admin_ID varchar(20) NOT NULL,
-    Customer_ID varchar(50) NULL,
     Product_ID varchar(50) NOT NULL,
     Unit_Price_Sell_Before decimal(10,2) NULL,    -- Giá bán TRƯỚC khuyến mãi
     Unit_Price_Sell_After  decimal(10,2) NOT NULL CONSTRAINT DF_BED_UnitPriceAfter DEFAULT(0.00),  -- Giá bán SAU KM
@@ -321,6 +321,8 @@ CREATE TABLE dbo.Bill_Exported_Details(
     Total_Price_After  decimal(15,2) NOT NULL,     -- Tổng tiền sau KM
     Date_Exported date NOT NULL,
     Time_Exported time(7) NOT NULL,
+    Start_Date date NOT NULL,                      -- Ngày bắt đầu bảo hành
+    End_Date date NOT NULL,                        -- Ngày kết thúc bảo hành
     Status varchar(20) NOT NULL CONSTRAINT DF_BillExportedDetails_Status DEFAULT('Available'),
     CONSTRAINT PK_Bill_Exported_Details PRIMARY KEY CLUSTERED (Invoice_No ASC, Admin_ID ASC, Product_ID ASC)
 );
@@ -341,6 +343,30 @@ IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_BED_SoldQuant
 BEGIN
 ALTER TABLE dbo.Bill_Exported_Details WITH CHECK
 ADD CONSTRAINT CK_BED_SoldQuantity_Positive CHECK (Sold_Quantity>0);
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_BED_EndDate_After_StartDate')
+BEGIN
+ALTER TABLE dbo.Bill_Exported_Details WITH CHECK
+ADD CONSTRAINT CK_BED_EndDate_After_StartDate CHECK (End_Date >= Start_Date);
+END;
+
+-- Thêm check constraints cho số lượng
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_Product_Quantity_NonNegative')
+BEGIN
+ALTER TABLE dbo.Product WITH CHECK
+ADD CONSTRAINT CK_Product_Quantity_NonNegative CHECK (Quantity >= 0);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_ProductStock_Quantity_NonNegative')
+BEGIN
+ALTER TABLE dbo.Product_Stock WITH CHECK
+ADD CONSTRAINT CK_ProductStock_Quantity_NonNegative CHECK (Quantity_Stock >= 0);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_BID_Quantity_Positive')
+BEGIN
+ALTER TABLE dbo.Bill_Imported_Details WITH CHECK
+ADD CONSTRAINT CK_BID_Quantity_Positive CHECK (Quantity > 0);
 END;
 
 UPDATE d
@@ -395,7 +421,7 @@ END;
 GO
 
 -- ============================================
--- ORDERS_DETAILS TABLE
+-- ORDERS_DETAILS TABLE (OPTIMIZED)
 -- ============================================
 IF OBJECT_ID(N'dbo.Orders_Details', N'U') IS NULL
 BEGIN
@@ -431,94 +457,10 @@ END;
 GO
 
 -- ============================================
--- INSURANCE TABLE 
+-- INSURANCE TABLES REMOVED
 -- ============================================
-IF OBJECT_ID(N'dbo.Insurance', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.Insurance(
-    Insurance_No varchar(50) NOT NULL,
-    Admin_ID varchar(20) NOT NULL,
-    Customer_ID varchar(50) NULL,
-    Invoice_No varchar(50) NULL,              
-    Describle_customer varchar(50) NULL,
-    Start_Date_Insurance date NOT NULL,
-    End_Date_Insurance date NOT NULL,
-    Status varchar(20) NOT NULL CONSTRAINT DF_Insurance_Status DEFAULT('Available'),
-    CONSTRAINT PK_Insurance PRIMARY KEY CLUSTERED (Insurance_No ASC, Admin_ID ASC)
-);
-END;
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Insurance_Admin')
-BEGIN
-ALTER TABLE dbo.Insurance WITH CHECK
-ADD CONSTRAINT FK_Insurance_Admin FOREIGN KEY(Admin_ID) REFERENCES dbo.Admin(Admin_ID) ON UPDATE CASCADE ON DELETE CASCADE;
-END;
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Insurance_Customer')
-BEGIN
-ALTER TABLE dbo.Insurance WITH CHECK
-ADD CONSTRAINT FK_Insurance_Customer FOREIGN KEY(Customer_ID) REFERENCES dbo.Customer(Customer_ID) ON UPDATE CASCADE ON DELETE CASCADE;
-END;
--- Remove old foreign key constraint if exists
-IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Insurance_BillExported')
-BEGIN
-    ALTER TABLE dbo.Insurance DROP CONSTRAINT FK_Insurance_BillExported;
-END;
-
--- Add new foreign key constraint to Bill_Exported_Details
-
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='UQ_BillExportedDetails_InvoiceAdmin' AND object_id=OBJECT_ID('dbo.Bill_Exported_Details'))
-BEGIN
-    CREATE UNIQUE NONCLUSTERED INDEX UQ_BillExportedDetails_InvoiceAdmin 
-    ON dbo.Bill_Exported_Details(Invoice_No, Admin_ID);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Insurance_BillExportedDetails')
-BEGIN
-ALTER TABLE dbo.Insurance WITH CHECK
-ADD CONSTRAINT FK_Insurance_BillExportedDetails 
-FOREIGN KEY(Invoice_No, Admin_ID) 
-REFERENCES dbo.Bill_Exported_Details(Invoice_No, Admin_ID) 
-ON UPDATE NO ACTION ON DELETE NO ACTION;
-END;
-GO
-
--- ============================================
--- INSURANCE_DETAILS TABLE
--- ============================================
-IF OBJECT_ID(N'dbo.Insurance_Details', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.Insurance_Details(
-    Insurance_No varchar(50) NOT NULL,
-    Admin_ID varchar(20) NOT NULL,
-    Customer_ID varchar(50) NULL,
-    Invoice_No varchar(50) NULL,            
-    Product_ID varchar(50) NOT NULL,
-    Description nvarchar(255) NULL,
-    Date_Insurance date NOT NULL,
-    Time_Insurance time(7) NOT NULL,
-    Status varchar(20) NOT NULL CONSTRAINT DF_InsuranceDetails_Status DEFAULT('Available'),
-    CONSTRAINT PK_Insurance_Details PRIMARY KEY CLUSTERED (Insurance_No ASC, Admin_ID ASC, Product_ID ASC)
-);
-END;
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_InsuranceDetails_Insurance')
-BEGIN
-ALTER TABLE dbo.Insurance_Details WITH CHECK
-ADD CONSTRAINT FK_InsuranceDetails_Insurance FOREIGN KEY(Insurance_No,Admin_ID) REFERENCES dbo.Insurance(Insurance_No,Admin_ID) ON DELETE CASCADE;
-END;
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_InsuranceDetails_Product')
-BEGIN
-ALTER TABLE dbo.Insurance_Details WITH CHECK
-ADD CONSTRAINT FK_InsuranceDetails_Product FOREIGN KEY(Product_ID) REFERENCES dbo.Product(Product_ID) ON DELETE CASCADE;
-END;
--- Remove old foreign key constraint if exists
-IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_InsuranceDetails_BillExported')
-BEGIN
-    ALTER TABLE dbo.Insurance_Details DROP CONSTRAINT FK_InsuranceDetails_BillExported;
-END;
-
--- Insurance_Details không cần nối trực tiếp với Bill_Exported_Details
--- Chỉ Insurance nối với Bill_Exported_Details thông qua unique index
+-- Insurance functionality is now integrated into Bill_Exported_Details
+-- with Start_Date and End_Date columns for warranty tracking
 GO
 
 -- ============================================
@@ -712,248 +654,92 @@ LEFT JOIN dbo.Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
 WHERE p.Status = 'Available' AND (ps.Status = 'Available' OR ps.Status IS NULL);
 GO
 
--- View 7: Insurance với thông tin Export Bill Details
-IF OBJECT_ID(N'dbo.v_Insurance_With_Export', N'V') IS NOT NULL DROP VIEW dbo.v_Insurance_With_Export;
+-- View 7: Warranty Information from Export Bill Details
+IF OBJECT_ID(N'dbo.v_Warranty_Information', N'V') IS NOT NULL DROP VIEW dbo.v_Warranty_Information;
 GO
-CREATE VIEW dbo.v_Insurance_With_Export AS
-SELECT 
-    i.Insurance_No,
-    i.Admin_ID,
-    i.Customer_ID,
-    i.Invoice_No,
-    i.Describle_customer,
-    i.Start_Date_Insurance,
-    i.End_Date_Insurance,
-    bed.Product_ID,
-    p.Product_Name,
-    bed.Sold_Quantity, -- Sử dụng Sold_Quantity
-    bed.Unit_Price_Sell_After,
-    bed.Date_Exported,
-    c.Full_Name AS Customer_Name,
-    c.Contact AS Customer_Contact,
-    c.Address AS Customer_Address
-FROM dbo.Insurance i
-LEFT JOIN dbo.Bill_Exported_Details bed ON i.Invoice_No = bed.Invoice_No AND i.Admin_ID = bed.Admin_ID
-LEFT JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
-LEFT JOIN dbo.Customer c ON i.Customer_ID = c.Customer_ID
-WHERE i.Status = 'Available' AND bed.Status = 'Available' AND p.Status = 'Available' AND c.Record_Status = 'Available';
-GO
-
--- View 8: Insurance Details với thông tin Product
-IF OBJECT_ID(N'dbo.v_Insurance_Details_With_Product', N'V') IS NOT NULL DROP VIEW dbo.v_Insurance_Details_With_Product;
-GO
-CREATE VIEW dbo.v_Insurance_Details_With_Product AS
-SELECT 
-    id.Insurance_No,
-    id.Admin_ID,
-    id.Customer_ID,
-    id.Invoice_No,
-    id.Product_ID,
-    id.Description,
-    id.Date_Insurance,
-    id.Time_Insurance,
-    p.Product_Name,
-    p.Color,
-    p.Speed,
-    p.Battery_Capacity,
-    p.Price,
-    bed.Sold_Quantity AS Sold_Quantity,
-    bed.Unit_Price_Sell_After AS Sold_Price,
-    bed.Date_Exported AS Sale_Date
-FROM dbo.Insurance_Details id
-LEFT JOIN dbo.Product p ON id.Product_ID = p.Product_ID
-LEFT JOIN dbo.Bill_Exported_Details bed ON id.Invoice_No = bed.Invoice_No 
-    AND id.Admin_ID = bed.Admin_ID 
-    AND id.Product_ID = bed.Product_ID
-WHERE id.Status = 'Available' AND p.Status = 'Available' AND bed.Status = 'Available';
-GO
-
--- View 9: Available Export Bill Details for Insurance
-IF OBJECT_ID(N'dbo.v_Available_Export_Bills_For_Insurance', N'V') IS NOT NULL DROP VIEW dbo.v_Available_Export_Bills_For_Insurance;
-GO
-CREATE VIEW dbo.v_Available_Export_Bills_For_Insurance AS
+CREATE VIEW dbo.v_Warranty_Information AS
 SELECT 
     bed.Invoice_No,
     bed.Admin_ID,
-    bed.Customer_ID,
+    be.Customer_ID,
     bed.Product_ID,
     p.Product_Name,
-    bed.Sold_Quantity, -- Sử dụng Sold_Quantity
+    p.Warranty_Months,
+    bed.Sold_Quantity,
     bed.Unit_Price_Sell_After,
     bed.Date_Exported,
+    bed.Start_Date,
+    bed.End_Date,
     c.Full_Name AS Customer_Name,
     c.Contact AS Customer_Contact,
     c.Address AS Customer_Address,
     CASE 
-        WHEN i.Insurance_No IS NULL THEN 'Available for Insurance'
-        ELSE 'Already Insured'
-    END AS Insurance_Status,
-    i.Insurance_No AS Existing_Insurance_No
+        WHEN bed.End_Date >= GETDATE() THEN 'Under Warranty'
+        ELSE 'Warranty Expired'
+    END AS Warranty_Status
 FROM dbo.Bill_Exported_Details bed
 LEFT JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
-LEFT JOIN dbo.Customer c ON bed.Customer_ID = c.Customer_ID
-LEFT JOIN dbo.Insurance i ON bed.Invoice_No = i.Invoice_No AND bed.Admin_ID = i.Admin_ID
-WHERE bed.Invoice_No IS NOT NULL 
-    AND bed.Status = 'Available' 
-    AND p.Status = 'Available' 
-    AND c.Record_Status = 'Available';
+LEFT JOIN dbo.Bill_Exported be ON bed.Invoice_No = be.Invoice_No AND bed.Admin_ID = be.Admin_ID
+LEFT JOIN dbo.Customer c ON be.Customer_ID = c.Customer_ID
+WHERE bed.Status = 'Available' AND p.Status = 'Available' AND c.Record_Status = 'Available';
 GO
 
 -- ============================================
 -- TRIGGERS FOR PRODUCT_STOCK
 -- ============================================
 
--- Trigger 1: Tăng stock khi nhập hàng
--- TRIGGER NÀY ĐÃ BỊ VÔ HIỆU HÓA VÌ MERGE ĐÃ TỰ ĐỘNG CẬP NHẬT SỐ LƯỢNG
--- Không cần trigger này nữa để tránh nhân đôi số lượng
-/*
-CREATE TRIGGER dbo.trg_BID_AI_Stock ON dbo.Bill_Imported_Details AFTER INSERT AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock + x.TotalQty
-    FROM dbo.Product_Stock ps
-    JOIN (SELECT Warehouse_Item_ID, SUM(Quantity) AS TotalQty FROM inserted GROUP BY Warehouse_Item_ID) x
-      ON x.Warehouse_Item_ID = ps.Warehouse_Item_ID;
-END;
-*/
-GO
 
--- Trigger 2: Cập nhật stock khi sửa bill nhập
--- TRIGGER NÀY ĐÃ BỊ VÔ HIỆU HÓA VÌ MERGE ĐÃ TỰ ĐỘNG CẬP NHẬT SỐ LƯỢNG
--- Không cần trigger này nữa để tránh nhân đôi số lượng
-/*
-CREATE TRIGGER dbo.trg_BID_AU_Stock ON dbo.Bill_Imported_Details AFTER UPDATE AS
-BEGIN
-    SET NOCOUNT ON;
-    WITH d AS (SELECT Warehouse_Item_ID, SUM(Quantity) AS QtyDel FROM deleted GROUP BY Warehouse_Item_ID),
-         i AS (SELECT Warehouse_Item_ID, SUM(Quantity) AS QtyIns FROM inserted GROUP BY Warehouse_Item_ID)
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock - ISNULL(d.QtyDel,0) + ISNULL(i.QtyIns,0)
-    FROM dbo.Product_Stock ps
-    LEFT JOIN d ON d.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    LEFT JOIN i ON i.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    WHERE d.Warehouse_Item_ID IS NOT NULL OR i.Warehouse_Item_ID IS NOT NULL;
-END;
-*/
-GO
-
--- Trigger 3: Giảm stock khi xóa bill nhập
--- TRIGGER NÀY ĐÃ BỊ VÔ HIỆU HÓA VÌ MERGE ĐÃ TỰ ĐỘNG CẬP NHẬT SỐ LƯỢNG
--- Không cần trigger này nữa để tránh nhân đôi số lượng
-/*
-CREATE TRIGGER dbo.trg_BID_AD_Stock ON dbo.Bill_Imported_Details AFTER DELETE AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock - x.TotalQty
-    FROM dbo.Product_Stock ps
-    JOIN (SELECT Warehouse_Item_ID, SUM(Quantity) AS TotalQty FROM deleted GROUP BY Warehouse_Item_ID) x
-      ON x.Warehouse_Item_ID = ps.Warehouse_Item_ID;
-END;
-*/
-GO
-
--- Trigger 4: Giảm stock khi xuất hàng
+-- Trigger 4: Tự động tính warranty dates và cập nhật Product.Quantity (FIXED)
 CREATE TRIGGER dbo.trg_BED_AI_Stock ON dbo.Bill_Exported_Details AFTER INSERT AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock - x.TotalQty
-    FROM dbo.Product_Stock ps
-    JOIN dbo.Product p ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    JOIN (SELECT Product_ID, SUM(Sold_Quantity) AS TotalQty FROM inserted GROUP BY Product_ID) x
-      ON x.Product_ID = p.Product_ID
-    WHERE p.Warehouse_Item_ID IS NOT NULL;
-END;
-GO
-
--- Trigger 5: Cập nhật stock khi sửa bill xuất
-CREATE TRIGGER dbo.trg_BED_AU_Stock ON dbo.Bill_Exported_Details AFTER UPDATE AS
-BEGIN
-    SET NOCOUNT ON;
-    WITH d AS (SELECT p.Warehouse_Item_ID, SUM(del.Sold_Quantity) AS QtyDel 
-               FROM deleted del
-               JOIN dbo.Product p ON del.Product_ID = p.Product_ID
-               WHERE p.Warehouse_Item_ID IS NOT NULL
-               GROUP BY p.Warehouse_Item_ID),
-         i AS (SELECT p.Warehouse_Item_ID, SUM(ins.Sold_Quantity) AS QtyIns 
-               FROM inserted ins
-               JOIN dbo.Product p ON ins.Product_ID = p.Product_ID
-               WHERE p.Warehouse_Item_ID IS NOT NULL
-               GROUP BY p.Warehouse_Item_ID)
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock + ISNULL(d.QtyDel,0) - ISNULL(i.QtyIns,0)
-    FROM dbo.Product_Stock ps
-    LEFT JOIN d ON d.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    LEFT JOIN i ON i.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    WHERE d.Warehouse_Item_ID IS NOT NULL OR i.Warehouse_Item_ID IS NOT NULL;
-END;
-GO
-
--- Trigger 6: Tăng stock khi xóa bill xuất (trả lại hàng)
-CREATE TRIGGER dbo.trg_BED_AD_Stock ON dbo.Bill_Exported_Details AFTER DELETE AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE ps
-    SET ps.Quantity_Stock = ps.Quantity_Stock + x.TotalQty
-    FROM dbo.Product_Stock ps
-    JOIN dbo.Product p ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
-    JOIN (SELECT Product_ID, SUM(Sold_Quantity) AS TotalQty FROM deleted GROUP BY Product_ID) x
-      ON x.Product_ID = p.Product_ID
-    WHERE p.Warehouse_Item_ID IS NOT NULL;
-END;
-GO
-
--- ============================================
--- TRIGGERS FOR QUANTITY MANAGEMENT
--- ============================================
-
--- Trigger 1: Cập nhật Product.Quantity khi nhập hàng (tăng tồn kho)
-CREATE TRIGGER dbo.trg_Update_Product_Stock_On_Import
-ON dbo.Bill_Imported_Details
-AFTER INSERT, UPDATE, DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
     
-    -- Cập nhật Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ qua Export, KHÔNG qua Orders)
-    -- CHỈ cập nhật các Product đã tồn tại (có Product_ID)
+    -- Tự động tính warranty dates nếu chưa có
+    UPDATE bed
+    SET bed.Start_Date = bed.Date_Exported,
+        bed.End_Date = DATEADD(MONTH, p.Warranty_Months, bed.Date_Exported)
+    FROM dbo.Bill_Exported_Details bed
+    INNER JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
+    INNER JOIN inserted i ON bed.Invoice_No = i.Invoice_No 
+        AND bed.Admin_ID = i.Admin_ID 
+        AND bed.Product_ID = i.Product_ID
+    WHERE bed.Start_Date IS NULL OR bed.End_Date IS NULL;
+    
+    -- FIXED: Cập nhật Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ cho Product có Warehouse_Item_ID)
+    -- SỬA LỖI: Bill_Exported_Details không có Warehouse_Item_ID, chỉ lọc theo Product_ID
     UPDATE p
     SET p.Quantity = (
         SELECT 
             ISNULL(SUM(bid.Quantity), 0) - 
-            ISNULL(SUM(bed.Sold_Quantity), 0) -- Sử dụng Sold_Quantity thay vì Quantity
+            ISNULL(SUM(bed.Sold_Quantity), 0)
         FROM dbo.Bill_Imported_Details bid
-        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID AND bed.Status = 'Available'
+        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID 
+            AND bed.Status = 'Available'
         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
     )
     FROM dbo.Product p
-    WHERE p.Warehouse_Item_ID IN (
-        SELECT DISTINCT Warehouse_Item_ID FROM inserted
-        UNION
-        SELECT DISTINCT Warehouse_Item_ID FROM deleted
+    WHERE p.Product_ID IN (
+        SELECT DISTINCT Product_ID FROM inserted
     )
-    AND p.Product_ID IS NOT NULL; -- CHỈ cập nhật Product đã tồn tại
+    AND p.Warehouse_Item_ID IS NOT NULL; -- CHỈ cập nhật Product có liên kết với Warehouse
 END;
 GO
 
--- Trigger 2: Cập nhật Product.Quantity khi bán hàng qua Export (giảm tồn kho)
-CREATE TRIGGER dbo.trg_Update_Product_Stock_On_Export
-ON dbo.Bill_Exported_Details
-AFTER INSERT, UPDATE, DELETE
-AS
+-- Trigger 5: Cập nhật Product.Quantity khi sửa bill xuất (FIXED)
+CREATE TRIGGER dbo.trg_BED_AU_Stock ON dbo.Bill_Exported_Details AFTER UPDATE AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Cập nhật Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ qua Export, KHÔNG qua Orders)
+    -- FIXED: Cập nhật Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ cho Product có Warehouse_Item_ID)
+    -- SỬA LỖI: Bill_Exported_Details không có Warehouse_Item_ID, chỉ lọc theo Product_ID
     UPDATE p
     SET p.Quantity = (
         SELECT 
             ISNULL(SUM(bid.Quantity), 0) - 
-            ISNULL(SUM(bed.Sold_Quantity), 0) -- Sử dụng Sold_Quantity thay vì Quantity
+            ISNULL(SUM(bed.Sold_Quantity), 0)
         FROM dbo.Bill_Imported_Details bid
-        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID AND bed.Status = 'Available'
+        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID 
+            AND bed.Status = 'Available'
         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
     )
     FROM dbo.Product p
@@ -961,9 +747,40 @@ BEGIN
         SELECT DISTINCT Product_ID FROM inserted
         UNION
         SELECT DISTINCT Product_ID FROM deleted
-    );
+    )
+    AND p.Warehouse_Item_ID IS NOT NULL; -- CHỈ cập nhật Product có liên kết với Warehouse
 END;
 GO
+
+-- Trigger 6: Cập nhật Product.Quantity khi xóa bill xuất (trả lại hàng) (FIXED)
+CREATE TRIGGER dbo.trg_BED_AD_Stock ON dbo.Bill_Exported_Details AFTER DELETE AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- FIXED: Cập nhật Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ cho Product có Warehouse_Item_ID)
+    -- SỬA LỖI: Bill_Exported_Details không có Warehouse_Item_ID, chỉ lọc theo Product_ID
+    UPDATE p
+    SET p.Quantity = (
+        SELECT 
+            ISNULL(SUM(bid.Quantity), 0) - 
+            ISNULL(SUM(bed.Sold_Quantity), 0)
+        FROM dbo.Bill_Imported_Details bid
+        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID 
+            AND bed.Status = 'Available'
+        WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
+    )
+    FROM dbo.Product p
+    WHERE p.Product_ID IN (
+        SELECT DISTINCT Product_ID FROM deleted
+    )
+    AND p.Warehouse_Item_ID IS NOT NULL; -- CHỈ cập nhật Product có liên kết với Warehouse
+END;
+GO
+
+-- ============================================
+-- TRIGGERS FOR QUANTITY MANAGEMENT
+-- ============================================
+
 
 -- Trigger 3: KHÔNG cập nhật Product.Quantity khi có Order (chỉ kiểm tra tồn kho)
 -- Orders chỉ dự trữ hàng, không trừ số lượng cho đến khi xuất hóa đơn
@@ -980,7 +797,7 @@ END;
 GO
 
 -- Trigger 4: Set Product.Quantity khi tạo Product mới từ Warehouse
--- CHỈ set Quantity cho Product mới tạo từ Warehouse VÀ chưa có dữ liệu Bill_Imported_Details
+-- Set Quantity cho Product mới tạo từ Warehouse
 CREATE TRIGGER dbo.trg_Set_Product_Quantity_On_Create
 ON dbo.Product
 AFTER INSERT
@@ -988,21 +805,22 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- CHỈ set Quantity cho Product mới tạo từ Warehouse
-    -- VÀ chưa có dữ liệu Bill_Imported_Details
+    -- Set Quantity cho Product mới tạo từ Warehouse
+    -- Sử dụng logic: Quantity = Tổng nhập - Tổng đã bán
+    -- SỬA LỖI: Bill_Exported_Details không có Warehouse_Item_ID, chỉ lọc theo Product_ID
     UPDATE p
     SET p.Quantity = (
-        SELECT ISNULL(ps.Quantity_Stock, 0)
-        FROM dbo.Product_Stock ps
-        WHERE ps.Warehouse_Item_ID = p.Warehouse_Item_ID
+        SELECT 
+            ISNULL(SUM(bid.Quantity), 0) - 
+            ISNULL(SUM(bed.Sold_Quantity), 0)
+        FROM dbo.Bill_Imported_Details bid
+        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID 
+            AND bed.Status = 'Available'
+        WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
     )
     FROM dbo.Product p
     INNER JOIN inserted i ON p.Product_ID = i.Product_ID
-    WHERE p.Warehouse_Item_ID IS NOT NULL 
-    AND NOT EXISTS (
-        SELECT 1 FROM dbo.Bill_Imported_Details bid 
-        WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
-    ); -- CHỈ set khi chưa có dữ liệu nhập
+    WHERE p.Warehouse_Item_ID IS NOT NULL;
 END;
 GO
 
@@ -1075,12 +893,53 @@ END;
 GO
 
 -- ============================================
--- STORED PROCEDURES FOR INSURANCE
+-- STORED PROCEDURES FOR STOCK VALIDATION
 -- ============================================
 
--- Stored Procedure: Get Export Bill Details for Insurance
+-- Stored Procedure: Kiểm tra tồn kho trước khi xuất
+CREATE PROCEDURE dbo.sp_ValidateStockBeforeExport
+    @ProductID varchar(50),
+    @RequestedQuantity int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @ProductStock int = 0;
+    DECLARE @WarehouseStock int = 0;
+    DECLARE @IsValid bit = 0;
+    
+    -- Lấy số lượng tồn kho hiện tại
+    SELECT 
+        @ProductStock = ISNULL(p.Quantity, 0),
+        @WarehouseStock = ISNULL(ps.Quantity_Stock, 0)
+    FROM dbo.Product p
+    LEFT JOIN dbo.Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
+    WHERE p.Product_ID = @ProductID 
+        AND p.Status = 'Available' 
+        AND (ps.Status = 'Available' OR ps.Status IS NULL);
+    
+    -- Kiểm tra tồn kho
+    IF @ProductStock >= @RequestedQuantity AND @WarehouseStock >= @RequestedQuantity
+        SET @IsValid = 1;
+    
+    SELECT 
+        @IsValid AS IsValid,
+        @ProductStock AS ProductStock,
+        @WarehouseStock AS WarehouseStock,
+        @RequestedQuantity AS RequestedQuantity,
+        CASE 
+            WHEN @IsValid = 1 THEN 'SUCCESS'
+            ELSE 'INSUFFICIENT_STOCK'
+        END AS Result;
+END;
+GO
 
-CREATE PROCEDURE dbo.sp_GetExportBillDetailsForInsurance
+-- ============================================
+-- STORED PROCEDURES FOR WARRANTY
+-- ============================================
+
+-- Stored Procedure: Get Export Bill Details with Warranty Information
+CREATE PROCEDURE dbo.sp_GetExportBillDetailsWithWarranty
     @InvoiceNo varchar(50),
     @AdminID varchar(20)
 AS
@@ -1090,24 +949,32 @@ BEGIN
     SELECT 
         bed.Invoice_No,
         bed.Admin_ID,
-        bed.Customer_ID,
+        be.Customer_ID,
         bed.Product_ID,
         p.Product_Name,
         p.Color,
         p.Speed,
         p.Battery_Capacity,
         p.Price,
-        bed.Sold_Quantity, -- Sử dụng Sold_Quantity
+        p.Warranty_Months,
+        bed.Sold_Quantity,
         bed.Unit_Price_Sell_After AS Sold_Price,
         bed.Date_Exported AS Sale_Date,
         bed.Time_Exported AS Sale_Time,
+        bed.Start_Date,
+        bed.End_Date,
         c.Full_Name AS Customer_Name,
         c.Contact AS Customer_Contact,
         c.Address AS Customer_Address,
-        c.Email AS Customer_Email
+        c.Email AS Customer_Email,
+        CASE 
+            WHEN bed.End_Date >= GETDATE() THEN 'Under Warranty'
+            ELSE 'Warranty Expired'
+        END AS Warranty_Status
     FROM dbo.Bill_Exported_Details bed
     LEFT JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
-    LEFT JOIN dbo.Customer c ON bed.Customer_ID = c.Customer_ID
+    LEFT JOIN dbo.Bill_Exported be ON bed.Invoice_No = be.Invoice_No AND bed.Admin_ID = be.Admin_ID
+LEFT JOIN dbo.Customer c ON be.Customer_ID = c.Customer_ID
     WHERE bed.Invoice_No = @InvoiceNo 
         AND bed.Admin_ID = @AdminID 
         AND bed.Status = 'Available' 
@@ -1116,51 +983,30 @@ BEGIN
 END;
 GO
 
--- Stored Procedure: Create Insurance from Export Bill Details
-
-CREATE PROCEDURE dbo.sp_CreateInsuranceFromExportBill
-    @InsuranceNo varchar(50),
+-- Stored Procedure: Update Warranty Dates for Export Bill Details
+CREATE PROCEDURE dbo.sp_UpdateWarrantyDates
     @InvoiceNo varchar(50),
     @AdminID varchar(20),
-    @CustomerID varchar(50),
-    @Description nvarchar(255),
-    @StartDate date,
-    @EndDate date,
-    @ProductIDs varchar(MAX) -- Comma-separated list of Product_IDs to insure
+    @ProductID varchar(50)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRANSACTION;
     
     BEGIN TRY
-        -- Insert into Insurance table
-        INSERT INTO dbo.Insurance (
-            Insurance_No, Admin_ID, Customer_ID, Invoice_No, 
-            Describle_customer, Start_Date_Insurance, End_Date_Insurance, Status
-        )
-        VALUES (
-            @InsuranceNo, @AdminID, @CustomerID, @InvoiceNo,
-            @Description, @StartDate, @EndDate, 'Available'
-        );
-        
-        -- Insert into Insurance_Details table for selected products
-        INSERT INTO dbo.Insurance_Details (
-            Insurance_No, Admin_ID, Customer_ID, Invoice_No, Product_ID,
-            Description, Date_Insurance, Time_Insurance, Status
-        )
-        SELECT 
-            @InsuranceNo, @AdminID, @CustomerID, @InvoiceNo, bed.Product_ID,
-            @Description, GETDATE(), GETDATE(), 'Available'
+        -- Update Start_Date and End_Date based on Product's Warranty_Months
+        UPDATE bed
+        SET bed.Start_Date = bed.Date_Exported,
+            bed.End_Date = DATEADD(MONTH, p.Warranty_Months, bed.Date_Exported)
         FROM dbo.Bill_Exported_Details bed
+        INNER JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
         WHERE bed.Invoice_No = @InvoiceNo 
             AND bed.Admin_ID = @AdminID 
-            AND bed.Status = 'Available'
-            AND (@ProductIDs IS NULL OR bed.Product_ID IN (
-                SELECT value FROM STRING_SPLIT(@ProductIDs, ',')
-            ));
+            AND bed.Product_ID = @ProductID
+            AND bed.Status = 'Available';
         
         COMMIT TRANSACTION;
-        SELECT 'SUCCESS' AS Result, 'Insurance created successfully' AS Message;
+        SELECT 'SUCCESS' AS Result, 'Warranty dates updated successfully' AS Message;
         
     END TRY
     BEGIN CATCH
@@ -1182,10 +1028,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Product_WarehouseItem' A
     CREATE INDEX IX_Product_WarehouseItem ON dbo.Product(Warehouse_Item_ID);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_PS_CategorySup' AND object_id=OBJECT_ID('dbo.Product_Stock'))
     CREATE INDEX IX_PS_CategorySup ON dbo.Product_Stock(Category_ID, Sup_ID);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_Insurance_InvoiceNo' AND object_id=OBJECT_ID('dbo.Insurance'))
-    CREATE INDEX IX_Insurance_InvoiceNo ON dbo.Insurance(Invoice_No, Admin_ID);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_InsuranceDetails_InvoiceNo' AND object_id=OBJECT_ID('dbo.Insurance_Details'))
-    CREATE INDEX IX_InsuranceDetails_InvoiceNo ON dbo.Insurance_Details(Invoice_No, Admin_ID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_BED_WarrantyDates' AND object_id=OBJECT_ID('dbo.Bill_Exported_Details'))
+    CREATE INDEX IX_BED_WarrantyDates ON dbo.Bill_Exported_Details(Start_Date, End_Date);
 GO
 
 
@@ -1205,72 +1049,91 @@ WHERE pr.Promotion_Code IS NOT NULL;
 
 UPDATE d SET d.Total_Price_After = d.Unit_Price_Sell_After * d.Sold_Quantity * (1 - ISNULL(d.Discount_Percent,0)/100.0)
 FROM dbo.Bill_Exported_Details d;
+
+-- Auto-calculate warranty dates based on Product's Warranty_Months
+UPDATE bed
+SET bed.Start_Date = bed.Date_Exported,
+    bed.End_Date = DATEADD(MONTH, p.Warranty_Months, bed.Date_Exported)
+FROM dbo.Bill_Exported_Details bed
+INNER JOIN dbo.Product p ON bed.Product_ID = p.Product_ID
+WHERE bed.Start_Date IS NULL OR bed.End_Date IS NULL;
 GO
 
 
 
--- 2.1) Trigger cập nhật tồn Product khi có INSERT/UPDATE/DELETE trên Bill_Exported_Details
-IF OBJECT_ID('dbo.trg_Update_Product_Stock_On_Export', 'TR') IS NOT NULL
-    DROP TRIGGER dbo.trg_Update_Product_Stock_On_Export;
-GO
+-- Trigger đã được định nghĩa ở trên, không cần tạo lại
 
-CREATE TRIGGER dbo.trg_Update_Product_Stock_On_Export
-ON dbo.Bill_Exported_Details
-AFTER INSERT, UPDATE, DELETE
+-- Trigger trùng lặp đã được xóa
+
+-- ============================================
+-- STORED PROCEDURE TO FIX QUANTITY ISSUES
+-- ============================================
+
+-- Stored Procedure: RESET và sửa lỗi số lượng (FIXED VERSION)
+CREATE PROCEDURE dbo.sp_FixQuantityIssues
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    -- Chỉ tính: Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ qua Export, KHÔNG qua Orders)
+    
+    PRINT '=== BẮT ĐẦU SỬA LỖI SỐ LƯỢNG ===';
+    
+    -- 1. RESET tất cả Product.Quantity về 0 trước
+    UPDATE dbo.Product 
+    SET Quantity = 0 
+    WHERE Warehouse_Item_ID IS NOT NULL;
+    
+    PRINT '✓ Đã reset tất cả Product.Quantity về 0';
+    
+    -- 2. FIXED: Đồng bộ lại với logic đúng: Quantity = Tổng nhập - Tổng đã bán
+    -- CHỈ cập nhật Product có Warehouse_Item_ID và có dữ liệu nhập
+    -- SỬA LỖI: Bill_Exported_Details không có Warehouse_Item_ID, chỉ lọc theo Product_ID
     UPDATE p
     SET p.Quantity = (
         SELECT 
-            ISNULL(SUM(bid.Quantity), 0) 
-            - ISNULL((
-                SELECT SUM(bed.Sold_Quantity) -- Sử dụng Sold_Quantity
-                FROM dbo.Bill_Exported_Details bed 
-                WHERE bed.Product_ID = p.Product_ID
-                  AND bed.Status = 'Available'
-            ), 0)
+            ISNULL(SUM(bid.Quantity), 0) - 
+            ISNULL(SUM(bed.Sold_Quantity), 0)
         FROM dbo.Bill_Imported_Details bid
+        LEFT JOIN dbo.Bill_Exported_Details bed ON bed.Product_ID = p.Product_ID 
+            AND bed.Status = 'Available'
         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
     )
     FROM dbo.Product p
-    WHERE p.Product_ID IN (
-        SELECT DISTINCT Product_ID FROM inserted
-        UNION
-        SELECT DISTINCT Product_ID FROM deleted
+    WHERE p.Warehouse_Item_ID IS NOT NULL
+    AND p.Product_ID IS NOT NULL
+    AND EXISTS (
+        SELECT 1 FROM dbo.Bill_Imported_Details bid 
+        WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
     );
-END;
-GO
-
--- 2.2) Trigger "recalc all" (nếu bạn có trigger/tác vụ tính lại hàng loạt)
-IF OBJECT_ID('dbo.trg_Recalc_Product_Quantities', 'TR') IS NOT NULL
-    DROP TRIGGER dbo.trg_Recalc_Product_Quantities;
-GO
-
-CREATE TRIGGER dbo.trg_Recalc_Product_Quantities
-ON dbo.Product
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Chỉ tính: Product.Quantity = Tổng nhập - Tổng đã bán (CHỈ qua Export, KHÔNG qua Orders)
-    UPDATE p
-    SET p.Quantity = (
-        SELECT 
-            ISNULL(SUM(bid.Quantity), 0) 
-            - ISNULL((
-                SELECT SUM(bed.Sold_Quantity) -- Sử dụng Sold_Quantity
-                FROM dbo.Bill_Exported_Details bed 
-                WHERE bed.Product_ID = p.Product_ID
-                  AND bed.Status = 'Available'
-            ), 0)
-        FROM dbo.Bill_Imported_Details bid
-        WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID
-    )
+    
+    PRINT '✓ Đã đồng bộ số lượng Product với logic đúng';
+    
+    -- 3. Kiểm tra kết quả
+    SELECT 
+        'After Fix' AS Info,
+        p.Product_ID,
+        p.Product_Name,
+        ISNULL(ps.Quantity_Stock, 0) AS Total_Imported,
+        p.Quantity AS Current_Stock,
+        ISNULL(sold.Sold_Quantity, 0) AS Total_Sold,
+        CASE 
+            WHEN ISNULL(ps.Quantity_Stock, 0) = p.Quantity + ISNULL(sold.Sold_Quantity, 0)
+            THEN N'✓ Cân bằng'
+            ELSE N'✗ Lệch'
+        END AS Balance_Status
     FROM dbo.Product p
-    WHERE p.Warehouse_Item_ID IS NOT NULL;
+    LEFT JOIN dbo.Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
+    LEFT JOIN (
+        SELECT p.Warehouse_Item_ID, 
+               ISNULL(SUM(bed.Sold_Quantity), 0) AS Sold_Quantity
+        FROM dbo.Product p
+        LEFT JOIN dbo.Bill_Exported_Details bed ON p.Product_ID = bed.Product_ID AND bed.Status = 'Available'
+        WHERE p.Warehouse_Item_ID IS NOT NULL
+        GROUP BY p.Warehouse_Item_ID
+    ) sold ON ps.Warehouse_Item_ID = sold.Warehouse_Item_ID
+    WHERE p.Status = 'Available' AND (ps.Status = 'Available' OR ps.Status IS NULL)
+    ORDER BY Balance_Status DESC;
+    
+    PRINT '=== HOÀN THÀNH SỬA LỖI SỐ LƯỢNG ===';
+    SELECT 'SUCCESS' AS Result, 'Quantity issues fixed - Reset and resync completed' AS Message;
 END;
 GO

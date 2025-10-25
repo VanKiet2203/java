@@ -16,6 +16,8 @@ public class DTO_BillExportedDetail {
     private BigDecimal totalPriceAfter;
     private Date dateExported;
     private Time timeExported;
+    private Date startDate;
+    private Date endDate;
     private String promotionCode;
 
     public DTO_BillExportedDetail() {}
@@ -23,7 +25,7 @@ public class DTO_BillExportedDetail {
     public DTO_BillExportedDetail(String invoiceNo, String adminId, String customerId, String productId,
                                   BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
                                   BigDecimal totalPriceBefore, BigDecimal totalPriceAfter,
-                                  Date dateExported, Time timeExported) {
+                                  Date dateExported, Time timeExported, Date startDate, Date endDate) {
         this.invoiceNo = invoiceNo;
         this.adminId = adminId;
         this.customerId = customerId;
@@ -35,12 +37,14 @@ public class DTO_BillExportedDetail {
         this.totalPriceAfter = totalPriceAfter;
         this.dateExported = dateExported;
         this.timeExported = timeExported;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
     
     public DTO_BillExportedDetail(String invoiceNo, String adminId, String customerId, String productId,
                                   BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
                                   BigDecimal totalPriceBefore, BigDecimal totalPriceAfter,
-                                  Date dateExported, Time timeExported, String promotionCode) {
+                                  Date dateExported, Time timeExported, String promotionCode, Date startDate, Date endDate) {
         this.invoiceNo = invoiceNo;
         this.adminId = adminId;
         this.customerId = customerId;
@@ -53,6 +57,8 @@ public class DTO_BillExportedDetail {
         this.dateExported = dateExported;
         this.timeExported = timeExported;
         this.promotionCode = promotionCode;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public String getInvoiceNo() { return invoiceNo; }
@@ -79,4 +85,8 @@ public class DTO_BillExportedDetail {
     public void setTimeExported(Time timeExported) { this.timeExported = timeExported; }
     public String getPromotionCode() { return promotionCode; }
     public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
+    public Date getStartDate() { return startDate; }
+    public void setStartDate(Date startDate) { this.startDate = startDate; }
+    public Date getEndDate() { return endDate; }
+    public void setEndDate(Date endDate) { this.endDate = endDate; }
 }

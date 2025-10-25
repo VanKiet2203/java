@@ -41,7 +41,7 @@ public class EditProduct extends javax.swing.JFrame {
     private MyTextField txtProductID, txtProductName, txtColor, txtBattery, txtSpeed, txtPrice;
     private MyCombobox<String> cmbOperate;
     private MyButton bntupload, bntUpdate, bntReset;
-    private JSpinner spinnerQuantity;
+    private JSpinner spinnerQuantity, spinnerWarranty;
     private String image;
     private JPanel panelUpload; // Lưu reference đến panel upload
 
@@ -245,6 +245,14 @@ public class EditProduct extends javax.swing.JFrame {
         spinnerQuantity.setEnabled(false);
         panel.add(spinnerQuantity, "growx, wrap");
         
+        // Warranty Months (editable)
+        JLabel lblWarranty = new JLabel("Warranty (Months):");
+        lblWarranty.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(lblWarranty);
+        
+        spinnerWarranty = new JSpinner(new SpinnerNumberModel(12, 1, 120, 1));
+        panel.add(spinnerWarranty, "growx, wrap");
+        
         // Category (editable)
         JLabel lblCategory = new JLabel("Category:");
         lblCategory.setFont(new Font("Arial", Font.BOLD, 12));
@@ -341,7 +349,8 @@ public class EditProduct extends javax.swing.JFrame {
                     currentProduct.getImage(),
                     currentProduct.getPrice(),
                     currentProduct.getListPriceBefore(),
-                    currentProduct.getListPriceAfter()
+                    currentProduct.getListPriceAfter(),
+                    currentProduct.getWarrantyMonths()
                 );
 
                 // Cập nhật các trường thay đổi (nếu có)
@@ -364,6 +373,12 @@ public class EditProduct extends javax.swing.JFrame {
                 }
                 if (!txtSpeed.getText().equals(currentProduct.getSpeed())) {
                 updatedProduct.setSpeed(txtSpeed.getText());
+                }
+                
+                // Cập nhật warranty months nếu có thay đổi
+                int newWarrantyMonths = (Integer) spinnerWarranty.getValue();
+                if (newWarrantyMonths != currentProduct.getWarrantyMonths()) {
+                    updatedProduct.setWarrantyMonths(newWarrantyMonths);
                 }
 
                 // Cập nhật ảnh mới nếu có
@@ -449,6 +464,7 @@ public class EditProduct extends javax.swing.JFrame {
         txtSpeed.setText(product.getSpeed());
         txtPrice.setText(String.valueOf(product.getPrice()));
         spinnerQuantity.setValue(product.getQuantity());
+        spinnerWarranty.setValue(product.getWarrantyMonths());
         
         // Tìm và chọn category trong ComboBox
         String categoryId = product.getCategoryId();
@@ -474,6 +490,7 @@ public class EditProduct extends javax.swing.JFrame {
         txtSpeed.setText("");
         txtPrice.setText("");
         spinnerQuantity.setValue(1);
+        spinnerWarranty.setValue(12);
         image = null;
         if (cmbOperate != null) cmbOperate.setSelectedIndex(0);
         

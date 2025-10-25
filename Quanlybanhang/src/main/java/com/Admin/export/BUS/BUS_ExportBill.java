@@ -4,11 +4,14 @@ import com.Admin.export.DAO.DAO_ExportBill;
 import com.Admin.export.DTO.DTO_BillExported;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.Admin.export.DTO.DTO_BillExport;
+import com.Admin.export.DTO.DTO_WarrantyInfo;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.User.dashboard_user.DTO.DTOProfile_cus;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.sql.Date;
+import java.time.LocalDate;
 
 public class BUS_ExportBill {
     private final DAO_ExportBill daoExportBill;
@@ -39,8 +42,10 @@ public class BUS_ExportBill {
     }
     
     public boolean insertBillDetail(DTO_BillExportedDetail detail, List<String> imeiList) {
+        // Tính toán Start_Date và End_Date từ Warranty_Months
+        calculateWarrantyDates(detail);
         return daoExportBill.insertBillExportedDetail(detail, detail.getPromotionCode());
-   }
+    }
 
 
      public boolean updateProductQuantity(DTO_BillExportedDetail detail) {
@@ -83,13 +88,39 @@ public class BUS_ExportBill {
         return daoExportBill.searchBillDetails(searchType, searchKeyword);
     }
     
-    public String getWarranry(String productID) {
+    public String getWarranty(String productID) {
         try {
             return daoExportBill.getWarranty(productID);
         } catch (Exception e) { // broaden catch: underlying call may not throw SQLException directly
             e.printStackTrace();
-            CustomDialog.showError("Data upload eror ! ");
-            return null;
+            CustomDialog.showError("Data upload error ! ");
+            return "12 tháng"; // Default warranty
+        }
+    }
+    
+    /**
+     * Tính toán Start_Date và End_Date từ Warranty_Months của sản phẩm
+     */
+    private void calculateWarrantyDates(DTO_BillExportedDetail detail) {
+        try {
+            // Lấy Warranty_Months từ Product
+            int warrantyMonths = daoExportBill.getWarrantyMonths(detail.getProductId());
+            
+            // Start_Date = Date_Exported
+            Date startDate = detail.getDateExported();
+            detail.setStartDate(startDate);
+            
+            // End_Date = Date_Exported + Warranty_Months
+            LocalDate startLocalDate = startDate.toLocalDate();
+            LocalDate endLocalDate = startLocalDate.plusMonths(warrantyMonths);
+            Date endDate = Date.valueOf(endLocalDate);
+            detail.setEndDate(endDate);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Nếu có lỗi, sử dụng giá trị mặc định
+            detail.setStartDate(detail.getDateExported());
+            detail.setEndDate(detail.getDateExported());
         }
     }
     
@@ -118,6 +149,45 @@ public class BUS_ExportBill {
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+    
+    /**
+     * Lấy danh sách thông tin bảo hành
+     */
+    public List<DTO_WarrantyInfo> getWarrantyInformation() {
+        try {
+            return daoExportBill.getWarrantyInformation();
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Failed to get warranty information: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+    
+    /**
+     * Sửa lỗi số lượng (RESET và đồng bộ lại)
+     */
+    public boolean fixQuantityIssues() {
+        try {
+            return daoExportBill.fixQuantityIssues();
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Failed to fix quantity issues: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * RESET và đồng bộ lại tất cả số lượng (sửa lỗi nhân đôi)
+     */
+    public boolean resetAndSyncAllQuantities() {
+        try {
+            return daoExportBill.fixQuantityIssues(); // Sử dụng method fix đã có
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Failed to reset and sync quantities: " + e.getMessage());
+            return false;
         }
     }
      

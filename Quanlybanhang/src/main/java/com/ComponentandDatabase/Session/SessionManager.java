@@ -1,16 +1,12 @@
 package com.ComponentandDatabase.Session;
 
-/**
- * SessionManager để quản lý thông tin session của admin hiện tại
- */
 public class SessionManager {
     private static SessionManager instance;
     private String currentAdminId;
     private String currentAdminName;
+    private boolean loggedIn = false;
     
-    private SessionManager() {
-        // Private constructor for singleton
-    }
+    private SessionManager() {}
     
     public static SessionManager getInstance() {
         if (instance == null) {
@@ -22,6 +18,7 @@ public class SessionManager {
     public void setCurrentAdmin(String adminId, String adminName) {
         this.currentAdminId = adminId;
         this.currentAdminName = adminName;
+        this.loggedIn = true;
     }
     
     public String getCurrentAdminId() {
@@ -32,12 +29,13 @@ public class SessionManager {
         return currentAdminName;
     }
     
-    public void clearSession() {
-        this.currentAdminId = null;
-        this.currentAdminName = null;
+    public boolean isLoggedIn() {
+        return loggedIn;
     }
     
-    public boolean isLoggedIn() {
-        return currentAdminId != null && !currentAdminId.isEmpty();
+    public void logout() {
+        this.currentAdminId = null;
+        this.currentAdminName = null;
+        this.loggedIn = false;
     }
 }
