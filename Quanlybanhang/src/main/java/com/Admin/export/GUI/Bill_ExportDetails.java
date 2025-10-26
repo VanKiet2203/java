@@ -9,20 +9,16 @@ import com.ComponentandDatabase.Components.MyTextField;
 import com.Admin.export.BUS.BUS_ExportBill;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.ComponentandDatabase.Components.CustomDialog;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Locale;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.Date;
 import java.text.ParseException;
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -32,14 +28,14 @@ import static com.ComponentandDatabase.Components.UIConstants.*;
 
 
 public class Bill_ExportDetails extends javax.swing.JFrame {
-     private JPanel panelSearch;
      private JLabel lblTitle;
      private MyPanel panelTitle;
-     private MyCombobox cmbSearch;
+     private MyCombobox<String> cmbSearch;
      private MyButton bntSearch, bntRefresh;
      private MyTextField txtSearch;
      private MyTable tableBillDetail;
      private BUS_ExportBill busExportBill;
+     private javax.swing.JLayeredPane bg;
  
      private DefaultTableModel model;
     public Bill_ExportDetails() {
@@ -47,6 +43,44 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
         setAlwaysOnTop(true); // Luôn hiển thị trên cùng
         init();
+    }
+    
+    // Method để thiết lập thông tin hóa đơn
+    public void setOrderInfo(String orderNo, String customerID, String orderDate, String totalAmount) {
+        // Có thể sử dụng thông tin này để hiển thị chi tiết hóa đơn
+        // Ví dụ: cập nhật title hoặc load dữ liệu chi tiết
+        if (lblTitle != null) {
+            lblTitle.setText("CHI TIẾT HÓA ĐƠN - " + orderNo);
+        }
+        
+        // Load chi tiết hóa đơn dựa trên orderNo
+        loadOrderDetails(orderNo);
+    }
+    
+    // Method để load chi tiết hóa đơn
+    private void loadOrderDetails(String orderNo) {
+        try {
+            busExportBill = new BUS_ExportBill();
+            List<DTO_BillExportedDetail> allDetails = busExportBill.getAllBillDetails();
+            
+            // Clear table
+            model.setRowCount(0);
+            
+            // Filter và add data to table
+            for (DTO_BillExportedDetail detail : allDetails) {
+                if (detail.getInvoiceNo().equals(orderNo)) {
+                    model.addRow(new Object[]{
+                        detail.getProductId(),
+                        "Product Name", // Có thể cần lấy từ bảng product
+                        detail.getQuantity(),
+                        detail.getUnitPrice(),
+                        detail.getTotalPriceAfter()
+                    });
+                }
+            }
+        } catch (Exception e) {
+            CustomDialog.showError("Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
+        }
     }
 
    public void init() {
@@ -338,8 +372,6 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         );
     }
   
-    @SuppressWarnings("unchecked")
-    
     private void initComponents() {
 
         bg = new javax.swing.JLayeredPane();
@@ -404,6 +436,5 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLayeredPane bg;
     // End of variables declaration//GEN-END:variables
 }

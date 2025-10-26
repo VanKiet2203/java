@@ -33,11 +33,11 @@ import net.coobird.thumbnailator.Thumbnails;
 import net.miginfocom.swing.MigLayout;
 
 public class CartDetails extends javax.swing.JFrame {
-     public JLabel lblTitle, lblID, lblProductName, lblColor, lblBatteryCapacity, lblSpeed, lblOperating, lblWarranty, lblCateID
+     public JLabel lblTitle, lblID, lblProductName, lblColor, lblBatteryCapacity, lblSpeed, lblWarranty, lblCateID
              , lblBrand, lblQuantity;
      public MyPanel panelTitle;
      public MyCombobox cmbGender;
-     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtOperating, txtWarranty, txtCateID, txtBrand, txtQuantity;
+     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtWarranty, txtCateID, txtBrand, txtQuantity;
      private JDateChooser dateOfBirth;
      private JTextArea txtAddress;
      public JPanel panelUpload;
@@ -113,32 +113,27 @@ public class CartDetails extends javax.swing.JFrame {
      lblSpeed.setForeground(Color.BLACK);
      bg.add(lblSpeed, "pos 30 460, w 150!, h 50!");
      
-    lblOperating= new JLabel("Chế độ vận hành");
-     lblOperating.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblOperating.setForeground(Color.BLACK);
-     bg.add(lblOperating, "pos 30 520, w 160!, h 50!");
-     
-     lblWarranty= new JLabel("Warranty Period");
+     lblWarranty= new JLabel("Warranty (Months)");
      lblWarranty.setFont(new Font("sansserif", Font.BOLD, 18));
      lblWarranty.setForeground(Color.BLACK);
-     bg.add(lblWarranty, "pos 30 580, w 150!, h 50!");
+     bg.add(lblWarranty, "pos 30 520, w 150!, h 50!");
      
           
      lblCateID= new JLabel("Category.ID");
      lblCateID.setFont(new Font("sansserif", Font.BOLD, 18));
      lblCateID.setForeground(Color.BLACK);
-     bg.add(lblCateID, "pos 30 640, w 150!, h 50!");
+     bg.add(lblCateID, "pos 30 580, w 150!, h 50!");
      
      
-     lblBrand= new JLabel("Brand");
+     lblBrand= new JLabel("Supplier");
      lblBrand.setFont(new Font("sansserif", Font.BOLD, 18));
      lblBrand.setForeground(Color.BLACK);
-     bg.add(lblBrand, "pos 380 580, w 150!, h 50!");
+     bg.add(lblBrand, "pos 380 520, w 150!, h 50!");
      
      lblQuantity= new JLabel("Quantity");
      lblQuantity.setFont(new Font("sansserif", Font.BOLD, 18));
      lblQuantity.setForeground(Color.BLACK);
-     bg.add(lblQuantity, "pos 380 640, w 150!, h 50!");
+     bg.add(lblQuantity, "pos 380 580, w 150!, h 50!");
      
      
      txtID = new MyTextField();
@@ -188,15 +183,6 @@ public class CartDetails extends javax.swing.JFrame {
 
      bg.add(txtSpeed, "pos 180 470, w 450!, h 32!");
      
-     txtOperating = new MyTextField();
-     txtOperating.setBorder(null);
-     txtOperating.setTextColor(Color.BLACK); // Đặt màu mong muốn
-     txtOperating.setLocked(true);
-     txtOperating.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
-     txtOperating.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtOperating, "pos 190 530, w 180!, h 32!");
-     
      txtWarranty = new MyTextField();
      txtWarranty.setBorder(null);
      txtWarranty.setTextColor(Color.BLACK); // Đặt màu mong muốn
@@ -204,7 +190,7 @@ public class CartDetails extends javax.swing.JFrame {
      txtWarranty.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
      txtWarranty.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtWarranty, "pos 170 590, w 200!, h 32!");
+     bg.add(txtWarranty, "pos 170 530, w 200!, h 32!");
      
      txtCateID = new MyTextField();
      txtCateID.setBorder(null);
@@ -213,7 +199,7 @@ public class CartDetails extends javax.swing.JFrame {
      txtCateID.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
      txtCateID.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtCateID, "pos 150 650, w 150!, h 32!");
+     bg.add(txtCateID, "pos 150 590, w 150!, h 32!");
      
      txtBrand = new MyTextField();
      txtBrand.setBorder(null);
@@ -222,7 +208,7 @@ public class CartDetails extends javax.swing.JFrame {
      txtBrand.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
      txtBrand.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtBrand, "pos 430 590, w 150!, h 32!");
+     bg.add(txtBrand, "pos 430 530, w 150!, h 32!");
      
      txtQuantity = new MyTextField();
      txtQuantity.setBorder(null);
@@ -231,7 +217,7 @@ public class CartDetails extends javax.swing.JFrame {
      txtQuantity.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
      txtQuantity.setBackgroundColor(Color.WHITE);
     
-     bg.add(txtQuantity, "pos 460 650, w 60!, h 30!");
+     bg.add(txtQuantity, "pos 460 590, w 60!, h 30!");
      
     }
     
@@ -283,8 +269,7 @@ public class CartDetails extends javax.swing.JFrame {
         txtColor.setText(product.getColor());
         txtBatteryCapacity.setText(product.getBatteryCapacity());
         txtSpeed.setText(product.getSpeed());
-        txtOperating.setText(product.getOperatingSystem());
-        txtWarranty.setText(product.getWarrantyPeriod());
+        txtWarranty.setText(String.valueOf(product.getWarrantyMonths()));
         txtCateID.setText(product.getCategoryID());
         txtQuantity.setText(String.valueOf(product.getQuantity()));
         String brand = busProduct.getBrandByProductId(product.getProductID());

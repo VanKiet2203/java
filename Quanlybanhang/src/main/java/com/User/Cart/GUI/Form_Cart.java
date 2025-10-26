@@ -37,7 +37,7 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     private JLabel lblPayment;
     private JScrollPane scrollShow;
     private productBUS proBUS;
-    private MyButton bntOrder;
+    private MyButton bntOrder, bntSelectAll, bntClearSelection;
     private BUSCart cartBUS;
     private String currentCustomerID; // Thêm biến để lưu ID khách hàng hiện tại 
     private MyRadioButton momo, cash;
@@ -46,10 +46,12 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     public  ArrayList<DTOCart> cartItems;
     ArrayList<productDTO> productsInCart;
     private OrderUpdateListener orderUpdateListener;
+    private ArrayList<JCheckBox> productCheckboxes; // Danh sách checkbox cho từng sản phẩm
 
     public Form_Cart(String customerID) {
         this.currentCustomerID = customerID;
         this.cartBUS = new BUSCart();
+        this.productCheckboxes = new ArrayList<>();
         initComponents();
         initProductDisplayArea();
         updateProductList();
@@ -70,6 +72,7 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     
     public void updateProductList() {
         panelShow.removeAll();
+        productCheckboxes.clear(); // Clear danh sách checkbox
         proBUS = new productBUS();
         
         // Lấy danh sách sản phẩm trong giỏ hàng
@@ -101,6 +104,25 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         panelShow.setBackground(Color.WHITE);
         panelShow.setBorder(null);
 
+        // Thêm các nút Select All và Clear Selection
+        bntSelectAll = new MyButton("✅ Select All", 10);
+        bntSelectAll.setBounds(20, 10, 120, 35);
+        bntSelectAll.setBackgroundColor(Color.decode("#4CAF50"));
+        bntSelectAll.setHoverColor(Color.decode("#45A049"));
+        bntSelectAll.setForeground(Color.WHITE);
+        bntSelectAll.setFont(new Font("Arial", Font.BOLD, 12));
+        bntSelectAll.addActionListener(e -> selectAllProducts());
+        panel.add(bntSelectAll);
+
+        bntClearSelection = new MyButton("❌ Clear Selection", 10);
+        bntClearSelection.setBounds(150, 10, 140, 35);
+        bntClearSelection.setBackgroundColor(Color.decode("#FF9800"));
+        bntClearSelection.setHoverColor(Color.decode("#F57C00"));
+        bntClearSelection.setForeground(Color.WHITE);
+        bntClearSelection.setFont(new Font("Arial", Font.BOLD, 12));
+        bntClearSelection.addActionListener(e -> clearSelection());
+        panel.add(bntClearSelection);
+
         scrollShow = new JScrollPane(panelShow);
         scrollShow.setBounds(0, 50, 1250, 500);
         scrollShow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -116,7 +138,7 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
       panel.add(lblPayment);
 
                     // Momo icon resized
-      JLabel momoIcon = new JLabel(loadScaledIcon("src\\main\\resources\\Icons\\User_icon\\momo.png", 30, 30));
+      JLabel momoIcon = new JLabel(loadScaledIcon("/Icons/User_icon/momo.png", 30, 30));
       momoIcon.setBounds(480, 580, 30, 30);
       panel.add(momoIcon);
 
@@ -137,7 +159,7 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
       panel.add(momo);
 
       // Cash icon resized
-      JLabel cashIcon = new JLabel(loadScaledIcon("src\\main\\resources\\Icons\\User_icon\\cash.png", 30, 30));
+      JLabel cashIcon = new JLabel(loadScaledIcon("/Icons/User_icon/cash.png", 30, 30));
       cashIcon.setBounds(640, 580, 30, 30);
       panel.add(cashIcon);
 
@@ -205,81 +227,126 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
 
      
    private JPanel createProductPanel(productDTO product) {
-    JPanel panelcreate = new JPanel(new BorderLayout(3, 3)); // Giảm khoảng cách dọc
-        panelcreate.setPreferredSize(new Dimension(280, 240)); // Giảm chiều cao từ 250 xuống 240
+    JPanel panelcreate = new JPanel(new BorderLayout(3, 3));
+        panelcreate.setPreferredSize(new Dimension(300, 280));
         panelcreate.setBackground(Color.WHITE);
-        panelcreate.setBorder(null);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-            BorderFactory.createEmptyBorder(3, 5, 3, 5) // Giảm padding top và bottom
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
         ));
+
+        // Checkbox để chọn sản phẩm
+        JCheckBox selectCheckbox = new JCheckBox("Select for Order");
+        selectCheckbox.setFont(new Font("Arial", Font.BOLD, 12));
+        selectCheckbox.setForeground(Color.decode("#2E7D32"));
+        selectCheckbox.setBackground(Color.WHITE);
+        productCheckboxes.add(selectCheckbox);
+        
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(selectCheckbox, BorderLayout.WEST);
 
         // Product Image
         ImageIcon icon = new ImageIcon(product.getImage());
-        Image img = icon.getImage().getScaledInstance(150, 110, Image.SCALE_SMOOTH); // Giảm chiều cao ảnh
+        Image img = icon.getImage().getScaledInstance(180, 120, Image.SCALE_SMOOTH);
         JLabel imageLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
-        imageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0)); // Giảm khoảng cách dưới ảnh
-        panelcreate.add(imageLabel, BorderLayout.NORTH);
+        imageLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        imageLabel.setBackground(Color.decode("#F8F9FA"));
+        imageLabel.setOpaque(true);
+        topPanel.add(imageLabel, BorderLayout.CENTER);
+        panelcreate.add(topPanel, BorderLayout.NORTH);
 
-      // Product Details
-      JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 3, 3));
-      detailsPanel.setBackground(Color.WHITE);
+        // Product Details
+        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
-     // Thêm các thông tin với font và padding tối ưu
-     addCompactDetail(detailsPanel, "ID: " + product.getProductID(), Font.PLAIN, 12);
-     addCompactDetail(detailsPanel, "Name: " + product.getProductName(), Font.PLAIN, 12);
-     addCompactDetail(detailsPanel, "Price: " + product.getPrice() + " VNĐ", Font.PLAIN, 12);
-     addCompactDetail(detailsPanel, "Quantity: " + product.getQuantity(), Font.PLAIN, 12);
-     addCompactDetail(detailsPanel, "Status: " + getStatusText(product), Font.PLAIN, 12);
+        // Product Name (highlighted)
+        JLabel nameLabel = new JLabel(product.getProductName());
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        nameLabel.setForeground(Color.decode("#2E7D32"));
+        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        detailsPanel.add(nameLabel);
 
-     panelcreate.add(detailsPanel, BorderLayout.CENTER);
-
-     // Action Buttons - Gọn hơn
-     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 3)); // Giảm khoảng cách
-     buttonPanel.setBackground(Color.WHITE);
-
-     MyButton detailBtn = new MyButton("Details", 8);
-     detailBtn.setPreferredSize(new Dimension(75, 22)); // Nút nhỏ hơn
-     detailBtn.addActionListener((e) -> {
-         CartDetails details = new CartDetails();
-         details.setVisible(true);
-         details.displayProductDetails(product);
-     });
-     buttonPanel.add(detailBtn);
-     
-     MyButton bntDelete = new MyButton("Delete", 8);
-     bntDelete.setPreferredSize(new Dimension(75, 22)); // Nút nhỏ hơn
-     bntDelete.setBackgroundColor(Color.decode("#f44336")); 
-     bntDelete.setHoverColor(Color.decode("#FF6633"));      
-     bntDelete.setPressedColor(Color.decode("#d32f2f")); 
-      bntDelete.setForeground(Color.WHITE);
-      bntDelete.addActionListener(e -> {
-       boolean confirm = CustomDialog.showOptionPane(
-                          "Confirm Deletion",
-                          "Are you sure you want to delete this Product ! ",
-                           UIManager.getIcon("OptionPane.questionIcon"),
-                          Color.decode("#FF6666")
-                  );
-        if (confirm) {
-            deleteProductFromCart(product.getProductID());
-            
+        addCompactDetail(detailsPanel, "ID: " + product.getProductID(), Font.PLAIN, 11);
+        addCompactDetail(detailsPanel, "Price: " + product.getPrice() + " VNĐ", Font.BOLD, 12);
+        addCompactDetail(detailsPanel, "Quantity: " + product.getQuantity(), Font.PLAIN, 11);
+        
+        // Status với màu sắc
+        JLabel statusLabel = new JLabel(getStatusText(product));
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 11));
+        if (product.getQuantity() == 0) {
+            statusLabel.setForeground(Color.decode("#D32F2F"));
+        } else {
+            statusLabel.setForeground(Color.decode("#388E3C"));
         }
-   });
-    
-    
-    
-    buttonPanel.add(bntDelete);
-    
-     panelcreate.add(buttonPanel, BorderLayout.SOUTH);
+        detailsPanel.add(statusLabel);
 
-     return panelcreate;
+        panelcreate.add(detailsPanel, BorderLayout.CENTER);
+
+        // Action Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
+        buttonPanel.setBackground(Color.WHITE);
+
+        MyButton detailBtn = new MyButton("Details", 8);
+        detailBtn.setPreferredSize(new Dimension(90, 30));
+        detailBtn.setBackgroundColor(Color.decode("#2196F3"));
+        detailBtn.setHoverColor(Color.decode("#1976D2"));
+        detailBtn.setForeground(Color.WHITE);
+        detailBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        detailBtn.addActionListener((e) -> {
+            CartDetails details = new CartDetails();
+            details.setVisible(true);
+            details.displayProductDetails(product);
+        });
+        buttonPanel.add(detailBtn);
+        
+        MyButton bntDelete = new MyButton("Delete", 8);
+        bntDelete.setPreferredSize(new Dimension(90, 30));
+        bntDelete.setBackgroundColor(Color.decode("#f44336")); 
+        bntDelete.setHoverColor(Color.decode("#FF6633"));      
+        bntDelete.setPressedColor(Color.decode("#d32f2f")); 
+        bntDelete.setForeground(Color.WHITE);
+        bntDelete.setFont(new Font("Arial", Font.BOLD, 11));
+        bntDelete.addActionListener(e -> {
+            boolean confirm = CustomDialog.showOptionPane(
+                "Confirm Deletion",
+                "Are you sure you want to delete this Product?",
+                UIManager.getIcon("OptionPane.questionIcon"),
+                Color.decode("#FF6666")
+            );
+            if (confirm) {
+                deleteProductFromCart(product.getProductID());
+            }
+        });
+        buttonPanel.add(bntDelete);
+        
+        panelcreate.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panelcreate;
  }
    
-        // Hàm load ảnh và resize
-    private ImageIcon loadScaledIcon(String path, int width, int height) {
-         ImageIcon originalIcon = new ImageIcon(path);
-         Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-         return new ImageIcon(scaledImage);
+        // Hàm load ảnh và resize từ resources
+    private ImageIcon loadScaledIcon(String resourcePath, int width, int height) {
+         try {
+             // Load icon từ resources
+             java.net.URL iconURL = getClass().getResource(resourcePath);
+             if (iconURL != null) {
+                 ImageIcon originalIcon = new ImageIcon(iconURL);
+                 Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                 return new ImageIcon(scaledImage);
+             } else {
+                 System.err.println("Icon not found: " + resourcePath);
+                 // Trả về icon mặc định nếu không tìm thấy
+                 return new ImageIcon();
+             }
+         } catch (Exception e) {
+             System.err.println("Error loading icon: " + resourcePath + " - " + e.getMessage());
+             return new ImageIcon();
+         }
      }
 
   
@@ -292,6 +359,31 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     }
     private String getStatusText(productDTO product) {
         return product.getQuantity() == 0 ? "Out of Stock" : product.getStatus();
+    }
+    
+    // Method để chọn tất cả sản phẩm
+    private void selectAllProducts() {
+        for (JCheckBox checkbox : productCheckboxes) {
+            checkbox.setSelected(true);
+        }
+    }
+    
+    // Method để bỏ chọn tất cả sản phẩm
+    private void clearSelection() {
+        for (JCheckBox checkbox : productCheckboxes) {
+            checkbox.setSelected(false);
+        }
+    }
+    
+    // Method để lấy danh sách sản phẩm được chọn
+    public ArrayList<productDTO> getSelectedProducts() {
+        ArrayList<productDTO> selectedProducts = new ArrayList<>();
+        for (int i = 0; i < productCheckboxes.size(); i++) {
+            if (productCheckboxes.get(i).isSelected() && i < productsInCart.size()) {
+                selectedProducts.add(productsInCart.get(i));
+            }
+        }
+        return selectedProducts;
     }
     
     

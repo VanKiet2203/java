@@ -91,51 +91,92 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
     }
 
    private JPanel createOrderPanel(DTO_Order order) {
-        JPanel panelcreate = new JPanel(new BorderLayout(3, 3));
-        panelcreate.setPreferredSize(new Dimension(260, 200)); // Giảm chiều cao
+        JPanel panelcreate = new JPanel(new BorderLayout(5, 5));
+        panelcreate.setPreferredSize(new Dimension(300, 250));
         panelcreate.setBackground(Color.WHITE);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-            BorderFactory.createEmptyBorder(3, 5, 3, 5)
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
+        // Header với background đẹp
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(240, 240, 240));
+        headerPanel.setBackground(Color.decode("#E3F2FD"));
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#2196F3"), 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
 
-        JLabel orderNoLabel = new JLabel("Order:" + order.getOrderNo());
+        JLabel orderNoLabel = new JLabel("📋 Order: " + order.getOrderNo());
         orderNoLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        orderNoLabel.setForeground(Color.decode("#1976D2"));
 
-        JLabel dateLabel = new JLabel(
-        order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " +
-        order.getTimeOrder().format(DateTimeFormatter.ofPattern("HH:mm"))
-    );
-    dateLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    dateLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        JLabel dateLabel = new JLabel("📅 " + 
+            order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " +
+            order.getTimeOrder().format(DateTimeFormatter.ofPattern("HH:mm"))
+        );
+        dateLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        dateLabel.setForeground(Color.decode("#666666"));
+        dateLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         headerPanel.add(orderNoLabel, BorderLayout.WEST);
         headerPanel.add(dateLabel, BorderLayout.EAST);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
 
-        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        // Details panel với layout đẹp
+        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 8, 8));
         detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
-        addCompactDetail(detailsPanel, "Customer ID: " + order.getCustomerID(), Font.PLAIN, 12);
-        addCompactDetail(detailsPanel, "Total Items: " + order.getTotalQuantityProduct(), Font.PLAIN, 12);
-        addCompactDetail(detailsPanel, "Total Price: " + order.getTotalPrice() + " VNĐ", Font.BOLD, 12);
-        addCompactDetail(detailsPanel, "Payment Method: " + order.getPayment(), Font.PLAIN, 12);
-        addCompactDetail(detailsPanel, "Date Order: " + order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), Font.PLAIN, 12);
-        addCompactDetail(detailsPanel, "Time Order: " + order.getTimeOrder(), Font.PLAIN, 12);
+        // Customer ID
+        JLabel customerLabel = new JLabel("👤 Customer: " + order.getCustomerID());
+        customerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        customerLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(customerLabel);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); // Center nút
+        // Total Items
+        JLabel itemsLabel = new JLabel("📦 Items: " + order.getTotalQuantityProduct());
+        itemsLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        itemsLabel.setForeground(Color.decode("#2E7D32"));
+        detailsPanel.add(itemsLabel);
+
+        // Total Price (highlighted)
+        JLabel priceLabel = new JLabel("💰 Total: " + order.getTotalPrice() + " VNĐ");
+        priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        priceLabel.setForeground(Color.decode("#D32F2F"));
+        detailsPanel.add(priceLabel);
+
+        // Payment Method
+        JLabel paymentLabel = new JLabel("💳 Payment: " + order.getPayment());
+        paymentLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        paymentLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(paymentLabel);
+
+        // Date Order
+        JLabel dateOrderLabel = new JLabel("📅 Date: " + order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        dateOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        dateOrderLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(dateOrderLabel);
+
+        // Time Order
+        JLabel timeOrderLabel = new JLabel("⏰ Time: " + order.getTimeOrder());
+        timeOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        timeOrderLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(timeOrderLabel);
+
+        // Button panel với style đẹp
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         buttonPanel.setBackground(Color.WHITE);
 
-        MyButton detailBtn = new MyButton("View Details", 10);
-        detailBtn.setPreferredSize(new Dimension(120, 30));
+        MyButton detailBtn = new MyButton("👁️ View Details", 10);
+        detailBtn.setPreferredSize(new Dimension(140, 35));
+        detailBtn.setBackgroundColor(Color.decode("#2196F3"));
+        detailBtn.setHoverColor(Color.decode("#1976D2"));
+        detailBtn.setForeground(Color.WHITE);
+        detailBtn.setFont(new Font("Arial", Font.BOLD, 12));
         detailBtn.addActionListener((e) -> {
-     
-            String customerID= Dashboard_user.customerID;
-            orderNo= order.getOrderNo();
-            Order_Details orderDetails= new Order_Details(customerID, orderNo);
+            String customerID = Dashboard_user.customerID;
+            orderNo = order.getOrderNo();
+            Order_Details orderDetails = new Order_Details(customerID, orderNo);
             orderDetails.setVisible(true);
         });
         buttonPanel.add(detailBtn);

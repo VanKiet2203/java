@@ -41,4 +41,8 @@ public class BUSProfile_cus {
         return daoProfile.getCustomerID(email);
     }
     
+    public String getCustomerName(String customerID) {
+        return daoProfile.getCustomerName(customerID);
+    }
+    
 }

@@ -63,7 +63,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             lblTitle.setBounds(20, 10, 400, 40);
             panel.add(lblTitle);
             
-            // Tạo panelSearch với màu nền trắng
+            // Tạo panelSearch với màu nền trắng - CHUẨN HÓA
             panelSearch = new MyPanel(Color.WHITE);
             panelSearch.setLayout(null);
             panelSearch.setBorder(BorderFactory.createTitledBorder(
@@ -73,7 +73,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                 FONT_TITLE_SMALL,
                 PRIMARY_COLOR
             ));
-            panelSearch.setBounds(20, 60, 1160, 120);
+            panelSearch.setBounds(20, 60, 1160, 100);
             
   
             // ComboBox search
@@ -83,11 +83,15 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             cmbSearchProduct.setCustomFont(FONT_CONTENT_MEDIUM);
             cmbSearchProduct.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
             
-            // TextField search
+            // TextField search - THÊM VIỀN
             txtSearch = new MyTextField();
             txtSearch.setHint("Search something...");
             txtSearch.setBounds(180, 30, 300, 35);
             txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+            txtSearch.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            ));
             panelSearch.add(txtSearch);
            cmbSearchProduct.repaint();
            cmbSearchProduct.revalidate();
@@ -106,7 +110,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             stylePrimaryButton(bntSearch);
             bntSearch.setBounds(490, 30, 120, 35);
             bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
-           bntSearch.addActionListener((e) -> {
+            bntSearch.addActionListener((e) -> {
             String selectedColumn = cmbSearchProduct.getSelectedItem().toString();
             String keyword = txtSearch.getText().trim();
 
@@ -120,32 +124,23 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
             panelSearch.add(bntSearch);
             panel.add(panelSearch);
             
-           bntNew = new MyButton("Add new", 20);
-           stylePrimaryButton(bntNew);
-           bntNew.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntNew.setBounds(410, 70, 130, 35); // Hàng 2
-          bntNew.addActionListener(e -> {
+            bntNew = new MyButton("Add new", 20);
+            stylePrimaryButton(bntNew);
+            bntNew.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
+            bntNew.setBounds(20, 170, 130, 35); // Giữa search panel và bảng
+            bntNew.addActionListener(e -> {
             NewProduct newProductFrame = new NewProduct();
-             newProductFrame.setVisible(true);
+            newProductFrame.setVisible(true);
            
       });
 
 
-           panelSearch.add(bntNew);
-           
-          bntRefresh = new MyButton("Refresh", 20);
-          styleInfoButton(bntRefresh);
-          bntRefresh.setBounds(620, 30, 120, 35); // Hàng 1
-          bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntRefresh.addActionListener((e) -> {
-              initRefreshButton();
-          });
-          panelSearch.add(bntRefresh);
-          
+           panel.add(bntNew);
+
            bntEdit = new MyButton("Edit", 20);
            styleWarningButton(bntEdit);
            bntEdit.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\edit.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-           bntEdit.setBounds(20, 70, 120, 35); // Hàng 2
+           bntEdit.setBounds(160, 170, 120, 35); // Giữa search panel và bảng
 
             bntEdit.addActionListener(e -> {
           // 1. Kiểm tra dòng được chọn
@@ -174,11 +169,14 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
           // 5. Hiển thị form
           editFrame.setVisible(true);
       });
-            panelSearch.add(bntEdit);
+            panel.add(bntEdit);
+
+          
+           
             
             bntDelete = new MyButton("Delete", 20);
             styleDangerButton(bntDelete);
-            bntDelete.setBounds(150, 70, 120, 35); // Hàng 2
+            bntDelete.setBounds(290, 170, 120, 35); // Giữa search panel và bảng
             bntDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             // Add click event for Delete button
             bntDelete.addActionListener(e -> {
@@ -220,15 +218,23 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                 }
             });
 
-            panelSearch.add(bntDelete);
+            panel.add(bntDelete);
             
-           // IMEI button removed
+            bntRefresh = new MyButton("Refresh", 20);
+            styleInfoButton(bntRefresh);
+            bntRefresh.setBounds(420, 170, 120, 35); // Giữa search panel và bảng
+            bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+            bntRefresh.addActionListener((e) -> {
+                initRefreshButton();
+            });
+            panel.add(bntRefresh);
            
+
            bntExportFile = new MyButton("Export",20);
            bntExportFile.setBackgroundColor(Color.WHITE); // Màu nền
            bntExportFile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
            bntExportFile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-           bntExportFile.setBounds(280, 70, 120, 35); // Hàng 2
+           bntExportFile.setBounds(550, 170, 120, 35); // Giữa search panel và bảng
         //    bntExportFile.setFont(new Font("sansserif", Font.BOLD, 18));
            bntExportFile.setForeground(Color.BLACK);
            bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
@@ -248,16 +254,16 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                busProduct.exportFile(path);
             }
          });
-           panelSearch.add(bntExportFile);
+           panel.add(bntExportFile);
            
            // Import File button
            bntImportFile = new MyButton("Import", 20);
            bntImportFile.setBackgroundColor(Color.WHITE);
            bntImportFile.setPressedColor(Color.decode("#D3D3D3"));
            bntImportFile.setHoverColor(Color.decode("#EEEEEE"));
-           bntImportFile.setBounds(410, 70, 120, 35); // Next to Export button
+           bntImportFile.setBounds(680, 170, 120, 35); // Giữa search panel và bảng
            bntImportFile.setForeground(Color.BLACK);
-           bntImportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+           bntImportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
            bntImportFile.addActionListener((e) -> {
                JFileChooser fileChooser = new JFileChooser();
                fileChooser.setDialogTitle("Choose Excel file to import");
@@ -276,32 +282,32 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
                    tableProduct.adjustColumnWidths();
                }
            });
-           panelSearch.add(bntImportFile);
+           panel.add(bntImportFile);
            
     
            
-           // Sync Quantities button
-           MyButton bntSyncQuantities = new MyButton("Sync Quantities", 20);
-           bntSyncQuantities.setBackgroundColor(Color.decode("#4CAF50"));
-           bntSyncQuantities.setPressedColor(Color.decode("#3D8B40"));
-           bntSyncQuantities.setHoverColor(Color.decode("#45A049"));
-           bntSyncQuantities.setBounds(670, 70, 120, 35); // Next to Debug button
-           bntSyncQuantities.setForeground(Color.WHITE);
-           bntSyncQuantities.addActionListener((e) -> {
-               busProduct = new BusProduct();
-               // FIXED: Sử dụng method fix quantity issues thay vì sync
-               if (busProduct.fixQuantityIssues()) {
-                   CustomDialog.showSuccess("Quantity issues fixed successfully!");
-               } else {
-                   CustomDialog.showError("Failed to fix quantity issues!");
-               }
-               // Refresh table after fix
-               DefaultTableModel model = (DefaultTableModel) tableProduct.getModel();
-               model.setRowCount(0);
-               busProduct.uploadProduct(model);
-               tableProduct.adjustColumnWidths();
-           });
-           panelSearch.add(bntSyncQuantities);
+        //    // Sync Quantities button
+        //    MyButton bntSyncQuantities = new MyButton("Sync Quantities", 20);
+        //    bntSyncQuantities.setBackgroundColor(Color.decode("#4CAF50"));
+        //    bntSyncQuantities.setPressedColor(Color.decode("#3D8B40"));
+        //    bntSyncQuantities.setHoverColor(Color.decode("#45A049"));
+        //    bntSyncQuantities.setBounds(670, 70, 120, 35); // Next to Debug button
+        //    bntSyncQuantities.setForeground(Color.WHITE);
+        //    bntSyncQuantities.addActionListener((e) -> {
+        //        busProduct = new BusProduct();
+        //        // FIXED: Sử dụng method fix quantity issues thay vì sync
+        //        if (busProduct.fixQuantityIssues()) {
+        //            CustomDialog.showSuccess("Quantity issues fixed successfully!");
+        //        } else {
+        //            CustomDialog.showError("Failed to fix quantity issues!");
+        //        }
+        //        // Refresh table after fix
+        //        DefaultTableModel model = (DefaultTableModel) tableProduct.getModel();
+        //        model.setRowCount(0);
+        //        busProduct.uploadProduct(model);
+        //        tableProduct.adjustColumnWidths();
+        //    });
+        //    panelSearch.add(bntSyncQuantities);
 
                     // 1️⃣ Tên cột
          String[] columnNames = {
@@ -310,7 +316,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
              "Color", 
              "Speed", 
              "Battery Capacity", 
-             "Warranty (Months)",
+             "Warranty",
              "Total Imported",    // Số lượng nhập
              "Current Stock",      // Số lượng tồn kho
              "Sold Quantity",      // Số lượng đã bán
@@ -329,7 +335,7 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
          tableProduct.setRowHeight(30);
 
          // 6️⃣ ScrollPane chứa bảng - tối ưu cho màn hình nhỏ
-         JScrollPane tableScrollPane = MyTable.createScrollPane(tableProduct, 20, 200, 1160, 350);
+         JScrollPane tableScrollPane = MyTable.createScrollPane(tableProduct, 20, 220, 1160, 350);
 
          // 7️⃣ Tùy chỉnh thanh cuộn
          tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));

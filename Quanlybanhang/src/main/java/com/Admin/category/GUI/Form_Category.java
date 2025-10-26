@@ -82,7 +82,7 @@ public class Form_Category extends JPanel {
             lblTitle.setBounds(20, 10, 400, 40);
             panel.add(lblTitle);
             
-            // Tạo panelSearch với màu nền trắng
+            // Tạo panelSearch với màu nền trắng - CHUẨN HÓA
             panelSearch = new MyPanel(Color.WHITE);
             panelSearch.setLayout(null);
             panelSearch.setBorder(BorderFactory.createTitledBorder(
@@ -92,7 +92,7 @@ public class Form_Category extends JPanel {
                 FONT_TITLE_SMALL,
                 PRIMARY_COLOR
             ));
-            panelSearch.setBounds(20, 60, 1490, 80);
+            panelSearch.setBounds(20, 60, 1490, 100);
             
   
             // ComboBox search type
@@ -102,11 +102,15 @@ public class Form_Category extends JPanel {
             cmbSearchcate.setCustomFont(FONT_CONTENT_MEDIUM);
             cmbSearchcate.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
             
-            // TextField search
+            // TextField search - THÊM VIỀN
             txtSearch = new MyTextField();
             txtSearch.setHint("Search something...");
             txtSearch.setBounds(180, 30, 300, 35);
             txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+            txtSearch.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            ));
             panelSearch.add(txtSearch);
             //cmbSearch.setMaximumRowCount(5); // Giới hạn dòng dropdown nếu dài
             cmbSearchcate.repaint();
@@ -153,7 +157,7 @@ public class Form_Category extends JPanel {
                 BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
                 "Category Information", 0, 0, FONT_TITLE_SMALL, PRIMARY_COLOR
             ));
-            formPanel.setBounds(20, 150, 450, 250);
+            formPanel.setBounds(20, 180, 450, 250);
             panel.add(formPanel);
             
             lblCateID= new JLabel("Category.ID");
@@ -393,7 +397,7 @@ public class Form_Category extends JPanel {
              tableCate = createStyledTable(model);
              tableCate.setRowHeight(30);
 
-             JScrollPane scrollPane = MyTable.createScrollPane(tableCate, 490, 150, 1020, 250);
+             JScrollPane scrollPane = MyTable.createScrollPane(tableCate, 490, 180, 1020, 250);
              scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
              scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
              panel.add(scrollPane);
@@ -443,7 +447,7 @@ public class Form_Category extends JPanel {
     */
    private void createImageCarousel() {
        carouselImageLabel = new JLabel();
-       carouselImageLabel.setBounds(20, 410, 450, 300);
+       carouselImageLabel.setBounds(20, 430, 450, 300);
        carouselImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
        carouselImageLabel.setVerticalAlignment(SwingConstants.CENTER);
        carouselImageLabel.setBorder(BorderFactory.createLineBorder(PRIMARY_COLOR, 2));

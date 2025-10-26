@@ -27,6 +27,7 @@ public class Dashboard_user extends JFrame {
     private Set<JLabel> hoveredLabels = new HashSet<>();
     private BUSProfile_cus busProfile;
     public static String email, customerID;
+    private String userName;
 
     public Dashboard_user() {
         this(null); // Gọi constructor với email = null
@@ -34,6 +35,7 @@ public class Dashboard_user extends JFrame {
     
     public Dashboard_user(String userEmail) {
         initComponents(userEmail);
+        loadUserInfo(); // Load thông tin user
         setSize(1570, 800); // KHÔNG full screen nữa
         setLocationRelativeTo(null); // Hiển thị giữa màn hình
         setResizable(true);
@@ -54,10 +56,10 @@ public class Dashboard_user extends JFrame {
         panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
 
         // Tiêu đề chính giữa
-        ImageIcon titleIcon = new ImageIcon("src\\main\\resources\\Icons\\Admin_icon\\Title_icon.png");
+        ImageIcon titleIcon = new ImageIcon(getClass().getResource("/Icons/Admin_icon/Title_icon.png"));
         Image img = titleIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
         titleIcon = new ImageIcon(img);
-        title = new JLabel("NPK Store - Electric Bycicle Sales", titleIcon, JLabel.CENTER);
+        title = new JLabel("NPK Store - Electric Bicycle Sales", titleIcon, JLabel.CENTER);
         title.setFont(new Font("Times New Roman", Font.BOLD, 20));
         title.setForeground(Color.WHITE);
 
@@ -68,8 +70,24 @@ public class Dashboard_user extends JFrame {
         logout.setHoverColor(Color.decode("#FF7F7F"));
         logout.setFont(new Font("Times New Roman", Font.BOLD, 18));
         logout.setForeground(Color.WHITE);
-        logout.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\logout.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-        logout.addActionListener(e -> requestFocusInWindow());
+        logout.setButtonIcon("/Icons/Admin_icon/logout.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        logout.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to logout?",
+                "Logout Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Đóng frame hiện tại và quay về login
+                this.dispose();
+                // Mở lại form login
+                com.User.login_user.GUI.Login_User loginForm = new com.User.login_user.GUI.Login_User();
+                loginForm.setVisible(true);
+            }
+        });
 
         lblDateTime = new JLabel();
         lblDateTime.setFont(new Font("Times New Roman", Font.BOLD, 18));
@@ -175,6 +193,31 @@ public class Dashboard_user extends JFrame {
         label.setIconTextGap(15);
         label.setOpaque(false);
         return label;
+    }
+
+    // Method để lấy tên user
+    public String getUserName() {
+        if (userName == null && customerID != null) {
+            try {
+                busProfile = new BUSProfile_cus();
+                userName = busProfile.getCustomerName(customerID);
+            } catch (Exception e) {
+                userName = "User";
+            }
+        }
+        return userName;
+    }
+    
+    // Method để load thông tin user khi khởi tạo
+    private void loadUserInfo() {
+        if (customerID != null) {
+            try {
+                busProfile = new BUSProfile_cus();
+                userName = busProfile.getCustomerName(customerID);
+            } catch (Exception e) {
+                userName = "User";
+            }
+        }
     }
 
     public static void main(String[] args) {

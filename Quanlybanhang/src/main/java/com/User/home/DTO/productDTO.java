@@ -6,16 +6,18 @@ public class productDTO {
 
     private String productID;
     private String productName;
-    private String color;           // Thay thế cpu
-    private String batteryCapacity; // Thay thế ram  
-    private String speed;           // Thay thế graphicsCard
-    private String operatingSystem;
+    private String color;
+    private String batteryCapacity;
+    private String speed;
     private BigDecimal price;
+    private BigDecimal listPriceBefore;
+    private BigDecimal listPriceAfter;
     private int quantity;
-    private String warrantyPeriod;
+    private int warrantyMonths;
     private String status;
     private String categoryID;
-    private String brand;
+    private String supID;
+    private String warehouseItemID;
     private String image;
 
     // Constructor mặc định
@@ -23,19 +25,23 @@ public class productDTO {
 
     // Constructor với tất cả các tham số
     public productDTO(String productID, String productName, String color, String batteryCapacity, String speed,
-                      String operatingSystem, BigDecimal price, int quantity, String warrantyPeriod, 
-                      String status, String categoryID, String image) {
+                      BigDecimal price, BigDecimal listPriceBefore, BigDecimal listPriceAfter, int quantity, 
+                      int warrantyMonths, String status, String categoryID, String supID, 
+                      String warehouseItemID, String image) {
         this.productID = productID;
         this.productName = productName;
         this.color = color;
         this.batteryCapacity = batteryCapacity;
         this.speed = speed;
-        this.operatingSystem = operatingSystem;
         this.price = price;
+        this.listPriceBefore = listPriceBefore;
+        this.listPriceAfter = listPriceAfter;
         this.quantity = quantity;
-        this.warrantyPeriod = warrantyPeriod;
+        this.warrantyMonths = warrantyMonths;
         this.status = status;
         this.categoryID = categoryID;
+        this.supID = supID;
+        this.warehouseItemID = warehouseItemID;
         this.image = image;
     }
 
@@ -81,12 +87,20 @@ public class productDTO {
         this.speed = speed;
     }
 
-    public String getOperatingSystem() {
-        return operatingSystem;
+    public BigDecimal getListPriceBefore() {
+        return listPriceBefore;
     }
 
-    public void setOperatingSystem(String operatingSystem) {
-        this.operatingSystem = operatingSystem;
+    public void setListPriceBefore(BigDecimal listPriceBefore) {
+        this.listPriceBefore = listPriceBefore;
+    }
+
+    public BigDecimal getListPriceAfter() {
+        return listPriceAfter;
+    }
+
+    public void setListPriceAfter(BigDecimal listPriceAfter) {
+        this.listPriceAfter = listPriceAfter;
     }
 
     public BigDecimal getPrice() {
@@ -105,12 +119,12 @@ public class productDTO {
         this.quantity = quantity;
     }
 
-    public String getWarrantyPeriod() {
-        return warrantyPeriod;
+    public int getWarrantyMonths() {
+        return warrantyMonths;
     }
 
-    public void setWarrantyPeriod(String warrantyPeriod) {
-        this.warrantyPeriod = warrantyPeriod;
+    public void setWarrantyMonths(int warrantyMonths) {
+        this.warrantyMonths = warrantyMonths;
     }
 
     public String getStatus() {
@@ -129,12 +143,20 @@ public class productDTO {
         this.categoryID = categoryID;
     }
 
-    public String getBrand() {
-        return brand;
+    public String getSupID() {
+        return supID;
     }
 
-    public void setBrand(String brand) {
-        this.brand = brand;
+    public void setSupID(String supID) {
+        this.supID = supID;
+    }
+
+    public String getWarehouseItemID() {
+        return warehouseItemID;
+    }
+
+    public void setWarehouseItemID(String warehouseItemID) {
+        this.warehouseItemID = warehouseItemID;
     }
 
     public String getImage() {
@@ -147,19 +169,21 @@ public class productDTO {
 
     @Override
     public String toString() {
-        return "DTOProduct{" +
+        return "productDTO{" +
                 "productID='" + productID + '\'' +
                 ", productName='" + productName + '\'' +
                 ", color='" + color + '\'' +
                 ", batteryCapacity='" + batteryCapacity + '\'' +
                 ", speed='" + speed + '\'' +
-                ", operatingSystem='" + operatingSystem + '\'' +
                 ", price=" + price +
+                ", listPriceBefore=" + listPriceBefore +
+                ", listPriceAfter=" + listPriceAfter +
                 ", quantity=" + quantity +
-                ", warrantyPeriod='" + warrantyPeriod + '\'' +
+                ", warrantyMonths=" + warrantyMonths +
                 ", status='" + status + '\'' +
                 ", categoryID='" + categoryID + '\'' +
-                ", brand='" + brand + '\'' +
+                ", supID='" + supID + '\'' +
+                ", warehouseItemID='" + warehouseItemID + '\'' +
                 ", image='" + image + '\'' +
                 '}';
     }

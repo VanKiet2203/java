@@ -55,7 +55,9 @@ public class Menu_user extends JPanel {
         menuPanel.setOpaque(false); // Giữ panel trong suốt
         menuPanel.setBounds(0, 0, 300, 1000); // Điều chỉnh theo UI của bạn
         
-        lblProfile = createLabel("Your Information", "profile.png", 50);
+        // Lấy tên user từ Dashboard_user (giả sử có method getUserName())
+        String userName = parentFrame.getUserName(); // Cần implement method này
+        lblProfile = createLabel(userName != null ? userName : "Your Information", "profile.png", 50);
         // Label Menu (bấm vào để mở/đóng)
         lblMenu = createLabel("Menu", "menu.png",120);
  
@@ -130,15 +132,23 @@ public class Menu_user extends JPanel {
       lblExit.addMouseListener(new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-            boolean confirm = cs.showOptionPane(
-                    "Exit",
-                    "Are you sure to exit ?",
-                    UIManager.getIcon("OptionPane.questionIcon"),
-                    Color.decode("#FF6666")
+            int confirm = JOptionPane.showConfirmDialog(
+                Menu_user.this,
+                "Are you sure you want to logout?",
+                "Logout Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
             );
 
-              if (confirm) {
-                   System.exit(0);
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Đóng frame hiện tại và quay về login
+                JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(Menu_user.this);
+                if (currentFrame != null) {
+                    currentFrame.dispose();
+                }
+                // Mở lại form login
+                com.User.login_user.GUI.Login_User loginForm = new com.User.login_user.GUI.Login_User();
+                loginForm.setVisible(true);
             }
         }
 });

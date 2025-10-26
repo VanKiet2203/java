@@ -1,8 +1,6 @@
 package com.Admin.inventory.GUI;
 
 import com.Admin.inventory.BUS.BUSInventory;
-import com.Admin.category.BUS.BusCategory;
-import com.Admin.category.DTO.DTOCategory;
 import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.MyCombobox;
 import com.ComponentandDatabase.Components.MyPanel;
@@ -15,16 +13,15 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.BorderLayout;
 import java.io.File;
-import java.util.List;
+import javax.swing.SwingConstants;
 
 public class Form_Inventory extends JPanel {
     private JPanel panel, panelSearch;
-    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntDebugBill, bntReimportItem, bntFixQuantity;
+    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntReimportItem;
     private MyTextField txtSearch;
-    private MyCombobox<String> cmbSearch, cmbCategory, cmbSupplier;
+    private MyCombobox<String> cmbSearch;
     private JTable tableInventory, tableBills;
     private BUSInventory busInventory;
-    private BusCategory busCategory;
     private JTabbedPane tabbedPane;
     
     public Form_Inventory() {
@@ -79,12 +76,12 @@ public class Form_Inventory extends JPanel {
         panelSearch.setLayout(null);
         panelSearch.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-            "Search & Filter",
+            "Search",
             0, 0,
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        panelSearch.setBounds(20, 60, 1160, 120);
+        panelSearch.setBounds(20, 60, 1160, 100);
         
         // Search components
         String[] searchItems = {"Warehouse ID", "Product Name", "Category", "Supplier"};
@@ -93,35 +90,24 @@ public class Form_Inventory extends JPanel {
         cmbSearch.setCustomFont(FONT_CONTENT_MEDIUM);
         
         txtSearch = new MyTextField();
-        txtSearch.setHint("Search...");
+        txtSearch.setHint("Search something...");
         txtSearch.setBounds(180, 30, 300, 35);
         txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+        txtSearch.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         
         bntSearch = new MyButton("Search", 20);
         stylePrimaryButton(bntSearch);
         bntSearch.setBounds(490, 30, 120, 35);
+        bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntSearch.addActionListener(e -> performSearch());
         
-        bntRefresh = new MyButton("Refresh", 20);
-        styleInfoButton(bntRefresh);
-        bntRefresh.setBounds(620, 30, 120, 35);
-        bntRefresh.addActionListener(e -> refreshData());
-        
-        // Filter components
-        cmbCategory = new MyCombobox<>();
-        cmbCategory.setBounds(20, 75, 150, 35);
-        cmbCategory.setCustomFont(FONT_CONTENT_MEDIUM);
-        
-        cmbSupplier = new MyCombobox<>();
-        cmbSupplier.setBounds(180, 75, 150, 35);
-        cmbSupplier.setCustomFont(FONT_CONTENT_MEDIUM);
         
         panelSearch.add(cmbSearch);
         panelSearch.add(txtSearch);
         panelSearch.add(bntSearch);
-        panelSearch.add(bntRefresh);
-        panelSearch.add(cmbCategory);
-        panelSearch.add(cmbSupplier);
         panel.add(panelSearch);
     }
     
@@ -135,57 +121,73 @@ public class Form_Inventory extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        actionPanel.setBounds(20, 190, 1160, 80);
+        actionPanel.setBounds(20, 190, 1160, 120);
         
-        // 1. Add New Item button
-        bntAddNew = new MyButton("Add New Item", 20);
+        // Hàng 1: Các chức năng cơ bản và thường dùng
+        // 1. Add New Item button - Thêm sản phẩm mới
+        bntAddNew = new MyButton("New Item", 20);
         styleSuccessButton(bntAddNew);
         bntAddNew.setBounds(20, 30, 150, 35);
+        bntAddNew.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntAddNew.addActionListener(e -> addNewInventoryItem());
         actionPanel.add(bntAddNew);
         
-        // 2. Import Inventory button
-        bntImportInventory = new MyButton("Import Inventory", 20);
-        styleSuccessButton(bntImportInventory);
-        bntImportInventory.setBounds(180, 30, 150, 35);
-        bntImportInventory.addActionListener(e -> importInventory());
-        actionPanel.add(bntImportInventory);
-        
-        // 3. Export Inventory button
-        bntExportInventory = new MyButton("Export Inventory", 20);
-        styleInfoButton(bntExportInventory);
-        bntExportInventory.setBounds(340, 30, 150, 35);
-        bntExportInventory.addActionListener(e -> exportInventory());
-        actionPanel.add(bntExportInventory);
-        
-        // 4. Export Excel Bill Import button
-        bntExportExcelBill = new MyButton("Export Excel Bill", 20);
-        styleInfoButton(bntExportExcelBill);
-        bntExportExcelBill.setBounds(500, 30, 150, 35);
-        bntExportExcelBill.addActionListener(e -> exportExcelBillImport());
-        actionPanel.add(bntExportExcelBill);
-        
-        // 5. Export PDF Bill Import button
-        bntExportPDFBill = new MyButton("Export PDF Bill", 20);
-        styleDangerButton(bntExportPDFBill);
-        bntExportPDFBill.setBounds(660, 30, 150, 35);
-        bntExportPDFBill.addActionListener(e -> exportPDFBillImport());
-        actionPanel.add(bntExportPDFBill);
-        
-        // 6. Reimport Item button
-        bntReimportItem = new MyButton("Import Existing Item", 20);
+        // 2. Import Existing Item button - Nhập thêm sản phẩm đã có
+        bntReimportItem = new MyButton("Reimport Item", 20);
         styleWarningButton(bntReimportItem);
-        bntReimportItem.setBounds(820, 30, 150, 35);
+        bntReimportItem.setBounds(180, 30, 150, 35);
+        bntReimportItem.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntReimportItem.addActionListener(e -> reimportExistingItem());
         actionPanel.add(bntReimportItem);
         
+        // 3. Import Inventory button - Import từ file Excel
+        bntImportInventory = new MyButton("Import File", 20);
+        styleSuccessButton(bntImportInventory);
+        bntImportInventory.setBounds(340, 30, 150, 35);
+        bntImportInventory.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntImportInventory.addActionListener(e -> importInventory());
+        actionPanel.add(bntImportInventory);
         
-        // 7. View Bills button
+        // 4. Refresh button - Làm mới dữ liệu
+        bntRefresh = new MyButton("Refresh", 20);
+        styleInfoButton(bntRefresh);
+        bntRefresh.setBounds(500, 30, 150, 35);
+        bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntRefresh.addActionListener(e -> refreshData());
+        actionPanel.add(bntRefresh);
+        
+        // Hàng 2: Các chức năng xuất báo cáo và xem dữ liệu
+        // 5. Export Inventory button - Xuất danh sách tồn kho
+        bntExportInventory = new MyButton("Export File", 20);
+        styleInfoButton(bntExportInventory);
+        bntExportInventory.setBounds(20, 70, 150, 35);
+        bntExportInventory.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntExportInventory.addActionListener(e -> exportInventory());
+        actionPanel.add(bntExportInventory);
+        
+        // 6. View Bills button - Xem hóa đơn nhập
         bntViewBills = new MyButton("View Bills", 20);
         stylePrimaryButton(bntViewBills);
-        bntViewBills.setBounds(980, 30, 150, 35);
+        bntViewBills.setBounds(180, 70, 150, 35);
+        bntViewBills.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntViewBills.addActionListener(e -> viewBills());
         actionPanel.add(bntViewBills);
+        
+        // 7. Export Excel Bill button - Xuất hóa đơn Excel
+        bntExportExcelBill = new MyButton("Export Bill", 20);
+        styleInfoButton(bntExportExcelBill);
+        bntExportExcelBill.setBounds(340, 70, 150, 35);
+        bntExportExcelBill.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntExportExcelBill.addActionListener(e -> exportExcelBillImport());
+        actionPanel.add(bntExportExcelBill);
+        
+        // 8. Export PDF Bill button - Xuất hóa đơn PDF
+        bntExportPDFBill = new MyButton("Export PDF", 20);
+        styleDangerButton(bntExportPDFBill);
+        bntExportPDFBill.setBounds(500, 70, 150, 35);
+        bntExportPDFBill.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntExportPDFBill.addActionListener(e -> exportPDFBillImport());
+        actionPanel.add(bntExportPDFBill);
            
         
         panel.add(actionPanel);
@@ -193,7 +195,7 @@ public class Form_Inventory extends JPanel {
     
     private void createTabbedPane() {
         tabbedPane = new JTabbedPane();
-        tabbedPane.setBounds(20, 280, 1160, 400);
+        tabbedPane.setBounds(20, 340, 1160, 400);
         tabbedPane.setFont(FONT_CONTENT_MEDIUM);
         
         // Inventory Tab
@@ -224,39 +226,12 @@ public class Form_Inventory extends JPanel {
     
     private void initializeData() {
         busInventory = new BUSInventory();
-        busCategory = new BusCategory();
         
-        // Load categories and suppliers
-        loadCategories();
-        loadSuppliers();
         
         // Load inventory data
         refreshData();
     }
     
-    private void loadCategories() {
-        try {
-            List<DTOCategory> categories = busCategory.getAllCategories();
-            cmbCategory.removeAllItems();
-            cmbCategory.addItem("All Categories");
-            for (DTOCategory category : categories) {
-                cmbCategory.addItem(category.getCategoryName());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    private void loadSuppliers() {
-        try {
-            // Load suppliers - you may need to implement this in your BUS layer
-            cmbSupplier.removeAllItems();
-            cmbSupplier.addItem("All Suppliers");
-            // Add supplier loading logic here
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     
     private void performSearch() {
         String searchType = cmbSearch.getSelectedItem().toString();

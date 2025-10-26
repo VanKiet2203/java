@@ -20,18 +20,22 @@ public class ControlHome {
                 p.Battery_Capacity,
                 p.Speed,
                 p.Price,
+                p.List_Price_Before,
+                p.List_Price_After,
                 ISNULL(p.Quantity, 0) AS Quantity,
+                p.Warranty_Months,
                 CASE 
                     WHEN ISNULL(p.Quantity, 0) = 0 THEN 'Unavailable'
                     ELSE 'Available'
                 END AS Status,
-                c.Category_ID,
+                p.Category_ID,
+                p.Sup_ID,
+                p.Warehouse_Item_ID,
                 p.Image
             FROM 
                 Product p
-            LEFT JOIN Category c ON p.Category_ID = c.Category_ID
-            LEFT JOIN Product_Stock ps ON ps.Warehouse_Item_ID = p.Warehouse_Item_ID
-            """ + (condition != null && !condition.trim().isEmpty() ? " WHERE " + condition : "");
+            WHERE p.Status = 'Available'
+            """ + (condition != null && !condition.trim().isEmpty() ? " AND " + condition : "");
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -45,9 +49,14 @@ public class ControlHome {
                     prd.setBatteryCapacity(rs.getString("Battery_Capacity"));
                     prd.setSpeed(rs.getString("Speed"));
                     prd.setPrice(rs.getBigDecimal("Price"));
+                    prd.setListPriceBefore(rs.getBigDecimal("List_Price_Before"));
+                    prd.setListPriceAfter(rs.getBigDecimal("List_Price_After"));
                     prd.setQuantity(rs.getInt("Quantity"));
+                    prd.setWarrantyMonths(rs.getInt("Warranty_Months"));
                     prd.setStatus(rs.getString("Status"));
                     prd.setCategoryID(rs.getString("Category_ID"));
+                    prd.setSupID(rs.getString("Sup_ID"));
+                    prd.setWarehouseItemID(rs.getString("Warehouse_Item_ID"));
                     prd.setImage(rs.getString("Image"));
                     list.add(prd);
                 }
@@ -56,8 +65,7 @@ public class ControlHome {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            CustomDialog dialog = new CustomDialog();
-            dialog.showError("Lỗi khi tải danh sách sản phẩm!");
+            CustomDialog.showError("Lỗi khi tải danh sách sản phẩm!");
             return new ArrayList<>();
         }
     }
@@ -71,16 +79,20 @@ public class ControlHome {
                 p.Battery_Capacity,
                 p.Speed,
                 p.Price,
+                p.List_Price_Before,
+                p.List_Price_After,
                 ISNULL(p.Quantity, 0) AS Quantity,
+                p.Warranty_Months,
                 CASE 
                     WHEN ISNULL(p.Quantity, 0) = 0 THEN 'Unavailable'
                     ELSE 'Available'
                 END AS Status,
-                c.Category_ID,
+                p.Category_ID,
+                p.Sup_ID,
+                p.Warehouse_Item_ID,
                 p.Image
             FROM Product p
-            LEFT JOIN Category c ON p.Category_ID = c.Category_ID
-            WHERE p.Product_ID = ?
+            WHERE p.Product_ID = ? AND p.Status = 'Available'
         """;
 
         try (Connection conn = DatabaseConnection.connect();
@@ -95,9 +107,14 @@ public class ControlHome {
                     prd.setBatteryCapacity(rs.getString("Battery_Capacity"));
                     prd.setSpeed(rs.getString("Speed"));
                     prd.setPrice(rs.getBigDecimal("Price"));
+                    prd.setListPriceBefore(rs.getBigDecimal("List_Price_Before"));
+                    prd.setListPriceAfter(rs.getBigDecimal("List_Price_After"));
                     prd.setQuantity(rs.getInt("Quantity"));
+                    prd.setWarrantyMonths(rs.getInt("Warranty_Months"));
                     prd.setStatus(rs.getString("Status"));
                     prd.setCategoryID(rs.getString("Category_ID"));
+                    prd.setSupID(rs.getString("Sup_ID"));
+                    prd.setWarehouseItemID(rs.getString("Warehouse_Item_ID"));
                     prd.setImage(rs.getString("Image"));
                     return prd;
                 }
@@ -105,8 +122,7 @@ public class ControlHome {
             return null;
         } catch (SQLException e) {
             e.printStackTrace();
-            CustomDialog dialog = new CustomDialog();
-            dialog.showError("Lỗi khi truy vấn chi tiết sản phẩm!");
+            CustomDialog.showError("Lỗi khi truy vấn chi tiết sản phẩm!");
         }
 
         return null;
@@ -114,10 +130,9 @@ public class ControlHome {
 
     public String getBrandByProductId(String productId) {
         String sql = """
-            SELECT s.Sup_ID
+            SELECT s.Sup_Name
             FROM Product p
-            JOIN Category c ON p.Category_ID = c.Category_ID
-            JOIN Supplier s ON c.Sup_ID = s.Sup_ID
+            JOIN Supplier s ON p.Sup_ID = s.Sup_ID
             WHERE p.Product_ID = ?
         """;
 
@@ -125,7 +140,7 @@ public class ControlHome {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, productId);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) return rs.getString("Sup_ID");
+                if (rs.next()) return rs.getString("Sup_Name");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -142,16 +157,20 @@ public class ControlHome {
                 p.Battery_Capacity,
                 p.Speed,
                 p.Price,
-                p.Quantity AS Quantity,
+                p.List_Price_Before,
+                p.List_Price_After,
+                ISNULL(p.Quantity, 0) AS Quantity,
+                p.Warranty_Months,
                 CASE 
-                    WHEN p.Quantity <= 0 THEN 'Unavailable'
+                    WHEN ISNULL(p.Quantity, 0) = 0 THEN 'Unavailable'
                     ELSE 'Available'
                 END AS Status,
-                c.Category_ID,
+                p.Category_ID,
+                p.Sup_ID,
+                p.Warehouse_Item_ID,
                 p.Image
             FROM 
                 Product p
-            LEFT JOIN Category c ON p.Category_ID = c.Category_ID
             WHERE p.Product_ID = ? AND p.Status = 'Available'
         """;
 
@@ -168,9 +187,14 @@ public class ControlHome {
                     product.setBatteryCapacity(rs.getString("Battery_Capacity"));
                     product.setSpeed(rs.getString("Speed"));
                     product.setPrice(rs.getBigDecimal("Price"));
+                    product.setListPriceBefore(rs.getBigDecimal("List_Price_Before"));
+                    product.setListPriceAfter(rs.getBigDecimal("List_Price_After"));
                     product.setQuantity(rs.getInt("Quantity"));
+                    product.setWarrantyMonths(rs.getInt("Warranty_Months"));
                     product.setStatus(rs.getString("Status"));
                     product.setCategoryID(rs.getString("Category_ID"));
+                    product.setSupID(rs.getString("Sup_ID"));
+                    product.setWarehouseItemID(rs.getString("Warehouse_Item_ID"));
                     product.setImage(rs.getString("Image"));
                     return product;
                 }

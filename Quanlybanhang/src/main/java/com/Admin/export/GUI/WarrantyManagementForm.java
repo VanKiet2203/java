@@ -82,7 +82,7 @@ public class WarrantyManagementForm extends JPanel {
         
         // Table panel
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBounds(20, 150, 1160, 500);
+        tablePanel.setBounds(20, 160, 1160, 500);
         tablePanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
             "Warranty Information",

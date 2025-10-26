@@ -78,9 +78,9 @@ public class Menu extends JPanel {
         lblProduct= createLabel("Product", "product.png", 330);
         lblInventory= createLabel("Inventory", "import.png", 390);
         lblExport= createLabel("Export", "export.png", 450);
-        lblPromotion= createLabel("Promotion", "pie_chart.png", 570);
-        lblStatistics= createLabel("Statistics", "statistics.png", 630);
-        lblExit= createLabel("Exit", "exit.png", 690);
+        lblPromotion= createLabel("Promotion", "promotion.png", 510);
+        lblStatistics= createLabel("Statistics", "statistics.png", 570);
+        lblExit= createLabel("Exit", "exit.png", 630);
         
         
         // Thêm hiệu ứng hover

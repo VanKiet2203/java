@@ -12,6 +12,7 @@ import java.awt.*;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import javax.swing.SwingConstants;
 
 public class Form_Promotion extends JPanel {
     // Components
@@ -49,7 +50,7 @@ public class Form_Promotion extends JPanel {
         add(mainPanel);
         
         // Title
-        JLabel lblTitle = new JLabel("QUẢN LÝ MÃ GIẢM GIÁ");
+        JLabel lblTitle = new JLabel("MANAGE PROMOTION");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
         lblTitle.setForeground(PRIMARY_COLOR);
         lblTitle.setBounds(20, 10, 400, 40);
@@ -75,12 +76,12 @@ public class Form_Promotion extends JPanel {
         searchPanel.setLayout(null);
         searchPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-            "Tìm kiếm",
+            "Search",
             0, 0,
-            new Font("Arial", Font.BOLD, 14),
+            FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        searchPanel.setBounds(20, 60, 1490, 80);
+        searchPanel.setBounds(20, 60, 1490, 100);
         mainPanel.add(searchPanel);
         
         // Search type combo
@@ -90,20 +91,26 @@ public class Form_Promotion extends JPanel {
         cmbSearchType.setCustomFont(new Font("Arial", Font.PLAIN, 13));
         searchPanel.add(cmbSearchType);
         
-        // Search text field
+        // Search text field - THÊM VIỀN
         txtSearch = new MyTextField();
-        txtSearch.setHint("Nhập từ khóa tìm kiếm...");
+        txtSearch.setHint("Search something...");
         txtSearch.setBounds(180, 30, 300, 35);
         txtSearch.setTextFont(new Font("Arial", Font.PLAIN, 13));
+        txtSearch.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         searchPanel.add(txtSearch);
         
         // Search button
-        btnSearch = createButton("Tìm kiếm", 490, 30, 100, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnSearch = createButton("Search", 490, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSearch.addActionListener(e -> searchPromotion());
         searchPanel.add(btnSearch);
         
         // Refresh button
-        btnRefresh = createButton("Làm mới", 600, 30, 100, 35, INFO_COLOR, INFO_HOVER);
+        btnRefresh = createButton("Refresh", 620, 30, 120, 35, INFO_COLOR, INFO_HOVER);
+        btnRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnRefresh.addActionListener(e -> {
             txtSearch.setText("");
             cmbSearchType.setSelectedIndex(0);
@@ -112,7 +119,8 @@ public class Form_Promotion extends JPanel {
         searchPanel.add(btnRefresh);
         
         // Add button
-        btnAdd = createButton("+ Thêm mới", 1340, 30, 130, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnAdd = createButton("Add new", 750, 30, 130, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnAdd.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnAdd.addActionListener(e -> prepareAddPromotion());
         searchPanel.add(btnAdd);
     }
@@ -125,12 +133,12 @@ public class Form_Promotion extends JPanel {
         formPanel.setLayout(null);
         formPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-            "Thông tin mã giảm giá",
+            "Promotion information",
             0, 0,
             new Font("Arial", Font.BOLD, 14),
             PRIMARY_COLOR
         ));
-        formPanel.setBounds(20, 150, 1490, 200);
+        formPanel.setBounds(20, 180, 1490, 200);
         formPanel.setVisible(false); // Hidden by default
         mainPanel.add(formPanel);
         
@@ -140,48 +148,64 @@ public class Form_Promotion extends JPanel {
         int fieldWidth = 250;
         
         // Row 1: Promotion Code
-        addLabel("Mã giảm giá:", labelX, 30, labelWidth, 30);
+        addLabel("Promotion Code:", labelX, 30, labelWidth, 30);
         txtPromotionCode = new MyTextField();
         txtPromotionCode.setBounds(fieldX, 30, fieldWidth, 35);
         txtPromotionCode.setTextFont(new Font("Arial", Font.PLAIN, 13));
+        txtPromotionCode.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         formPanel.add(txtPromotionCode);
         
         // Row 1: Promotion Name
-        addLabel("Tên chương trình:", labelX + 550, 30, labelWidth, 30);
+        addLabel("Promotion Name:", labelX + 550, 30, labelWidth, 30);
         txtPromotionName = new MyTextField();
         txtPromotionName.setBounds(fieldX + 550, 30, fieldWidth + 100, 35);
         txtPromotionName.setTextFont(new Font("Arial", Font.PLAIN, 13));
+        txtPromotionName.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         formPanel.add(txtPromotionName);
         
         // Row 2: Start Date
-        addLabel("Ngày bắt đầu:", labelX, 80, labelWidth, 30);
+        addLabel("Start Date:", labelX, 80, labelWidth, 30);
         dateStart = new JDateChooser();
         dateStart.setBounds(fieldX, 80, fieldWidth, 35);
         dateStart.setDateFormatString("dd/MM/yyyy");
         dateStart.setFont(new Font("Arial", Font.PLAIN, 13));
+        dateStart.setBorder(BorderFactory.createLineBorder(PRIMARY_COLOR, 1));
         formPanel.add(dateStart);
         
         // Row 2: End Date
-        addLabel("Ngày kết thúc:", labelX + 550, 80, labelWidth, 30);
+        addLabel("End Date:", labelX + 550, 80, labelWidth, 30);
         dateEnd = new JDateChooser();
         dateEnd.setBounds(fieldX + 550, 80, fieldWidth, 35);
         dateEnd.setDateFormatString("dd/MM/yyyy");
         dateEnd.setFont(new Font("Arial", Font.PLAIN, 13));
+        dateEnd.setBorder(BorderFactory.createLineBorder(PRIMARY_COLOR, 1));
         formPanel.add(dateEnd);
         
         // Row 3: Discount Percent
-        addLabel("Giảm giá (%):", labelX, 130, labelWidth, 30);
+        addLabel("Discount Percent:", labelX, 130, labelWidth, 30);
         txtDiscountPercent = new MyTextField();
         txtDiscountPercent.setBounds(fieldX, 130, 150, 35);
         txtDiscountPercent.setTextFont(new Font("Arial", Font.PLAIN, 13));
+        txtDiscountPercent.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         formPanel.add(txtDiscountPercent);
         
         // Buttons
-        btnSave = createButton("💾 Lưu", 1100, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnSave = createButton("Save", 1100, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER);
+        btnSave.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSave.addActionListener(e -> savePromotion());
         formPanel.add(btnSave);
         
-        btnClear = createButton("🗑️ Hủy", 1100, 80, 120, 35, DANGER_COLOR, DANGER_HOVER);
+        btnClear = createButton("Cancel", 1100, 80, 120, 35, DANGER_COLOR, DANGER_HOVER);
+        btnClear.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnClear.addActionListener(e -> clearForm());
         formPanel.add(btnClear);
     }
@@ -201,18 +225,18 @@ public class Form_Promotion extends JPanel {
         tablePanel.setLayout(null);
         tablePanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-            "Danh sách mã giảm giá",
+            "Promotion List",
             0, 0,
             new Font("Arial", Font.BOLD, 14),
             PRIMARY_COLOR
         ));
-        tablePanel.setBounds(20, 360, 1490, 480);
+        tablePanel.setBounds(20, 400, 1490, 460);
         mainPanel.add(tablePanel);
         
         // Create table
         String[] columns = {
-            "STT", "Mã giảm giá", "Tên chương trình", 
-            "Ngày bắt đầu", "Ngày kết thúc", "Giảm giá (%)", "Trạng thái"
+            "STT", "Promotion Code", "Promotion Name", 
+            "Start Date", "End Date", "Discount (%)", "Status"
         };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -261,12 +285,14 @@ public class Form_Promotion extends JPanel {
         tablePanel.add(scrollPane);
         
         // Action buttons
-        btnEdit = createButton("✏️ Sửa", 20, 410, 100, 35, WARNING_COLOR, WARNING_HOVER);
+        btnEdit = createButton("Edit", 20, 410, 120, 35, WARNING_COLOR, WARNING_HOVER);
+        btnEdit.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\edit.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnEdit.addActionListener(e -> editSelectedPromotion());
         btnEdit.setEnabled(false);
         tablePanel.add(btnEdit);
         
-        btnDelete = createButton("🗑️ Xóa", 130, 410, 100, 35, DANGER_COLOR, DANGER_HOVER);
+        btnDelete = createButton("Delete", 150, 410, 120, 35, DANGER_COLOR, DANGER_HOVER);
+        btnDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnDelete.addActionListener(e -> deleteSelectedPromotion());
         btnDelete.setEnabled(false);
         tablePanel.add(btnDelete);
@@ -296,7 +322,7 @@ public class Form_Promotion extends JPanel {
             List<DTOPromotion> promotions = busPromotion.getAllPromotions();
             displayPromotions(promotions);
         } catch (Exception e) {
-            showMessage("Lỗi khi tải dữ liệu: " + e.getMessage(), "error");
+            showMessage("Error loading data: " + e.getMessage(), "error");
         }
     }
     
@@ -308,7 +334,7 @@ public class Form_Promotion extends JPanel {
             List<DTOPromotion> promotions = busPromotion.searchPromotions(searchType, keyword);
             displayPromotions(promotions);
         } catch (Exception e) {
-            showMessage("Lỗi khi tìm kiếm: " + e.getMessage(), "error");
+            showMessage("Error searching: " + e.getMessage(), "error");
         }
     }
     
@@ -339,8 +365,8 @@ public class Form_Promotion extends JPanel {
             int activeCount = busPromotion.countActivePromotions();
             tablePanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-                "Danh sách mã giảm giá (Tổng: " + tableModel.getRowCount() + 
-                " | Đang hoạt động: " + activeCount + ")",
+                "Promotion List (Total: " + tableModel.getRowCount() + 
+                " | Active: " + activeCount + ")",
                 0, 0,
                 new Font("Arial", Font.BOLD, 14),
                 PRIMARY_COLOR
@@ -359,27 +385,25 @@ public class Form_Promotion extends JPanel {
         selectedPromotionCode = null;
         clearFormFields();
         formPanel.setVisible(true);
-        tablePanel.setBounds(20, 360, 1490, 480);
         txtPromotionCode.setEditable(true);
         txtPromotionCode.requestFocus();
     }
     
     private void editSelectedPromotion() {
         if (selectedPromotionCode == null) {
-            showMessage("Vui lòng chọn mã giảm giá cần sửa!", "error");
+            showMessage("Please select the promotion to edit!", "error");
             return;
         }
         
         try {
             DTOPromotion promotion = busPromotion.getPromotionByCode(selectedPromotionCode);
             if (promotion == null) {
-                showMessage("Không tìm thấy mã giảm giá!", "error");
+                showMessage("Promotion not found!", "error");
                 return;
             }
             
             isEditing = true;
             formPanel.setVisible(true);
-            tablePanel.setBounds(20, 360, 1490, 480);
             
             // Fill form
             txtPromotionCode.setText(promotion.getPromotionCode());
@@ -390,20 +414,20 @@ public class Form_Promotion extends JPanel {
             txtDiscountPercent.setText(promotion.getDiscountPercent().toString());
             
         } catch (Exception e) {
-            showMessage("Lỗi khi tải thông tin: " + e.getMessage(), "error");
+            showMessage("Error loading information: " + e.getMessage(), "error");
         }
     }
     
     private void deleteSelectedPromotion() {
         if (selectedPromotionCode == null) {
-            showMessage("Vui lòng chọn mã giảm giá cần xóa!", "error");
+            showMessage("Please select the promotion to delete!", "error");
             return;
         }
         
         int confirm = JOptionPane.showConfirmDialog(
             this,
-            "Bạn có chắc chắn muốn xóa mã giảm giá '" + selectedPromotionCode + "'?",
-            "Xác nhận xóa",
+            "Are you sure you want to delete the promotion '" + selectedPromotionCode + "'?",
+            "Confirm delete",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
         );
@@ -411,14 +435,14 @@ public class Form_Promotion extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 if (busPromotion.deletePromotion(selectedPromotionCode)) {
-                    showMessage("Xóa mã giảm giá thành công!", "success");
+                    showMessage("Delete promotion successfully!", "success");
                     loadPromotionData();
                     clearForm();
                 } else {
-                    showMessage("Xóa mã giảm giá thất bại!", "error");
+                    showMessage("Delete promotion failed!", "error");
                 }
             } catch (Exception e) {
-                showMessage("Lỗi: " + e.getMessage(), "error");
+                showMessage("Error: " + e.getMessage(), "error");
             }
         }
     }
@@ -427,29 +451,29 @@ public class Form_Promotion extends JPanel {
         try {
             // Validate inputs
             if (txtPromotionCode.getText().trim().isEmpty()) {
-                showMessage("Mã giảm giá không được để trống!", "error");
+                showMessage("Promotion code cannot be empty!", "error");
                 txtPromotionCode.requestFocus();
                 return;
             }
             
             if (txtPromotionName.getText().trim().isEmpty()) {
-                showMessage("Tên chương trình không được để trống!", "error");
+                showMessage("Promotion name cannot be empty!", "error");
                 txtPromotionName.requestFocus();
                 return;
             }
             
             if (dateStart.getDate() == null) {
-                showMessage("Ngày bắt đầu không được để trống!", "error");
+                showMessage("Start date cannot be empty!", "error");
                 return;
             }
             
             if (dateEnd.getDate() == null) {
-                showMessage("Ngày kết thúc không được để trống!", "error");
+                showMessage("End date cannot be empty!", "error");
                 return;
             }
             
             if (txtDiscountPercent.getText().trim().isEmpty()) {
-                showMessage("Phần trăm giảm giá không được để trống!", "error");
+                showMessage("Discount percent cannot be empty!", "error");
                 txtDiscountPercent.requestFocus();
                 return;
             }
@@ -474,29 +498,28 @@ public class Form_Promotion extends JPanel {
             
             if (success) {
                 showMessage(
-                    isEditing ? "Cập nhật mã giảm giá thành công!" : "Thêm mã giảm giá thành công!",
+                    isEditing ? "Update promotion successfully!" : "Add promotion successfully!",
                     "success"
                 );
                 loadPromotionData();
                 clearForm();
             } else {
                 showMessage(
-                    isEditing ? "Cập nhật thất bại!" : "Thêm mới thất bại!",
+                    isEditing ? "Update promotion failed!" : "Add promotion failed!",
                     "error"
                 );
             }
             
         } catch (NumberFormatException e) {
-            showMessage("Phần trăm giảm giá phải là số!", "error");
+            showMessage("Discount percent must be a number!", "error");
         } catch (Exception e) {
-            showMessage("Lỗi: " + e.getMessage(), "error");
+            showMessage("Error: " + e.getMessage(), "error");
         }
     }
     
     private void clearForm() {
         clearFormFields();
         formPanel.setVisible(false);
-        tablePanel.setBounds(20, 150, 1490, 690);
         isEditing = false;
         selectedPromotionCode = null;
     }
@@ -529,9 +552,9 @@ public class Form_Promotion extends JPanel {
     
     private void showMessage(String message, String type) {
         if (type.equals("success")) {
-            JOptionPane.showMessageDialog(this, message, "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, message, "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -551,13 +574,13 @@ public class Form_Promotion extends JPanel {
                 setHorizontalAlignment(CENTER);
                 
                 if (!isSelected) {
-                    if (status.equals("Đang hoạt động")) {
+                    if (status.equals("Active")) {
                         c.setBackground(new Color(200, 255, 200));
                         c.setForeground(new Color(0, 100, 0));
-                    } else if (status.equals("Đã hết hạn")) {
+                    } else if (status.equals("Expired")) {
                         c.setBackground(new Color(255, 200, 200));
                         c.setForeground(new Color(139, 0, 0));
-                    } else if (status.equals("Sắp diễn ra")) {
+                    } else if (status.equals("Upcoming")) {
                         c.setBackground(new Color(255, 255, 200));
                         c.setForeground(new Color(139, 69, 0));
                     }

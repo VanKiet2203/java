@@ -82,7 +82,7 @@ public class Form_Order extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        panelSearch.setBounds(20, 60, 1160, 80);
+        panelSearch.setBounds(20, 60, 1160, 100);
             
   
         // ComboBox search
@@ -93,11 +93,15 @@ public class Form_Order extends JPanel {
         cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
         panelSearch.add(cmbSearch);
         
-        // TextField search
+        // TextField search - THÊM VIỀN
         txtSearch = new MyTextField();
         txtSearch.setHint("Search something...");
         txtSearch.setBounds(180, 30, 300, 35);
         txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+        txtSearch.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
         panelSearch.add(txtSearch);
             
         // Button Search trong panelSearch
@@ -149,7 +153,7 @@ public class Form_Order extends JPanel {
         bntRefresh.setPressedColor(INFO_HOVER.darker());
         bntRefresh.setFont(FONT_BUTTON_MEDIUM);
         bntRefresh.setForeground(Color.WHITE);
-        bntRefresh.setBounds(20, 150, 120, 35);
+         bntRefresh.setBounds(20, 170, 120, 35); // Giữa search panel và bảng
         bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntRefresh.addActionListener((e) -> {
             Refresh();
@@ -164,7 +168,7 @@ public class Form_Order extends JPanel {
         bntDetails.setPressedColor(PRIMARY_HOVER.darker());
         bntDetails.setFont(FONT_BUTTON_MEDIUM);
         bntDetails.setForeground(Color.WHITE);
-        bntDetails.setBounds(150, 150, 120, 35); 
+         bntDetails.setBounds(150, 170, 120, 35); // Giữa search panel và bảng
         bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\details.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntDetails.addActionListener((e) -> {
             showOrderDetails();
@@ -178,7 +182,7 @@ public class Form_Order extends JPanel {
         bntUpdate.setPressedColor(WARNING_HOVER.darker());
         bntUpdate.setFont(FONT_BUTTON_MEDIUM);
         bntUpdate.setForeground(Color.WHITE);
-        bntUpdate.setBounds(280, 150, 120, 35);
+         bntUpdate.setBounds(280, 170, 120, 35); // Giữa search panel và bảng
         bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntUpdate.addActionListener((e) -> {
             updateOrderStatus();
@@ -190,7 +194,7 @@ public class Form_Order extends JPanel {
         bntExportFile.setBackgroundColor(Color.WHITE);
         bntExportFile.setPressedColor(Color.decode("#D3D3D3"));
         bntExportFile.setHoverColor(Color.decode("#EEEEEE"));
-        bntExportFile.setBounds( 410, 150, 120, 35);
+         bntExportFile.setBounds( 410, 170, 120, 35); // Giữa search panel và bảng
         bntExportFile.setFont(new Font("sansserif", Font.BOLD, 14));
         bntExportFile.setForeground(Color.BLACK);
         bntExportFile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
@@ -217,19 +221,19 @@ public class Form_Order extends JPanel {
         });
         panel.add(bntExportFile);
         
-        // Button View Confirmed Orders
-        bntViewConfirmed = new MyButton("View Confirmed", 20);
-        bntViewConfirmed.setBackgroundColor(SUCCESS_COLOR);
-        bntViewConfirmed.setHoverColor(SUCCESS_HOVER);
-        bntViewConfirmed.setPressedColor(SUCCESS_HOVER.darker());
-        bntViewConfirmed.setFont(FONT_BUTTON_MEDIUM);
-        bntViewConfirmed.setForeground(Color.WHITE);
-        bntViewConfirmed.setBounds(540, 150, 150, 35);
-        bntViewConfirmed.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\order.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
-        bntViewConfirmed.addActionListener(e -> {
-            viewConfirmedOrders();
-        });
-        panel.add(bntViewConfirmed);
+        // // Button View Confirmed Orders
+        // bntViewConfirmed = new MyButton("View Confirmed", 20);
+        // bntViewConfirmed.setBackgroundColor(SUCCESS_COLOR);
+        // bntViewConfirmed.setHoverColor(SUCCESS_HOVER);
+        // bntViewConfirmed.setPressedColor(SUCCESS_HOVER.darker());
+        // bntViewConfirmed.setFont(FONT_BUTTON_MEDIUM);
+        // bntViewConfirmed.setForeground(Color.WHITE);
+        // bntViewConfirmed.setBounds(540, 150, 150, 35);
+        // bntViewConfirmed.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\order.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        // bntViewConfirmed.addActionListener(e -> {
+        //     viewConfirmedOrders();
+        // });
+        // panel.add(bntViewConfirmed);
 
            // 1️⃣ Tên cột
         String[] columnNames = {
@@ -255,7 +259,7 @@ public class Form_Order extends JPanel {
             FONT_TABLE_HEADER               // Font tiêu đề
         );
 
-        JScrollPane tableScrollPane = MyTable.createScrollPane(tableOrder, 20, 200, 1160, 400);
+        JScrollPane tableScrollPane = MyTable.createScrollPane(tableOrder, 20, 220, 1160, 400);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));

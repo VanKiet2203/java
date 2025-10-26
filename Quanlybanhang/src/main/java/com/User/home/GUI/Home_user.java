@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import javax.swing.SwingConstants;
 
 public class Home_user extends JPanel {
 
@@ -41,39 +42,74 @@ public class Home_user extends JPanel {
     }
 
     private void initSearchComponents() {
-        String[] items = {"Product_ID", "Product_Name", "Price"};
+        // Tạo panel search với border đẹp
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(null);
+        searchPanel.setBounds(20, 20, 1260, 100);
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        add(searchPanel);
+
+        // Filter combo box với icon
+        String[] items = {"All Products", "Product ID", "Product Name", "Price Range"};
         comboBoxSearch = new MyCombobox(items);
-        comboBoxSearch.setBounds(325, 60, 160, 30);
+        comboBoxSearch.setBounds(20, 35, 200, 35);
+        comboBoxSearch.setCustomFont(new Font("Arial", Font.PLAIN, 14));
         selectedComboBoxItem = (String) comboBoxSearch.getSelectedItem();
-        add(comboBoxSearch);
+        searchPanel.add(comboBoxSearch);
 
+        // Search input với border đẹp
         inputText = new MyTextField();
-        inputText.setBounds(495, 60, 370, 30);
-        add(inputText);
+        inputText.setBounds(240, 35, 400, 35);
+        inputText.setHint("Enter search keyword...");
+        inputText.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        inputText.setTextFont(new Font("Arial", Font.PLAIN, 14));
+        searchPanel.add(inputText);
 
-        minlbl = new JLabel("Min price:");
-        minlbl.setBounds(495, 0, 100, 30);
+        // Price range labels
+        minlbl = new JLabel("Min Price:");
+        minlbl.setBounds(240, 20, 80, 20);
+        minlbl.setFont(new Font("Arial", Font.BOLD, 12));
+        minlbl.setForeground(Color.decode("#666666"));
         minlbl.setVisible(false);
-        add(minlbl);
+        searchPanel.add(minlbl);
 
         inputMin = new MyTextField();
-        inputMin.setBounds(495, 25, 370, 30);
+        inputMin.setBounds(240, 35, 190, 35);
+        inputMin.setHint("Min price...");
+        inputMin.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
         inputMin.setVisible(false);
-        add(inputMin);
+        searchPanel.add(inputMin);
 
-        maxlbl = new JLabel("Max price:");
-        maxlbl.setBounds(495, 50, 100, 30);
+        maxlbl = new JLabel("Max Price:");
+        maxlbl.setBounds(450, 20, 80, 20);
+        maxlbl.setFont(new Font("Arial", Font.BOLD, 12));
+        maxlbl.setForeground(Color.decode("#666666"));
         maxlbl.setVisible(false);
-        add(maxlbl);
+        searchPanel.add(maxlbl);
 
         inputMax = new MyTextField();
-        inputMax.setBounds(495, 75, 370, 30);
+        inputMax.setBounds(450, 35, 190, 35);
+        inputMax.setHint("Max price...");
+        inputMax.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
         inputMax.setVisible(false);
-        add(inputMax);
+        searchPanel.add(inputMax);
 
         comboBoxSearch.addActionListener(e -> {
             selectedComboBoxItem = (String) comboBoxSearch.getSelectedItem();
-            boolean isPriceSearch = "Price".equals(selectedComboBoxItem);
+            boolean isPriceSearch = selectedComboBoxItem.contains("Price");
             
             inputText.setVisible(!isPriceSearch);
             inputMin.setVisible(isPriceSearch);
@@ -85,15 +121,27 @@ public class Home_user extends JPanel {
             repaint();
         });
 
+        // Search button với icon
         MyButton btnSearch = new MyButton("Search", 10);
-        btnSearch.setBounds(875, 60, 90, 30);
+        btnSearch.setBounds(660, 35, 120, 35);
+        btnSearch.setBackgroundColor(Color.decode("#4CAF50"));
+        btnSearch.setHoverColor(Color.decode("#45A049"));
+        btnSearch.setForeground(Color.WHITE);
+        btnSearch.setFont(new Font("Arial", Font.BOLD, 14));
+        btnSearch.setButtonIcon("/Icons/Admin_icon/search.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSearch.addActionListener(e -> searchProducts());
-        add(btnSearch);
+        searchPanel.add(btnSearch);
 
+        // All Products button với icon
         MyButton reShowAllProducts = new MyButton("All Products", 10);
-        reShowAllProducts.setBounds(113, 60, 110, 30);
+        reShowAllProducts.setBounds(800, 35, 160, 35);
+        reShowAllProducts.setBackgroundColor(Color.decode("#2196F3"));
+        reShowAllProducts.setHoverColor(Color.decode("#1976D2"));
+        reShowAllProducts.setForeground(Color.WHITE);
+        reShowAllProducts.setFont(new Font("Arial", Font.BOLD, 14));
+        reShowAllProducts.setButtonIcon("/Icons/Admin_icon/refresh.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         reShowAllProducts.addActionListener(e -> updateProductList());
-        add(reShowAllProducts);
+        searchPanel.add(reShowAllProducts);
     }
 
     private void initProductDisplayArea() {
@@ -237,50 +285,129 @@ public class Home_user extends JPanel {
 
     
     private JPanel createProductPanel(productDTO product) {
-       JPanel panel = new JPanel(new BorderLayout(3, 3)); // Giảm khoảng cách dọc
-        panel.setPreferredSize(new Dimension(280, 240)); // Giảm chiều cao từ 250 xuống 240
+        // Main product panel với shadow effect
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setPreferredSize(new Dimension(320, 450)); // Tăng kích thước để có không gian rộng hơn
         panel.setBackground(Color.WHITE);
-        panel.setBorder(null);
         panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-            BorderFactory.createEmptyBorder(3, 5, 3, 5) // Giảm padding top và bottom
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15) // Tăng padding
         ));
 
-        // Product Image
+        // Product Image với border đẹp
         ImageIcon icon = new ImageIcon(product.getImage());
-        Image img = icon.getImage().getScaledInstance(150, 110, Image.SCALE_SMOOTH); // Giảm chiều cao ảnh
+        Image img = icon.getImage().getScaledInstance(200, 150, Image.SCALE_SMOOTH);
         JLabel imageLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
-        imageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0)); // Giảm khoảng cách dưới ảnh
+        imageLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        imageLabel.setBackground(Color.decode("#F8F9FA"));
+        imageLabel.setOpaque(true);
         panel.add(imageLabel, BorderLayout.NORTH);
 
-      // Product Details
-      JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 3, 3));
-      detailsPanel.setBackground(Color.WHITE);
+        // Product Details với layout đẹp
+        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 8, 8)); // Tăng khoảng cách giữa các dòng
+        detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10)); // Tăng padding
 
-      addDetailLabel(detailsPanel, "ID: " + product.getProductID(), 12);
-      addDetailLabel(detailsPanel, "Name: " + product.getProductName(), 12);
-      addDetailLabel(detailsPanel, "Price: " + product.getPrice() + " VNĐ", 12);
-      addDetailLabel(detailsPanel, "Quantity: " + product.getQuantity(), 12);
-      addDetailLabel(detailsPanel, "Status: " + getStatusText(product), 12);
+        // Product Name (highlighted)
+        JLabel nameLabel = new JLabel(product.getProductName());
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        nameLabel.setForeground(Color.decode("#2E7D32"));
+        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        detailsPanel.add(nameLabel);
 
-      panel.add(detailsPanel, BorderLayout.CENTER);
+        // Product ID
+        JLabel idLabel = new JLabel("ID: " + product.getProductID());
+        idLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        idLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(idLabel);
 
-      // Action Buttons
-      JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
-      buttonPanel.setBackground(Color.WHITE);
+        // Color
+        JLabel colorLabel = new JLabel("Color: " + (product.getColor() != null ? product.getColor() : "N/A"));
+        colorLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        colorLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(colorLabel);
 
-      MyButton detailBtn = new MyButton("Details", 8);
-      detailBtn.setPreferredSize(new Dimension(80, 25));
-      detailBtn.addActionListener((e) -> {
-          productDeteails details= new productDeteails();
-          details.setVisible(true);
-          details.displayProductDetails(product);
-      });
-      buttonPanel.add(detailBtn);
-      panel.add(buttonPanel, BorderLayout.SOUTH);
+        // Speed
+        JLabel speedLabel = new JLabel("Speed: " + (product.getSpeed() != null ? product.getSpeed() : "N/A"));
+        speedLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        speedLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(speedLabel);
 
-      return panel;
-  }
+        // Battery Capacity
+        JLabel batteryLabel = new JLabel("Battery: " + (product.getBatteryCapacity() != null ? product.getBatteryCapacity() : "N/A"));
+        batteryLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        batteryLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(batteryLabel);
+
+        // Price (highlighted)
+        JLabel priceLabel = new JLabel("Price: " + product.getPrice() + " VNĐ");
+        priceLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        priceLabel.setForeground(Color.decode("#D32F2F"));
+        detailsPanel.add(priceLabel);
+
+        // Quantity
+        JLabel qtyLabel = new JLabel("Stock: " + product.getQuantity());
+        qtyLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        qtyLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(qtyLabel);
+
+        // Warranty
+        JLabel warrantyLabel = new JLabel("Warranty: " + product.getWarrantyMonths() + " months");
+        warrantyLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        warrantyLabel.setForeground(Color.decode("#666666"));
+        detailsPanel.add(warrantyLabel);
+
+        // Status với màu sắc
+        JLabel statusLabel = new JLabel(getStatusText(product));
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        if (product.getQuantity() == 0) {
+            statusLabel.setForeground(Color.decode("#D32F2F"));
+        } else {
+            statusLabel.setForeground(Color.decode("#388E3C"));
+        }
+        detailsPanel.add(statusLabel);
+
+        panel.add(detailsPanel, BorderLayout.CENTER);
+
+        // Action Buttons với style đẹp
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setBackground(Color.WHITE);
+
+        MyButton detailBtn = new MyButton("Details", 8);
+        detailBtn.setPreferredSize(new Dimension(120, 35));
+        detailBtn.setBackgroundColor(Color.decode("#2196F3"));
+        detailBtn.setHoverColor(Color.decode("#1976D2"));
+        detailBtn.setForeground(Color.WHITE);
+        detailBtn.setFont(new Font("Arial", Font.BOLD, 12));
+        detailBtn.setButtonIcon("/Icons/Admin_icon/details.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        detailBtn.addActionListener((e) -> {
+            productDeteails details = new productDeteails();
+            details.setVisible(true);
+            details.displayProductDetails(product);
+        });
+        buttonPanel.add(detailBtn);
+
+        // Add to Cart button
+        MyButton addToCartBtn = new MyButton("Add to Cart", 8);
+        addToCartBtn.setPreferredSize(new Dimension(120, 35));
+        addToCartBtn.setBackgroundColor(Color.decode("#4CAF50"));
+        addToCartBtn.setHoverColor(Color.decode("#45A049"));
+        addToCartBtn.setForeground(Color.WHITE);
+        addToCartBtn.setFont(new Font("Arial", Font.BOLD, 12));
+        addToCartBtn.setButtonIcon("/Icons/User_icon/cart.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        addToCartBtn.addActionListener((e) -> {
+            // TODO: Implement add to cart functionality
+            CustomDialog.showSuccess("Product added to cart!");
+        });
+        buttonPanel.add(addToCartBtn);
+
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
 
    private void addDetailLabel(JPanel panel, String text, int fontSize) {
         JLabel label = new JLabel(text);

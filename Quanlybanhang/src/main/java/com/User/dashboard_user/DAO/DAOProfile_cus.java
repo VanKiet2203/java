@@ -162,4 +162,34 @@ public class DAOProfile_cus {
         return customerID;
     }
     
+    public String getCustomerName(String customerID) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseConnection.connect();
+            String sql = "SELECT Full_Name FROM Customer WHERE Customer_ID = ?";
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, customerID);
+            rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getString("Full_Name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        return "User";
+    }
+    
 }

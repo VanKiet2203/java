@@ -77,7 +77,7 @@ public class Form_Customer extends JPanel {
         Customner = createStyledTable(model);
         Customner.setRowHeight(30);
 
-        JScrollPane tableScrollPane = MyTable.createScrollPane(Customner, 20, 200, 1160, 400);
+        JScrollPane tableScrollPane = MyTable.createScrollPane(Customner, 20, 220, 1160, 400);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         tableScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
@@ -128,7 +128,7 @@ public class Form_Customer extends JPanel {
                 FONT_TITLE_SMALL,
                 PRIMARY_COLOR
             ));
-            panelSearch.setBounds(20, 60, 1160, 80);
+            panelSearch.setBounds(20, 60, 1160, 100);
             
             // ComboBox search
             String[] items = {"Customer.ID", "Customer Name", "Email", "Contact"};
@@ -138,11 +138,15 @@ public class Form_Customer extends JPanel {
             cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
             panelSearch.add(cmbSearch);
             
-            // TextField search
+            // TextField search - THÊM VIỀN
             txtSearch = new MyTextField();
             txtSearch.setHint("Search something...");
             txtSearch.setBounds(180, 30, 300, 35);
             txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
+            txtSearch.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            ));
             panelSearch.add(txtSearch);
 
             // Button Search trong panelSearch
@@ -202,7 +206,7 @@ public class Form_Customer extends JPanel {
             // Button Refresh
             bntRefresh = new MyButton("Refresh", 30);
             styleInfoButton(bntRefresh);
-            bntRefresh.setBounds(20, 150, 120, 35);
+            bntRefresh.setBounds(20, 170, 120, 35);
             bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             bntRefresh.addActionListener((ActionEvent e) -> {
                 refreshForm();
@@ -217,7 +221,7 @@ public class Form_Customer extends JPanel {
             bntDelete.setPressedColor(Color.decode("#BD2130"));
             bntDelete.setFont(FONT_BUTTON_MEDIUM);
             bntDelete.setForeground(Color.WHITE);
-            bntDelete.setBounds(150, 150, 120, 35);
+            bntDelete.setBounds(150, 170, 120, 35);
             bntDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             bntDelete.addActionListener(e -> {
                 int selectedRow = Customner.getSelectedRow();
@@ -262,7 +266,7 @@ public class Form_Customer extends JPanel {
             // Button Update
             bntUpdate = new MyButton("Update", 20);
             styleWarningButton(bntUpdate);
-            bntUpdate.setBounds(280, 150, 120, 35);
+            bntUpdate.setBounds(280, 170, 120, 35);
             bntUpdate.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
             bntUpdate.addActionListener(e -> {
                 busCustomer = new BusCustomer();
@@ -279,7 +283,7 @@ public class Form_Customer extends JPanel {
             bntExportfile.setBackgroundColor(Color.WHITE); // Màu nền
             bntExportfile.setPressedColor(Color.decode("#D3D3D3")); // Màu khi nhấn
             bntExportfile.setHoverColor(Color.decode("#EEEEEE")); // Màu khi rê chuột vào
-            bntExportfile.setBounds(410, 150, 120, 35); // Điều chỉnh vị trí và kích thước
+            bntExportfile.setBounds(410, 170, 120, 35); // Điều chỉnh vị trí và kích thước
             bntExportfile.setFont(new Font("sansserif", Font.BOLD, 14));
             bntExportfile.setForeground(Color.BLACK);
             bntExportfile.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\Excel.png", 30, 30, 10, SwingConstants.RIGHT, SwingConstants.CENTER);

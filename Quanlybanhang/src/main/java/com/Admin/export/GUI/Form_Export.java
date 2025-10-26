@@ -45,7 +45,7 @@ public class Form_Export extends JPanel {
     private JPanel panel, panelSearch,billBody;
     private MyPanel panelBill, panelTitle;
     private JLabel lblAdminID, lblAdminName, lblInvoice;
-    private MyButton bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport, bntWarranty, bntFixQuantity;
+    private MyButton bntSearchOrder, bntExportFile, bntDetails, bntRefresh, bntAddBill, bntExport, bntWarranty;
     private MyTextField txtSearchOrder, txtAdminID, txtAdminName;
     private MyCombobox<String> cmbSearchOrder;
     private MyTable tableOrderDetails;
@@ -106,7 +106,7 @@ public class Form_Export extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        panelSearch.setBounds(20, 60, 1490, 80);
+        panelSearch.setBounds(20, 60, 1490, 100);
           
           bntRefresh = new MyButton("Refresh", 20);
           styleInfoButton(bntRefresh);
@@ -123,7 +123,22 @@ public class Form_Export extends JPanel {
           bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
           bntDetails.setBounds(750, 30, 120, 35);
           bntDetails.addActionListener((e) -> {
-              Bill_ExportDetails billDetail= new Bill_ExportDetails();
+              // Kiểm tra xem có dòng nào được chọn không
+              int selectedRow = tableOrderDetails.getSelectedRow();
+              if (selectedRow == -1) {
+                  CustomDialog.showError("Vui lòng chọn một hóa đơn để xem chi tiết!");
+                  return;
+              }
+              
+              // Lấy thông tin hóa đơn từ dòng được chọn
+              String orderNo = tableOrderDetails.getValueAt(selectedRow, 0).toString();
+              String customerID = tableOrderDetails.getValueAt(selectedRow, 1).toString();
+              String orderDate = tableOrderDetails.getValueAt(selectedRow, 2).toString();
+              String totalAmount = tableOrderDetails.getValueAt(selectedRow, 3).toString();
+              
+              // Mở cửa sổ xem chi tiết hóa đơn
+              Bill_ExportDetails billDetail = new Bill_ExportDetails();
+              billDetail.setOrderInfo(orderNo, customerID, orderDate, totalAmount);
               billDetail.setVisible(true);
           });
           panelSearch.add(bntDetails);
@@ -143,33 +158,6 @@ public class Form_Export extends JPanel {
           });
           panelSearch.add(bntWarranty);
           
-          bntFixQuantity = new MyButton("Fix Quantity", 20);
-          styleDangerButton(bntFixQuantity);
-          bntFixQuantity.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntFixQuantity.setBounds(1010, 30, 120, 35);
-          bntFixQuantity.addActionListener((e) -> {
-              boolean confirm = CustomDialog.showOptionPane(
-                  "Fix Quantity Issues",
-                  "This will recalculate all product quantities. Continue?",
-                  UIManager.getIcon("OptionPane.questionIcon"),
-                  Color.decode("#FF9800")
-              );
-              if (confirm) {
-                  try {
-                      BUS_ExportBill busExportBill = new BUS_ExportBill();
-                      if (busExportBill.fixQuantityIssues()) {
-                          CustomDialog.showSuccess("Quantity issues fixed successfully!");
-                          Refresh();
-                      } else {
-                          CustomDialog.showError("Failed to fix quantity issues!");
-                      }
-                  } catch (Exception ex) {
-                      CustomDialog.showError("Error: " + ex.getMessage());
-                      ex.printStackTrace();
-                  }
-              }
-          });
-          panelSearch.add(bntFixQuantity);
           
           bntExportFile = new MyButton("Export", 20);
           bntExportFile.setBackgroundColor(Color.WHITE);
@@ -228,8 +216,10 @@ public class Form_Export extends JPanel {
           txtSearchOrder.setHint("Search something...");
           txtSearchOrder.setBounds(180, 30, 300, 35);
           txtSearchOrder.setTextFont(FONT_CONTENT_MEDIUM);
-          txtSearchOrder.setHintFont(FONT_CONTENT_SMALL);
-          txtSearchOrder.setBackgroundColor(Color.decode("#F5FFFA"));
+          txtSearchOrder.setBorder(BorderFactory.createCompoundBorder(
+              BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
+              BorderFactory.createEmptyBorder(5, 10, 5, 10)
+          ));
           panelSearch.add(txtSearchOrder);
          
           bntSearchOrder= new MyButton("Search", 20);
@@ -254,7 +244,7 @@ public class Form_Export extends JPanel {
           lblAdminID= new JLabel("Admin.ID");
           lblAdminID.setFont(FONT_CONTENT_MEDIUM);
           lblAdminID.setForeground(TEXT_PRIMARY);
-          lblAdminID.setBounds(400, 150, 100, 25);
+          lblAdminID.setBounds(400, 160, 100, 25);
           panel.add(lblAdminID);
        
           txtAdminID = new MyTextField();
@@ -263,14 +253,14 @@ public class Form_Export extends JPanel {
           txtAdminID.setLocked(true);
           txtAdminID.setTextFont(FONT_CONTENT_MEDIUM);
           txtAdminID.setBackgroundColor(Color.WHITE);
-          txtAdminID.setBounds(400, 175, 120, 35);
+          txtAdminID.setBounds(400, 185, 120, 35);
           txtAdminID.setText(Dashboard_ad.adminID);
           panel.add(txtAdminID);
           
          lblAdminName= new JLabel("Admin Name");
          lblAdminName.setFont(FONT_CONTENT_MEDIUM);
          lblAdminName.setForeground(TEXT_PRIMARY);
-         lblAdminName.setBounds(530, 150, 100, 25);
+         lblAdminName.setBounds(530, 160, 100, 25);
          panel.add(lblAdminName);
          
           txtAdminName = new MyTextField();
@@ -279,7 +269,7 @@ public class Form_Export extends JPanel {
           txtAdminName.setLocked(true);
           txtAdminName.setTextFont(FONT_CONTENT_MEDIUM);
           txtAdminName.setBackgroundColor(Color.WHITE);
-          txtAdminName.setBounds(530, 175, 120, 35);
+          txtAdminName.setBounds(530, 185, 120, 35);
           txtAdminName.setText(Dashboard_ad.getAdminName(txtAdminID.getText().strip()));
           panel.add(txtAdminName);
           
@@ -287,12 +277,12 @@ public class Form_Export extends JPanel {
           JLabel lblPromo = new JLabel("Promotion Code");
           lblPromo.setFont(FONT_CONTENT_MEDIUM);
           lblPromo.setForeground(TEXT_PRIMARY);
-          lblPromo.setBounds(660, 150, 140, 25);
+          lblPromo.setBounds(660, 160, 140, 25);
           panel.add(lblPromo);
 
           // ComboBox for promotion selection
           cmbPromotionCode = new MyCombobox<>();
-          cmbPromotionCode.setBounds(660, 175, 200, 35);
+          cmbPromotionCode.setBounds(660, 185, 200, 35);
           cmbPromotionCode.setCustomFont(FONT_CONTENT_MEDIUM);
           cmbPromotionCode.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
           cmbPromotionCode.addItem("-- Select Promotion --");
@@ -308,7 +298,7 @@ public class Form_Export extends JPanel {
           bntValidatePromo.setPressedColor(Color.decode("#1e7e34"));
           bntValidatePromo.setFont(FONT_BUTTON_SMALL);
           bntValidatePromo.setForeground(Color.WHITE);
-          bntValidatePromo.setBounds(870, 175, 80, 35);
+          bntValidatePromo.setBounds(870, 185, 80, 35);
           bntValidatePromo.addActionListener(e -> validateSelectedPromotion());
           panel.add(bntValidatePromo);
           
@@ -316,7 +306,7 @@ public class Form_Export extends JPanel {
           lblPromotionInfo = new JLabel("");
           lblPromotionInfo.setFont(new Font("Arial", Font.ITALIC, 11));
           lblPromotionInfo.setForeground(Color.decode("#666666"));
-          lblPromotionInfo.setBounds(660, 210, 300, 20);
+          lblPromotionInfo.setBounds(660, 200, 300, 20);
           panel.add(lblPromotionInfo);
            
 
@@ -328,7 +318,7 @@ public class Form_Export extends JPanel {
        panelBill.setLayout(new BorderLayout());
        panelBill.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1)); // Chỉ 1 viền chính
        panelBill.setBackground(Color.WHITE);
-       panelBill.setBounds(820, 220, 450, 500);
+       panelBill.setBounds(820, 240, 450, 500);
        panel.add(panelBill);
 
        // Tạo panel title "Bill For Order" (không thêm border riêng)
@@ -374,7 +364,7 @@ public class Form_Export extends JPanel {
         // 5️⃣ Tạo bảng với style chuẩn giống Product
         tableOrderDetails = createStyledTable(model);
 
-        JScrollPane scrollPane = MyTable.createScrollPane(tableOrderDetails, 20, 220, 790, 480);
+        JScrollPane scrollPane = MyTable.createScrollPane(tableOrderDetails, 20, 240, 790, 480);
 
         // 7️⃣ Tùy chỉnh thanh cuộn
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
@@ -419,7 +409,7 @@ public class Form_Export extends JPanel {
 
         bntAddBill = new MyButton("Add Bill", 20);
         stylePrimaryButton(bntAddBill);
-        bntAddBill.setBounds(20, 720, 110, 35);
+        bntAddBill.setBounds(20, 740, 110, 35);
 
         // Hàm xử lý khi nhấn nút Add Bill
         bntAddBill.addActionListener(e -> {
@@ -466,7 +456,7 @@ public class Form_Export extends JPanel {
         bntExport = new MyButton("Generate/Save Bill", 20);
         stylePrimaryButton(bntExport);
         bntExport.setFont(FONT_BUTTON_LARGE);
-        bntExport.setBounds(950, 720, 200, 50);
+        bntExport.setBounds(950, 750, 200, 50);
         bntExport.addActionListener(e -> {
             boolean confirm = CustomDialog.showOptionPane(
                 "Confirm Exportation",
@@ -1161,13 +1151,6 @@ public class Form_Export extends JPanel {
         btn.setForeground(Color.WHITE);
     }
     
-    private void styleDangerButton(MyButton btn) {
-        btn.setBackgroundColor(Color.decode("#F44336"));
-        btn.setHoverColor(Color.decode("#D32F2F"));
-        btn.setPressedColor(Color.decode("#C62828"));
-        btn.setFont(FONT_BUTTON_MEDIUM);
-        btn.setForeground(Color.WHITE);
-    }
     
     private MyTable createStyledTable(DefaultTableModel model) {
         return new MyTable(
