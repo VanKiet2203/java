@@ -38,14 +38,14 @@ public class Form_Promotion extends JPanel {
     
     private void initComponents() {
         setLayout(null);
-        setPreferredSize(new Dimension(1530, 860));
+        setPreferredSize(new Dimension(1200, 700)); // Thu nhỏ từ 1530x860 xuống 1200x700
         setBackground(Color.WHITE);
     }
     
     private void init() {
         mainPanel = new JPanel();
         mainPanel.setLayout(null);
-        mainPanel.setBounds(0, 0, 1530, 860);
+        mainPanel.setBounds(0, 0, 1200, 700); // Thu nhỏ mainPanel
         mainPanel.setBackground(Color.WHITE);
         add(mainPanel);
         
@@ -81,7 +81,7 @@ public class Form_Promotion extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        searchPanel.setBounds(20, 60, 1490, 100);
+        searchPanel.setBounds(20, 60, 1160, 100); // Thu nhỏ từ 1490 xuống 1160
         mainPanel.add(searchPanel);
         
         // Search type combo
@@ -94,7 +94,7 @@ public class Form_Promotion extends JPanel {
         // Search text field - THÊM VIỀN
         txtSearch = new MyTextField();
         txtSearch.setHint("Search something...");
-        txtSearch.setBounds(180, 30, 300, 35);
+        txtSearch.setBounds(180, 30, 250, 35); // Thu nhỏ từ 300 xuống 250
         txtSearch.setTextFont(new Font("Arial", Font.PLAIN, 13));
         txtSearch.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
@@ -103,14 +103,14 @@ public class Form_Promotion extends JPanel {
         searchPanel.add(txtSearch);
         
         // Search button
-        btnSearch = createButton("Search", 490, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER);
-        btnSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnSearch = createButton("Search", 440, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER); // Điều chỉnh vị trí
+        btnSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSearch.addActionListener(e -> searchPromotion());
         searchPanel.add(btnSearch);
         
         // Refresh button
-        btnRefresh = createButton("Refresh", 620, 30, 120, 35, INFO_COLOR, INFO_HOVER);
-        btnRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnRefresh = createButton("Refresh", 570, 30, 120, 35, INFO_COLOR, INFO_HOVER); // Điều chỉnh vị trí
+        btnRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnRefresh.addActionListener(e -> {
             txtSearch.setText("");
             cmbSearchType.setSelectedIndex(0);
@@ -119,8 +119,8 @@ public class Form_Promotion extends JPanel {
         searchPanel.add(btnRefresh);
         
         // Add button
-        btnAdd = createButton("Add new", 750, 30, 130, 35, PRIMARY_COLOR, PRIMARY_HOVER);
-        btnAdd.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnAdd = createButton("Add new", 700, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER); // Điều chỉnh vị trí
+        btnAdd.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnAdd.addActionListener(e -> prepareAddPromotion());
         searchPanel.add(btnAdd);
     }
@@ -138,14 +138,14 @@ public class Form_Promotion extends JPanel {
             new Font("Arial", Font.BOLD, 14),
             PRIMARY_COLOR
         ));
-        formPanel.setBounds(20, 180, 1490, 200);
+        formPanel.setBounds(20, 180, 1160, 200); // Thu nhỏ từ 1490 xuống 1160
         formPanel.setVisible(false); // Hidden by default
         mainPanel.add(formPanel);
         
         int labelX = 30;
         int fieldX = 200;
-        int labelWidth = 150;
-        int fieldWidth = 250;
+        int labelWidth = 120; // Thu nhỏ từ 150 xuống 120
+        int fieldWidth = 200; // Thu nhỏ từ 250 xuống 200
         
         // Row 1: Promotion Code
         addLabel("Promotion Code:", labelX, 30, labelWidth, 30);
@@ -159,9 +159,9 @@ public class Form_Promotion extends JPanel {
         formPanel.add(txtPromotionCode);
         
         // Row 1: Promotion Name
-        addLabel("Promotion Name:", labelX + 550, 30, labelWidth, 30);
+        addLabel("Promotion Name:", labelX + 450, 30, labelWidth, 30); // Điều chỉnh vị trí
         txtPromotionName = new MyTextField();
-        txtPromotionName.setBounds(fieldX + 550, 30, fieldWidth + 100, 35);
+        txtPromotionName.setBounds(fieldX + 450, 30, fieldWidth + 50, 35); // Điều chỉnh vị trí và kích thước
         txtPromotionName.setTextFont(new Font("Arial", Font.PLAIN, 13));
         txtPromotionName.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
@@ -179,9 +179,9 @@ public class Form_Promotion extends JPanel {
         formPanel.add(dateStart);
         
         // Row 2: End Date
-        addLabel("End Date:", labelX + 550, 80, labelWidth, 30);
+        addLabel("End Date:", labelX + 450, 80, labelWidth, 30); // Điều chỉnh vị trí
         dateEnd = new JDateChooser();
-        dateEnd.setBounds(fieldX + 550, 80, fieldWidth, 35);
+        dateEnd.setBounds(fieldX + 450, 80, fieldWidth, 35); // Điều chỉnh vị trí
         dateEnd.setDateFormatString("dd/MM/yyyy");
         dateEnd.setFont(new Font("Arial", Font.PLAIN, 13));
         dateEnd.setBorder(BorderFactory.createLineBorder(PRIMARY_COLOR, 1));
@@ -190,7 +190,7 @@ public class Form_Promotion extends JPanel {
         // Row 3: Discount Percent
         addLabel("Discount Percent:", labelX, 130, labelWidth, 30);
         txtDiscountPercent = new MyTextField();
-        txtDiscountPercent.setBounds(fieldX, 130, 150, 35);
+        txtDiscountPercent.setBounds(fieldX, 130, 120, 35); // Thu nhỏ từ 150 xuống 120
         txtDiscountPercent.setTextFont(new Font("Arial", Font.PLAIN, 13));
         txtDiscountPercent.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 1),
@@ -199,13 +199,13 @@ public class Form_Promotion extends JPanel {
         formPanel.add(txtDiscountPercent);
         
         // Buttons
-        btnSave = createButton("Save", 1100, 30, 120, 35, PRIMARY_COLOR, PRIMARY_HOVER);
-        btnSave.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnSave = createButton("Save", 950, 30, 100, 35, PRIMARY_COLOR, PRIMARY_HOVER); // Điều chỉnh vị trí
+        btnSave.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\update.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSave.addActionListener(e -> savePromotion());
         formPanel.add(btnSave);
         
-        btnClear = createButton("Cancel", 1100, 80, 120, 35, DANGER_COLOR, DANGER_HOVER);
-        btnClear.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnClear = createButton("Cancel", 950, 80, 120, 35, DANGER_COLOR, DANGER_HOVER); // Điều chỉnh vị trí
+        btnClear.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnClear.addActionListener(e -> clearForm());
         formPanel.add(btnClear);
     }
@@ -230,7 +230,7 @@ public class Form_Promotion extends JPanel {
             new Font("Arial", Font.BOLD, 14),
             PRIMARY_COLOR
         ));
-        tablePanel.setBounds(20, 400, 1490, 460);
+        tablePanel.setBounds(20, 400, 1160, 280); // Thu nhỏ từ 1490x460 xuống 1160x280
         mainPanel.add(tablePanel);
         
         // Create table
@@ -255,14 +255,14 @@ public class Form_Promotion extends JPanel {
         );
         tablePromotion.setRowHeight(30);
         
-        // Set column widths
-        tablePromotion.getColumnModel().getColumn(0).setPreferredWidth(50);   // STT
-        tablePromotion.getColumnModel().getColumn(1).setPreferredWidth(120);  // Code
-        tablePromotion.getColumnModel().getColumn(2).setPreferredWidth(300);  // Name
-        tablePromotion.getColumnModel().getColumn(3).setPreferredWidth(120);  // Start
-        tablePromotion.getColumnModel().getColumn(4).setPreferredWidth(120);  // End
-        tablePromotion.getColumnModel().getColumn(5).setPreferredWidth(100);  // Discount
-        tablePromotion.getColumnModel().getColumn(6).setPreferredWidth(150);  // Status
+        // Set column widths - Điều chỉnh để vừa với chiều rộng mới
+        tablePromotion.getColumnModel().getColumn(0).setPreferredWidth(40);   // STT
+        tablePromotion.getColumnModel().getColumn(1).setPreferredWidth(100);  // Code
+        tablePromotion.getColumnModel().getColumn(2).setPreferredWidth(200);  // Name
+        tablePromotion.getColumnModel().getColumn(3).setPreferredWidth(100);  // Start
+        tablePromotion.getColumnModel().getColumn(4).setPreferredWidth(100);  // End
+        tablePromotion.getColumnModel().getColumn(5).setPreferredWidth(80);   // Discount
+        tablePromotion.getColumnModel().getColumn(6).setPreferredWidth(100);  // Status
         
         // Center align for some columns
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -281,18 +281,18 @@ public class Form_Promotion extends JPanel {
         });
         
         JScrollPane scrollPane = new JScrollPane(tablePromotion);
-        scrollPane.setBounds(20, 30, 1450, 370);
+        scrollPane.setBounds(20, 30, 1120, 190); // Thu nhỏ từ 1450x370 xuống 1120x190
         tablePanel.add(scrollPane);
         
         // Action buttons
-        btnEdit = createButton("Edit", 20, 410, 120, 35, WARNING_COLOR, WARNING_HOVER);
-        btnEdit.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\edit.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnEdit = createButton("Edit", 20, 230, 100, 35, WARNING_COLOR, WARNING_HOVER); // Điều chỉnh vị trí
+        btnEdit.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\edit.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnEdit.addActionListener(e -> editSelectedPromotion());
         btnEdit.setEnabled(false);
         tablePanel.add(btnEdit);
         
-        btnDelete = createButton("Delete", 150, 410, 120, 35, DANGER_COLOR, DANGER_HOVER);
-        btnDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnDelete = createButton("Delete", 130, 230, 100, 35, DANGER_COLOR, DANGER_HOVER); // Điều chỉnh vị trí
+        btnDelete.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\delete.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnDelete.addActionListener(e -> deleteSelectedPromotion());
         btnDelete.setEnabled(false);
         tablePanel.add(btnDelete);

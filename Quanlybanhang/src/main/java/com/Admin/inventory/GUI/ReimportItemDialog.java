@@ -1,205 +1,241 @@
 package com.Admin.inventory.GUI;
 
-import com.Admin.inventory.BUS.BUSInventory;
-import com.ComponentandDatabase.Components.CustomDialog;
-import com.ComponentandDatabase.Components.MyButton;
-import com.ComponentandDatabase.Components.MyTextField;
-import static com.ComponentandDatabase.Components.UIConstants.*;
-
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.sql.*;
+import java.util.Objects;
 
+/**
+ * ReimportDialog - Giao diện nhập lại hàng (Reimport)
+ * - Giao diện gọn, có validate.
+ * - Gọi stored procedure sp_ReimportWarehouseItem.
+ *
+ * YÊU CẦU:
+ * - Có sẵn JDBC URL/USER/PASS trong AppConfig (hoặc thay trực tiếp ở getConnection()).
+ * - Bảng Product_Stock đã có dữ liệu Warehouse_Item_ID cần reimport.
+ */
 public class ReimportItemDialog extends JDialog {
-    private JTextField txtWarehouseId, txtProductName, txtCurrentQuantity;
-    private MyTextField txtAdditionalQuantity, txtUnitPrice;
-    private MyButton btnConfirm, btnCancel;
-    private BUSInventory busInventory;
+
+    private JTextField txtWarehouseId;
+    private JSpinner spnQuantity;
+    private JTextField txtUnitPrice;
+    private JTextField txtAdminId;
+    private JTextField txtInvoiceNo; // optional
+    private JButton btnSubmit;
+    private JButton btnCancel;
+    private JLabel lbStatus;
+    
+    // Additional fields for the new constructor
     private String warehouseId;
     private String productName;
     private int currentQuantity;
+
+    public ReimportItemDialog(Frame owner) {
+        super(owner, "Reimport Warehouse Item", true);
+        initComponents();
+        setSize(520, 360);
+        setLocationRelativeTo(owner);
+    }
     
     public ReimportItemDialog(JFrame parent, String warehouseId, String productName, int currentQuantity) {
-        super(parent, "Nhập thêm sản phẩm đã tồn tại", true);
+        super(parent, "Reimport Existing Product", true);
         this.warehouseId = warehouseId;
         this.productName = productName;
         this.currentQuantity = currentQuantity;
-        this.busInventory = new BUSInventory();
-        
         initComponents();
-        setupLayout();
-        setupEventHandlers();
+        setSize(450, 300);
+        setLocationRelativeTo(parent);
     }
-    
+
     private void initComponents() {
-        setSize(500, 400);
-        setLocationRelativeTo(getParent());
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        setResizable(false);
-        
-        // Initialize text fields
-        txtWarehouseId = new JTextField(warehouseId);
-        txtWarehouseId.setEditable(false);
-        txtWarehouseId.setBackground(Color.LIGHT_GRAY);
-        
-        txtProductName = new JTextField(productName);
-        txtProductName.setEditable(false);
-        txtProductName.setBackground(Color.LIGHT_GRAY);
-        
-        txtCurrentQuantity = new JTextField(String.valueOf(currentQuantity));
-        txtCurrentQuantity.setEditable(false);
-        txtCurrentQuantity.setBackground(Color.LIGHT_GRAY);
-        
-        txtAdditionalQuantity = new MyTextField();
-        txtAdditionalQuantity.setHint("Nhập số lượng cần thêm");
-        txtAdditionalQuantity.setTextFont(FONT_CONTENT_MEDIUM);
-        txtAdditionalQuantity.setHintFont(FONT_CONTENT_SMALL);
-        
-        txtUnitPrice = new MyTextField();
-        txtUnitPrice.setHint("Nhập giá nhập mới");
-        txtUnitPrice.setTextFont(FONT_CONTENT_MEDIUM);
-        txtUnitPrice.setHintFont(FONT_CONTENT_SMALL);
-        
-        // Initialize buttons
-        btnConfirm = new MyButton("Xác nhận nhập thêm", 20);
-        btnConfirm.setBackgroundColor(Color.decode("#4CAF50"));
-        btnConfirm.setHoverColor(Color.decode("#45A049"));
-        btnConfirm.setPressedColor(Color.decode("#3D8B40"));
-        btnConfirm.setForeground(Color.WHITE);
-        btnConfirm.setFont(FONT_BUTTON_MEDIUM);
-        
-        btnCancel = new MyButton("Hủy", 20);
-        btnCancel.setBackgroundColor(Color.decode("#F44336"));
-        btnCancel.setHoverColor(Color.decode("#D32F2F"));
-        btnCancel.setPressedColor(Color.decode("#C62828"));
-        btnCancel.setForeground(Color.WHITE);
-        btnCancel.setFont(FONT_BUTTON_MEDIUM);
-    }
-    
-    private void setupLayout() {
-        setLayout(new BorderLayout());
-        
-        // Main panel
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new GridBagLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.WEST;
-        
-        // Title
-        JLabel lblTitle = new JLabel("NHẬP THÊM SẢN PHẨM ĐÃ TỒN TẠI");
-        lblTitle.setFont(FONT_TITLE_LARGE);
-        lblTitle.setForeground(PRIMARY_COLOR);
-        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        mainPanel.add(lblTitle, gbc);
-        
-        // Warehouse ID
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridx = 0; gbc.gridy = 1;
-        mainPanel.add(new JLabel("Mã kho:"), gbc);
-        gbc.gridx = 1;
-        txtWarehouseId.setPreferredSize(new Dimension(200, 30));
-        mainPanel.add(txtWarehouseId, gbc);
-        
-        // Product Name
-        gbc.gridx = 0; gbc.gridy = 2;
-        mainPanel.add(new JLabel("Tên sản phẩm:"), gbc);
-        gbc.gridx = 1;
-        txtProductName.setPreferredSize(new Dimension(200, 30));
-        mainPanel.add(txtProductName, gbc);
-        
-        // Current Quantity
-        gbc.gridx = 0; gbc.gridy = 3;
-        mainPanel.add(new JLabel("Số lượng hiện tại:"), gbc);
-        gbc.gridx = 1;
-        txtCurrentQuantity.setPreferredSize(new Dimension(200, 30));
-        mainPanel.add(txtCurrentQuantity, gbc);
-        
-        // Additional Quantity
-        gbc.gridx = 0; gbc.gridy = 4;
-        mainPanel.add(new JLabel("Số lượng cần thêm:"), gbc);
-        gbc.gridx = 1;
-        txtAdditionalQuantity.setPreferredSize(new Dimension(200, 30));
-        mainPanel.add(txtAdditionalQuantity, gbc);
-        
-        // Unit Price
-        gbc.gridx = 0; gbc.gridy = 5;
-        mainPanel.add(new JLabel("Giá nhập mới:"), gbc);
-        gbc.gridx = 1;
-        txtUnitPrice.setPreferredSize(new Dimension(200, 30));
-        mainPanel.add(txtUnitPrice, gbc);
-        
-        // Buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(btnConfirm);
-        buttonPanel.add(btnCancel);
-        
-        add(mainPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-    }
-    
-    private void setupEventHandlers() {
-        btnConfirm.addActionListener(e -> confirmReimport());
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBorder(new EmptyBorder(16,16,16,16));
+        setContentPane(root);
+
+        // Header
+        JLabel header = new JLabel("Nhập lại hàng vào kho (Reimport)");
+        header.setFont(header.getFont().deriveFont(Font.BOLD, 18f));
+        header.setBorder(new EmptyBorder(0,0,10,0));
+        root.add(header, BorderLayout.NORTH);
+
+        // Form
+        JPanel form = new JPanel();
+        GroupLayout gl = new GroupLayout(form);
+        form.setLayout(gl);
+        gl.setAutoCreateGaps(true);
+        gl.setAutoCreateContainerGaps(true);
+
+        JLabel lbWarehouseId = new JLabel("Warehouse Item ID");
+        txtWarehouseId = new JTextField();
+        txtWarehouseId.setToolTipText("VD: WH001");
+
+        JLabel lbQuantity = new JLabel("Số lượng nhập thêm");
+        spnQuantity = new JSpinner(new SpinnerNumberModel(1, 1, 1_000_000, 1));
+
+        JLabel lbUnitPrice = new JLabel("Giá nhập (tuỳ chọn)");
+        txtUnitPrice = new JTextField();
+        txtUnitPrice.setToolTipText("Bỏ trống nếu giữ nguyên giá nhập gần nhất");
+
+        JLabel lbAdmin = new JLabel("Admin ID");
+        txtAdminId = new JTextField();
+
+        JLabel lbInvoice = new JLabel("Invoice No (tuỳ chọn)");
+        txtInvoiceNo = new JTextField();
+        txtInvoiceNo.setToolTipText("Bỏ trống để hệ thống tự sinh IMyyyymmdd####");
+
+        lbStatus = new JLabel(" ");
+        lbStatus.setForeground(new Color(0x666666));
+
+        btnSubmit = new JButton("Reimport");
+        btnSubmit.addActionListener(e -> onSubmit());
+
+        btnCancel = new JButton("Đóng");
         btnCancel.addActionListener(e -> dispose());
+
+        gl.setHorizontalGroup(gl.createParallelGroup()
+            .addGroup(gl.createSequentialGroup()
+                .addGroup(gl.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                    .addComponent(lbWarehouseId)
+                    .addComponent(lbQuantity)
+                    .addComponent(lbUnitPrice)
+                    .addComponent(lbAdmin)
+                    .addComponent(lbInvoice))
+                .addGroup(gl.createParallelGroup()
+                    .addComponent(txtWarehouseId)
+                    .addComponent(spnQuantity)
+                    .addComponent(txtUnitPrice)
+                    .addComponent(txtAdminId)
+                    .addComponent(txtInvoiceNo)))
+            .addComponent(lbStatus)
+            .addGroup(GroupLayout.Alignment.TRAILING, gl.createSequentialGroup()
+                .addComponent(btnCancel, 120, 120, 120)
+                .addComponent(btnSubmit, 140, 140, 140))
+        );
+
+        gl.setVerticalGroup(gl.createSequentialGroup()
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lbWarehouseId).addComponent(txtWarehouseId))
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lbQuantity).addComponent(spnQuantity))
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lbUnitPrice).addComponent(txtUnitPrice))
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lbAdmin).addComponent(txtAdminId))
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lbInvoice).addComponent(txtInvoiceNo))
+            .addGap(8)
+            .addComponent(lbStatus)
+            .addGap(12)
+            .addGroup(gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(btnCancel)
+                .addComponent(btnSubmit))
+        );
+
+        root.add(form, BorderLayout.CENTER);
     }
-    
-    private void confirmReimport() {
-        try {
-            // Validate input
-            String additionalQtyStr = txtAdditionalQuantity.getText().trim();
-            String unitPriceStr = txtUnitPrice.getText().trim();
-            
-            if (additionalQtyStr.isEmpty() || unitPriceStr.isEmpty()) {
-                CustomDialog.showError("Vui lòng nhập đầy đủ thông tin!");
+
+    private void onSubmit() {
+        String whId = txtWarehouseId.getText().trim();
+        int qty = (int) spnQuantity.getValue();
+        String adminId = txtAdminId.getText().trim();
+        String invoiceNo = txtInvoiceNo.getText().trim();
+        BigDecimal unitPrice = null;
+
+        if (whId.isEmpty()) {
+            showError("Vui lòng nhập Warehouse Item ID");
+            return;
+        }
+        if (adminId.isEmpty()) {
+            showError("Vui lòng nhập Admin ID");
+            return;
+        }
+        String priceStr = txtUnitPrice.getText().trim();
+        if (!priceStr.isEmpty()) {
+            try {
+                unitPrice = new BigDecimal(priceStr);
+                if (unitPrice.compareTo(BigDecimal.ZERO) < 0) {
+                    showError("Giá nhập phải >= 0");
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                showError("Giá nhập không hợp lệ");
                 return;
             }
-            
-            int additionalQuantity = Integer.parseInt(additionalQtyStr);
-            BigDecimal unitPrice = new BigDecimal(unitPriceStr);
-            
-            if (additionalQuantity <= 0) {
-                CustomDialog.showError("Số lượng cần thêm phải lớn hơn 0!");
-                return;
-            }
-            
-            if (unitPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                CustomDialog.showError("Giá nhập phải lớn hơn 0!");
-                return;
-            }
-            
-            // Confirm dialog
-            boolean confirm = CustomDialog.showOptionPane(
-                "Xác nhận nhập thêm",
-                "Bạn có chắc chắn muốn nhập thêm " + additionalQuantity + " sản phẩm với giá " + unitPrice + " VND?",
-                UIManager.getIcon("OptionPane.questionIcon"),
-                Color.decode("#FF9800")
-            );
-            
-            if (confirm) {
-                // Call business logic
-                boolean success = busInventory.reimportWarehouseItem(warehouseId, additionalQuantity, unitPrice);
-                
-                if (success) {
-                    CustomDialog.showSuccess("Nhập thêm sản phẩm thành công!\n" +
-                        "Mã kho: " + warehouseId + "\n" +
-                        "Số lượng thêm: " + additionalQuantity + "\n" +
-                        "Tổng số lượng sau khi nhập: " + (currentQuantity + additionalQuantity));
-                    dispose();
+        }
+
+        // Gọi proc
+        try (Connection cn = getConnection();
+             CallableStatement cs = cn.prepareCall("{call dbo.sp_ReimportWarehouseItem(?,?,?,?,?)}")) {
+
+            cs.setString(1, whId);
+            cs.setInt(2, qty);
+            if (unitPrice == null) cs.setNull(3, Types.DECIMAL); else cs.setBigDecimal(3, unitPrice);
+            cs.setString(4, adminId);
+            if (invoiceNo.isEmpty()) cs.setNull(5, Types.VARCHAR); else cs.setString(5, invoiceNo);
+
+            boolean hasResult = cs.execute();
+            String result = "SUCCESS";
+            String message = "Reimport thành công";
+            String returnedInvoice = null;
+
+            // Đọc ResultSet đầu tiên (nếu proc SELECT)
+            if (hasResult) {
+                try (ResultSet rs = cs.getResultSet()) {
+                    if (rs.next()) {
+                        result = Objects.toString(rs.getString("Result"), result);
+                        message = Objects.toString(rs.getString("Message"), message);
+                        returnedInvoice = rs.getString("Invoice_No");
+                    }
                 }
             }
-            
-        } catch (NumberFormatException e) {
-            CustomDialog.showError("Vui lòng nhập số hợp lệ cho số lượng và giá!");
-        } catch (Exception e) {
-            CustomDialog.showError("Lỗi khi nhập thêm sản phẩm: " + e.getMessage());
-            e.printStackTrace();
+
+            if ("SUCCESS".equalsIgnoreCase(result)) {
+                showInfo((returnedInvoice == null)
+                        ? message
+                        : (message + " | Invoice: " + returnedInvoice));
+                dispose();
+            } else {
+                showError(message);
+            }
+        } catch (SQLException ex) {
+            String msg = ex.getMessage();
+            if (msg != null && msg.contains("WAREHOUSE_NOT_FOUND")) {
+                showError("Không tìm thấy Warehouse ID: " + whId);
+            } else if (msg != null && msg.contains("ADMIN_NOT_FOUND")) {
+                showError("Admin ID không hợp lệ: " + adminId);
+            } else {
+                showError("Lỗi reimport: " + msg);
+            }
         }
+    }
+
+    private void showError(String m) {
+        lbStatus.setForeground(new Color(0xCC3333));
+        lbStatus.setText(m);
+        JOptionPane.showMessageDialog(this, m, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showInfo(String m) {
+        lbStatus.setForeground(new Color(0x2E7D32));
+        lbStatus.setText(m);
+        JOptionPane.showMessageDialog(this, m, "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private Connection getConnection() throws SQLException {
+        // TODO: Sửa lại theo config của dự án bạn
+        // Ví dụ:
+        // String url = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyKho;encrypt=false";
+        // return DriverManager.getConnection(url, "sa", "your_password");
+        String url = System.getProperty("db.url");
+        String user = System.getProperty("db.user");
+        String pass = System.getProperty("db.pass");
+        return DriverManager.getConnection(url, user, pass);
+    }
+
+    // Demo mở dialog
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new ReimportItemDialog(null).setVisible(true));
     }
 }

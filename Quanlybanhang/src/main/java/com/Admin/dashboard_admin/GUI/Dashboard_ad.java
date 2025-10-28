@@ -137,7 +137,7 @@ public class Dashboard_ad extends JFrame {
     bg.add(wrapper, BorderLayout.CENTER);
 
     // --- THÊM FORM ---
-    contentPanel.add(new Form_Home(), "Home");
+    contentPanel.add(new Form_Home(this), "Home");
     contentPanel.add(new Form_Category(), "Category");
     contentPanel.add(new Form_Order(), "Order");
     contentPanel.add(new Form_Customer(), "Customer");

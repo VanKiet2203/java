@@ -11,7 +11,6 @@ import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.ComponentandDatabase.Components.CustomDialog;
 import java.text.SimpleDateFormat;
 
-import java.util.Locale;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -21,10 +20,17 @@ import java.text.ParseException;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.table.DefaultTableModel;
 import net.miginfocom.swing.MigLayout;
 import static com.ComponentandDatabase.Components.UIConstants.*;
+import java.awt.GridLayout;
+import java.awt.FlowLayout;
+import java.awt.BorderLayout;
 
 
 public class Bill_ExportDetails extends javax.swing.JFrame {
@@ -36,51 +42,169 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
      private MyTable tableBillDetail;
      private BUS_ExportBill busExportBill;
      private javax.swing.JLayeredPane bg;
+     private JScrollPane contentScroll;
  
      private DefaultTableModel model;
     public Bill_ExportDetails() {
         initComponents();
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
         setAlwaysOnTop(true); // Luôn hiển thị trên cùng
+        setSize(1400, 1000); // Tăng kích thước cửa sổ mặc định
+        setLocationRelativeTo(null); // Căn giữa màn hình
         init();
     }
     
-    // Method để thiết lập thông tin hóa đơn
-    public void setOrderInfo(String orderNo, String customerID, String orderDate, String totalAmount) {
-        // Có thể sử dụng thông tin này để hiển thị chi tiết hóa đơn
-        // Ví dụ: cập nhật title hoặc load dữ liệu chi tiết
+    // Set bằng Invoice_No + Admin_ID
+    public void setInvoiceInfo(String invoiceNo, String adminId) {
         if (lblTitle != null) {
-            lblTitle.setText("CHI TIẾT HÓA ĐƠN - " + orderNo);
+            lblTitle.setText("CHI TIẾT HÓA ĐƠN - " + invoiceNo);
         }
-        
-        // Load chi tiết hóa đơn dựa trên orderNo
-        loadOrderDetails(orderNo);
+        loadBillDetails(invoiceNo);
     }
-    
-    // Method để load chi tiết hóa đơn
-    private void loadOrderDetails(String orderNo) {
+
+    // Load theo Invoice_No - chỉ hiển thị chi tiết của hóa đơn được chọn
+    private void loadBillDetails(String invoiceNo) {
         try {
             busExportBill = new BUS_ExportBill();
-            List<DTO_BillExportedDetail> allDetails = busExportBill.getAllBillDetails();
-            
-            // Clear table
-            model.setRowCount(0);
-            
-            // Filter và add data to table
-            for (DTO_BillExportedDetail detail : allDetails) {
-                if (detail.getInvoiceNo().equals(orderNo)) {
-                    model.addRow(new Object[]{
-                        detail.getProductId(),
-                        "Product Name", // Có thể cần lấy từ bảng product
-                        detail.getQuantity(),
-                        detail.getUnitPrice(),
-                        detail.getTotalPriceAfter()
-                    });
-                }
+            List<DTO_BillExportedDetail> details = busExportBill.getBillDetailsByInvoice(invoiceNo);
+            if (details == null || details.isEmpty()) {
+                CustomDialog.showError("Không tìm thấy chi tiết hóa đơn cho Invoice: " + invoiceNo);
+                return;
             }
+
+            JPanel page = new JPanel();
+            page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
+            page.setBackground(Color.WHITE);
+            page.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+                BorderFactory.createEmptyBorder(24, 32, 24, 32)
+            ));
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
+            JLabel title = new JLabel("SALES INVOICE", JLabel.CENTER);
+            title.setFont(new Font("Arial", Font.BOLD, 24));
+            title.setForeground(Color.decode("#2C3E50"));
+            title.setAlignmentX(0.5f);
+            page.add(title);
+            page.add(Box.createVerticalStrut(16));
+
+            DTO_BillExportedDetail first = details.get(0);
+            page.add(infoRow("Invoice No:", first.getInvoiceNo()));
+            page.add(infoRow("Admin ID:", first.getAdminId()));
+            page.add(infoRow("Customer ID:", first.getCustomerId()));
+            page.add(infoRow("Date Exported:", dateFormat.format(first.getDateExported())));
+            page.add(infoRow("Time Exported:", timeFormat.format(first.getTimeExported())));
+            page.add(separator());
+
+            JLabel prodTitle = new JLabel("PRODUCTS", JLabel.LEFT);
+            prodTitle.setFont(new Font("Arial", Font.BOLD, 16));
+            prodTitle.setForeground(Color.decode("#34495E"));
+            page.add(prodTitle);
+            page.add(Box.createVerticalStrut(12));
+
+            java.math.BigDecimal grandBefore = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal grandAfter = java.math.BigDecimal.ZERO;
+
+            for (DTO_BillExportedDetail d : details) {
+                String warrantyText = busExportBill.getWarranty(d.getProductId());
+
+                JPanel card = new JPanel(new GridLayout(2, 4, 12, 8));
+                card.setBackground(Color.decode("#F8F9FA"));
+                card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.decode("#DEE2E6"), 1),
+                    BorderFactory.createEmptyBorder(16, 16, 16, 16)
+                ));
+
+                card.add(field("Product ID", d.getProductId()));
+                card.add(field("Unit Price", String.valueOf(d.getUnitPrice())));
+                card.add(field("Quantity", String.valueOf(d.getQuantity())));
+                card.add(field("Warranty", warrantyText));
+
+                String promoCode = (d.getPromotionCode() != null && !d.getPromotionCode().isEmpty()) ? d.getPromotionCode() : "N/A";
+                card.add(field("Promotion Code", promoCode));
+                card.add(field("Discount %", d.getDiscountPercent() + "%"));
+                card.add(field("Total Before", String.valueOf(d.getTotalPriceBefore())));
+                card.add(field("Total After", String.valueOf(d.getTotalPriceAfter())));
+
+                page.add(card);
+                page.add(Box.createVerticalStrut(12));
+
+                grandBefore = grandBefore.add(d.getTotalPriceBefore());
+                grandAfter = grandAfter.add(d.getTotalPriceAfter());
+            }
+
+            page.add(separator());
+            page.add(Box.createVerticalStrut(8));
+            
+            // Tạo panel tổng tiền với style đặc biệt
+            JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            totalPanel.setBackground(Color.WHITE);
+            totalPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+            
+            JLabel subtotalLabel = new JLabel("Subtotal: ");
+            subtotalLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            subtotalLabel.setForeground(Color.decode("#7F8C8D"));
+            JLabel subtotalValue = new JLabel(String.valueOf(grandBefore));
+            subtotalValue.setFont(new Font("Arial", Font.PLAIN, 14));
+            subtotalValue.setForeground(Color.decode("#2C3E50"));
+            
+            totalPanel.add(subtotalLabel);
+            totalPanel.add(subtotalValue);
+            totalPanel.add(Box.createHorizontalStrut(20));
+            
+            JLabel totalLabel = new JLabel("Total Pay: ");
+            totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            totalLabel.setForeground(Color.decode("#E74C3C"));
+            JLabel totalValue = new JLabel(String.valueOf(grandAfter));
+            totalValue.setFont(new Font("Arial", Font.BOLD, 16));
+            totalValue.setForeground(Color.decode("#E74C3C"));
+            
+            totalPanel.add(totalLabel);
+            totalPanel.add(totalValue);
+            page.add(totalPanel);
+
+            contentScroll.setViewportView(page);
         } catch (Exception e) {
             CustomDialog.showError("Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
         }
+    }
+
+    private JPanel infoRow(String label, String value) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 4));
+        row.setBackground(Color.WHITE);
+        JLabel l = new JLabel(label);
+        l.setFont(new Font("Arial", Font.BOLD, 13));
+        l.setForeground(Color.decode("#7F8C8D"));
+        JLabel v = new JLabel(value);
+        v.setFont(new Font("Arial", Font.PLAIN, 13));
+        v.setForeground(Color.decode("#2C3E50"));
+        row.add(l);
+        row.add(v);
+        return row;
+    }
+
+    private JSeparator separator() {
+        JSeparator s = new JSeparator();
+        s.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        s.setForeground(Color.decode("#BDC3C7"));
+        return s;
+    }
+
+    private JPanel field(String label, String value) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(Color.WHITE);
+        p.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        JLabel l = new JLabel(label);
+        l.setFont(new Font("Arial", Font.PLAIN, 11));
+        l.setForeground(Color.decode("#95A5A6"));
+        JLabel v = new JLabel(value);
+        v.setFont(new Font("Arial", Font.BOLD, 13));
+        v.setForeground(Color.decode("#2C3E50"));
+        p.add(l, BorderLayout.NORTH);
+        p.add(v, BorderLayout.CENTER);
+        return p;
     }
 
    public void init() {
@@ -108,22 +232,13 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         model = new DefaultTableModel(columnNames, 0);
 
 
-        // 5️⃣ Tạo bảng với style chuẩn
-        tableBillDetail = createStyledTable(model);
-        tableBillDetail.setRowHeight(30);
-
-        JScrollPane scrollPane = MyTable.createScrollPane(tableBillDetail, 10, 150, 950, 630);
-
-        // 7️⃣ Tùy chỉnh thanh cuộn
-        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-        scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
-         SwingUtilities.invokeLater(() -> {
-             loadBillDetailsData();
-              tableBillDetail.adjustColumnWidths();        // Căn chỉnh cột
-          });          
-        
-        
-        bg.add(scrollPane, "pos 10 140, w 1430!, h 630!");
+        // 5️⃣ Thay thế bảng bằng container scroll cho nội dung dạng trang
+        contentScroll = new JScrollPane();
+        contentScroll.setBorder(null);
+        contentScroll.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+        contentScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+        contentScroll.setViewportBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        bg.add(contentScroll, "pos 10 140, w 1360!, h 820!");
         
        
             // TextField search
@@ -192,60 +307,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
      
    }
 
-    public void loadBillDetailsData() {
-       // Xóa dữ liệu cũ trong model
-       model.setRowCount(0);
-
-       // Lấy dữ liệu từ BUS
-       busExportBill = new BUS_ExportBill();
-       List<DTO_BillExportedDetail> billDetails = busExportBill.getAllBillDetails();
-
-       // Định dạng cho ngày và giờ
-       SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-       SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.ENGLISH);
-
-       // Định dạng tiền tệ
-      
-
-       // Thêm dữ liệu mới từ danh sách DTO
-       for (DTO_BillExportedDetail detail : billDetails) {
-           // Get promotion name
-           String promotionName = "N/A";
-           if (detail.getPromotionCode() != null && !detail.getPromotionCode().isEmpty()) {
-               try {
-                   com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
-                   com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.getPromotionByCode(detail.getPromotionCode());
-                   if (promotion != null) {
-                       promotionName = promotion.getPromotionName();
-                   }
-               } catch (Exception e) {
-                   // Use default value if error
-               }
-           }
-           
-           Object[] rowData = new Object[]{
-               detail.getInvoiceNo(),
-               detail.getAdminId(),
-               detail.getCustomerId(),
-               detail.getProductId(),
-               detail.getUnitPrice(),
-               detail.getQuantity(),
-               detail.getPromotionCode() != null ? detail.getPromotionCode() : "N/A",
-               promotionName,
-               detail.getDiscountPercent() + "%",
-               detail.getTotalPriceBefore(),
-               detail.getTotalPriceAfter(),
-               dateFormat.format(detail.getDateExported()),
-               timeFormat.format(detail.getTimeExported())
-           };
-           model.addRow(rowData);
-       }
-    
-    // Căn chỉnh cột sau khi load dữ liệu
-    SwingUtilities.invokeLater(() -> {
-        tableBillDetail.adjustColumnWidths();
-    });
-} 
+    // Method này đã được thay thế bằng loadBillDetails(String invoiceNo)
+    // để chỉ load dữ liệu của hóa đơn được chọn 
     private void updateTableData(List<DTO_BillExportedDetail> data) {
         
            // 1️⃣ Tên cột
@@ -307,8 +370,8 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         tableBillDetail.adjustColumnWidths();
     }
     private void Refresh(){
-        loadBillDetailsData();
-        tableBillDetail.adjustColumnWidths();
+        // Không cần refresh vì dữ liệu đã được load theo hóa đơn cụ thể
+        // Chỉ clear search
         cmbSearch.setSelectedIndex(0);
         txtSearch.setText(null);
     }
@@ -385,11 +448,11 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         bg.setLayout(bgLayout);
         bgLayout.setHorizontalGroup(
             bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1447, Short.MAX_VALUE)
+            .addGap(0, 1400, Short.MAX_VALUE)
         );
         bgLayout.setVerticalGroup(
             bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 800, Short.MAX_VALUE)
+            .addGap(0, 1000, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());

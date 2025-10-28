@@ -9,6 +9,7 @@ public class DTO_BillExportedDetail {
     private String adminId;
     private String customerId;
     private String productId;
+    private BigDecimal unitPriceBefore;
     private BigDecimal unitPrice;
     private int quantity;
     private BigDecimal discountPercent;
@@ -23,13 +24,14 @@ public class DTO_BillExportedDetail {
     public DTO_BillExportedDetail() {}
 
     public DTO_BillExportedDetail(String invoiceNo, String adminId, String customerId, String productId,
-                                  BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
+                                  BigDecimal unitPriceBefore, BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
                                   BigDecimal totalPriceBefore, BigDecimal totalPriceAfter,
                                   Date dateExported, Time timeExported, Date startDate, Date endDate) {
         this.invoiceNo = invoiceNo;
         this.adminId = adminId;
         this.customerId = customerId;
         this.productId = productId;
+        this.unitPriceBefore = unitPriceBefore;
         this.unitPrice = unitPrice;
         this.quantity = quantity;
         this.discountPercent = discountPercent;
@@ -42,13 +44,14 @@ public class DTO_BillExportedDetail {
     }
     
     public DTO_BillExportedDetail(String invoiceNo, String adminId, String customerId, String productId,
-                                  BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
+                                  BigDecimal unitPriceBefore, BigDecimal unitPrice, int quantity, BigDecimal discountPercent,
                                   BigDecimal totalPriceBefore, BigDecimal totalPriceAfter,
                                   Date dateExported, Time timeExported, String promotionCode, Date startDate, Date endDate) {
         this.invoiceNo = invoiceNo;
         this.adminId = adminId;
         this.customerId = customerId;
         this.productId = productId;
+        this.unitPriceBefore = unitPriceBefore;
         this.unitPrice = unitPrice;
         this.quantity = quantity;
         this.discountPercent = discountPercent;
@@ -69,6 +72,8 @@ public class DTO_BillExportedDetail {
     public void setCustomerId(String customerId) { this.customerId = customerId; }
     public String getProductId() { return productId; }
     public void setProductId(String productId) { this.productId = productId; }
+    public BigDecimal getUnitPriceBefore() { return unitPriceBefore; }
+    public void setUnitPriceBefore(BigDecimal unitPriceBefore) { this.unitPriceBefore = unitPriceBefore; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public int getQuantity() { return quantity; }

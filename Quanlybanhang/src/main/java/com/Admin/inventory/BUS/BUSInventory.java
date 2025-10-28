@@ -224,6 +224,15 @@ public class BUSInventory {
         }
     }
     
+    public void exportPDFBillImport(String filePath, String billId) {
+        try {
+            daoInventory.exportPDFBillImport(filePath, billId);
+            CustomDialog.showSuccess("PDF bill export successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("PDF bill export failed: " + e.getMessage());
+        }
+    }
+    
     // Method để nhập lại Warehouse Item (cộng thêm số lượng)
     public boolean reimportWarehouseItem(String warehouseItemId, int additionalQuantity, java.math.BigDecimal unitPrice) {
         try {

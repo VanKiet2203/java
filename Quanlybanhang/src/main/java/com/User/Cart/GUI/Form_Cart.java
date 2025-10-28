@@ -1,6 +1,5 @@
 package com.User.Cart.GUI;
 
-import com.Admin.product.DTO.DTOProduct;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.MyRadioButton;
@@ -18,8 +17,6 @@ import com.User.Cart.BUS.BUSCart;
 import com.User.Cart.DTO.DTOCart;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.net.URI;
@@ -33,7 +30,7 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class Form_Cart extends JPanel implements CartUpdateListener {
-    private JPanel panel, panelShow;
+    private JPanel panelShow;
     private JLabel lblPayment;
     private JScrollPane scrollShow;
     private productBUS proBUS;
@@ -59,14 +56,185 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     }
 
     private void initComponents() {
-        setLayout(null);
-        setPreferredSize(new Dimension(1530, 860));
-        setBackground(Color.WHITE);
-         
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(1200, 800));
+        setBackground(Color.decode("#F8F9FA"));
         
+        // Tạo header section
+        createHeaderSection();
+        
+        // Tạo main content area
+        createMainContentArea();
+        
+        // Tạo footer section
+        createFooterSection();
     }
       public void setOrderUpdateListener(OrderUpdateListener listener) {
         this.orderUpdateListener = listener;
+    }
+    
+    // Tạo header section với title và action buttons
+    private void createHeaderSection() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setPreferredSize(new Dimension(0, 80));
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, Color.decode("#E0E0E0")),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
+        
+        // Title section
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Shopping Cart");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(Color.decode("#2C3E50"));
+        
+        JLabel subtitleLabel = new JLabel("Manage your selected items");
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setForeground(Color.decode("#7F8C8D"));
+        subtitleLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 0));
+        
+        titlePanel.add(titleLabel);
+        titlePanel.add(subtitleLabel);
+        
+        // Action buttons section
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        
+        bntSelectAll = new MyButton("Select All", 15);
+        bntSelectAll.setBackgroundColor(Color.decode("#27AE60"));
+        bntSelectAll.setHoverColor(Color.decode("#2ECC71"));
+        bntSelectAll.setPressedColor(Color.decode("#229954"));
+        bntSelectAll.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        bntSelectAll.setForeground(Color.WHITE);
+        bntSelectAll.setPreferredSize(new Dimension(120, 40));
+        bntSelectAll.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        bntSelectAll.addActionListener(e -> selectAllProducts());
+        
+        bntClearSelection = new MyButton("Clear", 15);
+        bntClearSelection.setBackgroundColor(Color.decode("#E67E22"));
+        bntClearSelection.setHoverColor(Color.decode("#F39C12"));
+        bntClearSelection.setPressedColor(Color.decode("#D68910"));
+        bntClearSelection.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        bntClearSelection.setForeground(Color.WHITE);
+        bntClearSelection.setPreferredSize(new Dimension(100, 40));
+        bntClearSelection.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        bntClearSelection.addActionListener(e -> clearSelection());
+        
+        buttonPanel.add(bntSelectAll);
+        buttonPanel.add(bntClearSelection);
+        
+        headerPanel.add(titlePanel, BorderLayout.WEST);
+        headerPanel.add(buttonPanel, BorderLayout.EAST);
+        
+        add(headerPanel, BorderLayout.NORTH);
+    }
+    
+    // Tạo main content area
+    private void createMainContentArea() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+        
+        // Tạo scroll pane cho products
+        panelShow = new JPanel();
+        panelShow.setLayout(new GridLayout(0, 3, 15, 15));
+        panelShow.setBackground(Color.WHITE);
+        
+        scrollShow = new JScrollPane(panelShow);
+        scrollShow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollShow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollShow.setBorder(BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1));
+        scrollShow.setBackground(Color.WHITE);
+        
+        mainPanel.add(scrollShow, BorderLayout.CENTER);
+        add(mainPanel, BorderLayout.CENTER);
+    }
+    
+    // Tạo footer section với payment và order
+    private void createFooterSection() {
+        JPanel footerPanel = new JPanel(new BorderLayout());
+        footerPanel.setPreferredSize(new Dimension(0, 120));
+        footerPanel.setBackground(Color.WHITE);
+        footerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, Color.decode("#E0E0E0")),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        
+        // Payment section
+        JPanel paymentSection = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        paymentSection.setOpaque(false);
+        
+        lblPayment = new JLabel("Payment Method:");
+        lblPayment.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblPayment.setForeground(Color.decode("#2C3E50"));
+        
+        // Momo payment option
+        JPanel momoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        momoPanel.setBackground(Color.WHITE);
+        momoPanel.setBorder(BorderFactory.createLineBorder(Color.decode("#4A90E2"), 2));
+        momoPanel.setPreferredSize(new Dimension(180, 50));
+        
+        JLabel momoIcon = new JLabel(loadScaledIcon("/Icons/User_icon/momo.png", 25, 25));
+        momo = new MyRadioButton("Momo", null, 0, "Select Momo");
+        momo.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        momo.setForeground(Color.decode("#2C3E50"));
+        momo.addActionListener(e -> {
+            if (momo.isSelected()) {
+                try {
+                    Desktop.getDesktop().browse(new URI("https://momo.vn"));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    CustomDialog.showError("Can't open the Momo website !");
+                }
+            }
+        });
+        
+        momoPanel.add(momoIcon);
+        momoPanel.add(momo);
+        
+        // Cash payment option
+        JPanel cashPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        cashPanel.setBackground(Color.WHITE);
+        cashPanel.setBorder(BorderFactory.createLineBorder(Color.decode("#27AE60"), 2));
+        cashPanel.setPreferredSize(new Dimension(180, 50));
+        
+        JLabel cashIcon = new JLabel(loadScaledIcon("/Icons/User_icon/cash.png", 25, 25));
+        cash = new MyRadioButton("Cash", null, 0, "Select Cash");
+        cash.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        cash.setForeground(Color.decode("#2C3E50"));
+        
+        cashPanel.add(cashIcon);
+        cashPanel.add(cash);
+        
+        // Button group
+        ButtonGroup group = new ButtonGroup();
+        group.add(momo);
+        group.add(cash);
+        
+        paymentSection.add(lblPayment);
+        paymentSection.add(momoPanel);
+        paymentSection.add(cashPanel);
+        
+        // Order button
+        bntOrder = new MyButton("Place Order Now", 20);
+        bntOrder.setBackgroundColor(Color.decode("#E74C3C"));
+        bntOrder.setPressedColor(Color.decode("#C0392B"));
+        bntOrder.setHoverColor(Color.decode("#EC7063"));
+        bntOrder.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        bntOrder.setForeground(Color.WHITE);
+        bntOrder.setPreferredSize(new Dimension(180, 50));
+        bntOrder.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        bntOrder.addActionListener((e) -> {
+            Order();
+        });
+        
+        footerPanel.add(paymentSection, BorderLayout.WEST);
+        footerPanel.add(bntOrder, BorderLayout.EAST);
+        
+        add(footerPanel, BorderLayout.SOUTH);
     }
     
     
@@ -93,128 +261,57 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     }
 
     private void initProductDisplayArea() {
-        panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860);
-        panel.setBackground(Color.WHITE);
-        add(panel);
-
-        // Sử dụng GridLayout thay vì FlowLayout
-        panelShow = new JPanel(new GridLayout(0, 4, 5, 8));
-        panelShow.setBackground(Color.WHITE);
-        panelShow.setBorder(null);
-
-        // Thêm các nút Select All và Clear Selection
-        bntSelectAll = new MyButton("✅ Select All", 10);
-        bntSelectAll.setBounds(20, 10, 120, 35);
-        bntSelectAll.setBackgroundColor(Color.decode("#4CAF50"));
-        bntSelectAll.setHoverColor(Color.decode("#45A049"));
-        bntSelectAll.setForeground(Color.WHITE);
-        bntSelectAll.setFont(new Font("Arial", Font.BOLD, 12));
-        bntSelectAll.addActionListener(e -> selectAllProducts());
-        panel.add(bntSelectAll);
-
-        bntClearSelection = new MyButton("❌ Clear Selection", 10);
-        bntClearSelection.setBounds(150, 10, 140, 35);
-        bntClearSelection.setBackgroundColor(Color.decode("#FF9800"));
-        bntClearSelection.setHoverColor(Color.decode("#F57C00"));
-        bntClearSelection.setForeground(Color.WHITE);
-        bntClearSelection.setFont(new Font("Arial", Font.BOLD, 12));
-        bntClearSelection.addActionListener(e -> clearSelection());
-        panel.add(bntClearSelection);
-
-        scrollShow = new JScrollPane(panelShow);
-        scrollShow.setBounds(0, 50, 1250, 500);
-        scrollShow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollShow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollShow.setBorder(null);
-        panel.add(scrollShow); 
-        
-        
-      lblPayment= new JLabel("Payment: ");
-      lblPayment.setFont(new Font("sansserif", Font.BOLD, 18));
-      lblPayment.setForeground(Color.BLACK);
-      lblPayment.setBounds(350, 580, 100, 35);
-      panel.add(lblPayment);
-
-                    // Momo icon resized
-      JLabel momoIcon = new JLabel(loadScaledIcon("/Icons/User_icon/momo.png", 30, 30));
-      momoIcon.setBounds(480, 580, 30, 30);
-      panel.add(momoIcon);
-
-      // Radio button
-      momo = new MyRadioButton("Momo", null, 0, "Select Momo");
-      momo.setBounds(520, 580, 150, 30);
-      momo.addActionListener(e -> {
-        if (momo.isSelected()) {
-            try {
-                Desktop.getDesktop().browse(new URI("https://momo.vn"));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-               CustomDialog.showError("Can't open the Momo website !");
-            }
-        }
-    });
-
-      panel.add(momo);
-
-      // Cash icon resized
-      JLabel cashIcon = new JLabel(loadScaledIcon("/Icons/User_icon/cash.png", 30, 30));
-      cashIcon.setBounds(640, 580, 30, 30);
-      panel.add(cashIcon);
-
-      // Radio button
-      cash = new MyRadioButton("Cash", null, 0, "Select Cash");
-      cash.setBounds(680, 580, 150, 30);
-      panel.add(cash);
-      
-            // Nhóm 2 radio button lại để chỉ chọn được 1 cái
-      ButtonGroup group = new ButtonGroup();
-      group.add(momo);
-      group.add(cash);
-
-       
-     bntOrder = new MyButton("Order", 20);
-     bntOrder.setBackgroundColor(Color.decode("#FFA500"));
-     bntOrder.setPressedColor(Color.decode("#FF7F50"));
-     bntOrder.setHoverColor(Color.decode("#FFCC66"));
-     bntOrder.setFont(new Font("Times New Roman", Font.BOLD, 16));
-     bntOrder.setForeground(Color.WHITE);
-     bntOrder.setBounds(520, 650, 130, 35);
-     bntOrder.addActionListener((e) -> {
-         Order();
-     });
-     panel.add(bntOrder);
- }
+        // Method này không cần thiết nữa vì layout đã được tạo trong initComponents
+        // Giữ lại để tương thích với code cũ
+    }
 
     
     public void displayProducts(ArrayList<productDTO> products) {
         panelShow.removeAll();
+        panelShow.setLayout(new GridLayout(0, 3, 15, 15));
 
-          if (products.isEmpty()) {
-            // Tạm thời đặt layout thành null để có thể sử dụng setBounds
-            panelShow.setBorder(null);
-            panelShow.setLayout(null);
+        if (products.isEmpty()) {
+            // Thiết kế empty cart với layout mới
+            JPanel emptyPanel = new JPanel(new BorderLayout());
+            emptyPanel.setBackground(Color.WHITE);
+            emptyPanel.setBorder(BorderFactory.createEmptyBorder(60, 60, 60, 60));
 
+            // Icon và text container
+            JPanel contentPanel = new JPanel();
+            contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+            contentPanel.setOpaque(false);
+            contentPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            JPanel centerPanel = new JPanel();
-            centerPanel.setLayout(new BorderLayout()); // Sử dụng BorderLayout để căn giữa label
+            // Icon lớn
+            JLabel emptyIcon = new JLabel("🛒", SwingConstants.CENTER);
+            emptyIcon.setFont(new Font("Segoe UI", Font.PLAIN, 80));
+            emptyIcon.setForeground(Color.decode("#4A90E2"));
+            emptyIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+            emptyIcon.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+            
+            // Text chính
+            JLabel noProducts = new JLabel("Your Shopping Cart is Empty", SwingConstants.CENTER);
+            noProducts.setFont(new Font("Segoe UI", Font.BOLD, 32));
+            noProducts.setForeground(Color.decode("#2C3E50"));
+            noProducts.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            // Text phụ
+            JLabel subText = new JLabel("Browse our products and add items to your cart to get started", SwingConstants.CENTER);
+            subText.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+            subText.setForeground(Color.decode("#7F8C8D"));
+            subText.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            JLabel noProducts = new JLabel("Your cart is empty", SwingConstants.CENTER);
-            noProducts.setFont(new Font("Arial", Font.BOLD, 20));
+            contentPanel.add(emptyIcon);
+            contentPanel.add(Box.createVerticalStrut(20));
+            contentPanel.add(noProducts);
+            contentPanel.add(Box.createVerticalStrut(15));
+            contentPanel.add(subText);
 
-            // Thêm label vào centerPanel
-            centerPanel.add(noProducts, BorderLayout.CENTER);
-
-            // Đặt vị trí và kích thước theo ý muốn
-            centerPanel.setBounds(500, 200, 200, 50);
-            centerPanel.setBackground(Color.WHITE);
-
-            panelShow.add(centerPanel);
+            emptyPanel.add(contentPanel, BorderLayout.CENTER);
+            panelShow.add(emptyPanel);
 
         } else {
-             panelShow.setLayout(new GridLayout(0, 4, 5, 8));
-            // Không cần productsContainer nữa vì GridLayout tự động xuống dòng
+            // Hiển thị sản phẩm với grid layout
             for (productDTO product : products) {
                 JPanel productPanel = createProductPanel(product);
                 panelShow.add(productPanel);
@@ -227,34 +324,35 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
 
      
    private JPanel createProductPanel(productDTO product) {
-    JPanel panelcreate = new JPanel(new BorderLayout(3, 3));
-        panelcreate.setPreferredSize(new Dimension(300, 280));
+    JPanel panelcreate = new JPanel(new BorderLayout(8, 8));
+        panelcreate.setPreferredSize(new Dimension(300, 380));
         panelcreate.setBackground(Color.WHITE);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
 
-        // Checkbox để chọn sản phẩm
-        JCheckBox selectCheckbox = new JCheckBox("Select for Order");
-        selectCheckbox.setFont(new Font("Arial", Font.BOLD, 12));
-        selectCheckbox.setForeground(Color.decode("#2E7D32"));
+        // Checkbox để chọn sản phẩm với thiết kế hiện đại
+        JCheckBox selectCheckbox = new JCheckBox("✓ Select for Order");
+        selectCheckbox.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        selectCheckbox.setForeground(Color.decode("#27AE60"));
         selectCheckbox.setBackground(Color.WHITE);
+        selectCheckbox.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
         productCheckboxes.add(selectCheckbox);
         
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(Color.WHITE);
         topPanel.add(selectCheckbox, BorderLayout.WEST);
 
-        // Product Image
+        // Product Image với thiết kế hiện đại
         ImageIcon icon = new ImageIcon(product.getImage());
-        Image img = icon.getImage().getScaledInstance(180, 120, Image.SCALE_SMOOTH);
+        Image img = icon.getImage().getScaledInstance(200, 140, Image.SCALE_SMOOTH);
         JLabel imageLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
         imageLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
         ));
-        imageLabel.setBackground(Color.decode("#F8F9FA"));
+        imageLabel.setBackground(Color.decode("#FAFAFA"));
         imageLabel.setOpaque(true);
         topPanel.add(imageLabel, BorderLayout.CENTER);
         panelcreate.add(topPanel, BorderLayout.NORTH);
@@ -264,25 +362,26 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         detailsPanel.setBackground(Color.WHITE);
         detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
-        // Product Name (highlighted)
+        // Product Name (highlighted) với typography hiện đại
         JLabel nameLabel = new JLabel(product.getProductName());
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 13));
-        nameLabel.setForeground(Color.decode("#2E7D32"));
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        nameLabel.setForeground(Color.decode("#2C3E50"));
         nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         detailsPanel.add(nameLabel);
 
         addCompactDetail(detailsPanel, "ID: " + product.getProductID(), Font.PLAIN, 11);
-        addCompactDetail(detailsPanel, "Price: " + product.getPrice() + " VNĐ", Font.BOLD, 12);
-        addCompactDetail(detailsPanel, "Quantity: " + product.getQuantity(), Font.PLAIN, 11);
+        addCompactDetail(detailsPanel, "Price: " + product.getPrice() + " VNĐ", Font.BOLD, 13);
+        addCompactDetail(detailsPanel, "Quantity: " + product.getQuantity(), Font.PLAIN, 12);
         
-        // Status với màu sắc
+        // Status với màu sắc hiện đại
         JLabel statusLabel = new JLabel(getStatusText(product));
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 11));
+        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         if (product.getQuantity() == 0) {
-            statusLabel.setForeground(Color.decode("#D32F2F"));
+            statusLabel.setForeground(Color.decode("#E74C3C"));
         } else {
-            statusLabel.setForeground(Color.decode("#388E3C"));
+            statusLabel.setForeground(Color.decode("#27AE60"));
         }
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
         detailsPanel.add(statusLabel);
 
         panelcreate.add(detailsPanel, BorderLayout.CENTER);
@@ -291,12 +390,14 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
         buttonPanel.setBackground(Color.WHITE);
 
-        MyButton detailBtn = new MyButton("Details", 8);
-        detailBtn.setPreferredSize(new Dimension(90, 30));
-        detailBtn.setBackgroundColor(Color.decode("#2196F3"));
-        detailBtn.setHoverColor(Color.decode("#1976D2"));
+        MyButton detailBtn = new MyButton("👁 Details", 8);
+        detailBtn.setPreferredSize(new Dimension(100, 35));
+        detailBtn.setBackgroundColor(Color.decode("#3498DB"));
+        detailBtn.setHoverColor(Color.decode("#2980B9"));
+        detailBtn.setPressedColor(Color.decode("#21618C"));
         detailBtn.setForeground(Color.WHITE);
-        detailBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        detailBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        detailBtn.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         detailBtn.addActionListener((e) -> {
             CartDetails details = new CartDetails();
             details.setVisible(true);
@@ -304,13 +405,14 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         });
         buttonPanel.add(detailBtn);
         
-        MyButton bntDelete = new MyButton("Delete", 8);
-        bntDelete.setPreferredSize(new Dimension(90, 30));
-        bntDelete.setBackgroundColor(Color.decode("#f44336")); 
-        bntDelete.setHoverColor(Color.decode("#FF6633"));      
-        bntDelete.setPressedColor(Color.decode("#d32f2f")); 
+        MyButton bntDelete = new MyButton("🗑 Delete", 8);
+        bntDelete.setPreferredSize(new Dimension(100, 35));
+        bntDelete.setBackgroundColor(Color.decode("#E74C3C")); 
+        bntDelete.setHoverColor(Color.decode("#C0392B"));      
+        bntDelete.setPressedColor(Color.decode("#A93226")); 
         bntDelete.setForeground(Color.WHITE);
-        bntDelete.setFont(new Font("Arial", Font.BOLD, 11));
+        bntDelete.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        bntDelete.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         bntDelete.addActionListener(e -> {
             boolean confirm = CustomDialog.showOptionPane(
                 "Confirm Deletion",
@@ -353,8 +455,10 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
 
     private void addCompactDetail(JPanel panel, String text, int fontStyle, int fontSize) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", fontStyle, fontSize));
-        label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0)); // Giảm padding
+        label.setFont(new Font("Segoe UI", fontStyle, fontSize));
+        label.setForeground(Color.decode("#7F8C8D"));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0)); // Padding tối ưu
         panel.add(label);
     }
     private String getStatusText(productDTO product) {

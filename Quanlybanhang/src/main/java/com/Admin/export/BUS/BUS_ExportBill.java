@@ -4,7 +4,6 @@ import com.Admin.export.DAO.DAO_ExportBill;
 import com.Admin.export.DTO.DTO_BillExported;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.Admin.export.DTO.DTO_BillExport;
-import com.Admin.export.DTO.DTO_WarrantyInfo;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.User.dashboard_user.DTO.DTOProfile_cus;
 import java.sql.SQLException;
@@ -155,15 +154,6 @@ public class BUS_ExportBill {
     /**
      * Lấy danh sách thông tin bảo hành
      */
-    public List<DTO_WarrantyInfo> getWarrantyInformation() {
-        try {
-            return daoExportBill.getWarrantyInformation();
-        } catch (Exception e) {
-            e.printStackTrace();
-            CustomDialog.showError("Failed to get warranty information: " + e.getMessage());
-            return Collections.emptyList();
-        }
-    }
     
     /**
      * Sửa lỗi số lượng (RESET và đồng bộ lại)
@@ -188,6 +178,32 @@ public class BUS_ExportBill {
             e.printStackTrace();
             CustomDialog.showError("Failed to reset and sync quantities: " + e.getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Search bill exported by criteria
+     */
+    public List<DTO_BillExport> searchBillExported(String searchType, String keyword) {
+        try {
+            return daoExportBill.searchBillExported(searchType, keyword);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            CustomDialog.showError("Data upload error ! ");
+            return Collections.emptyList();
+        }
+    }
+    
+    /**
+     * Get bill details by invoice number
+     */
+    public List<DTO_BillExportedDetail> getBillDetailsByInvoice(String invoiceNo) {
+        try {
+            return daoExportBill.getBillDetailsByInvoice(invoiceNo);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            CustomDialog.showError("Data upload error ! ");
+            return Collections.emptyList();
         }
     }
      

@@ -41,4 +41,8 @@ public class BUS_Total {
     public DTO_BillImport getTotalBillImports() {
         return daoTotal.showTotalBillImport();
     }
+    
+    public int getTotalPromotions() {
+        return daoTotal.showTotalPromotion();
+    }
 }

@@ -5,9 +5,11 @@ import com.Admin.home.BUS.BUS_Chart;
 import com.Admin.home.DTO.*;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.ComponentandDatabase.Components.MyButton;
-import org.jfree.chart.ChartPanel;
+// import org.jfree.chart.ChartPanel;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class Form_Home extends JPanel {
     private JPanel panelContainer, chartContainer;
@@ -18,6 +20,7 @@ public class Form_Home extends JPanel {
     private MyButton bntRefresh;
     private BUS_Total busTotal;
     private BUS_Chart busChart;
+    private com.Admin.dashboard_admin.GUI.Dashboard_ad parentFrame;
 
     public Form_Home() {
         busTotal = new BUS_Total(); // Khởi tạo BUS
@@ -25,6 +28,16 @@ public class Form_Home extends JPanel {
         initComponents();
         updatePanelData(); // Cập nhật dữ liệu từ BUS
         loadChart();
+    }
+    
+    public Form_Home(com.Admin.dashboard_admin.GUI.Dashboard_ad parentFrame) {
+        this.parentFrame = parentFrame;
+        busTotal = new BUS_Total(); // Khởi tạo BUS
+        busChart = new BUS_Chart();
+        initComponents();
+        updatePanelData(); // Cập nhật dữ liệu từ BUS
+        loadChart();
+        addClickHandlers(); // Thêm xử lý click cho các card
     }
 
     private void initComponents() {
@@ -38,7 +51,7 @@ public class Form_Home extends JPanel {
         panelTotalCustomer = createInfoPanel("Total Customers", "\uD83D\uDC65", Color.decode("#1CB5E0"), Color.decode("#000046"), lblTotalCustomer = new JLabel());
         panelTotalOrder = createInfoPanel("Total Orders", "\uD83D\uDCDA", Color.decode("#E74C3C"), Color.decode("#641E16"), lblTotalOrder = new JLabel());
         panelTotalBillExport = createInfoPanel("Total Bill Exports", "\uD83D\uDCB8", Color.decode("#28B463"), Color.decode("#145A32"), lblTotalBillExport = new JLabel());
-        panelTotalWarranty = createInfoPanel("Total Warranties", "\uD83D\uDEE0", Color.decode("#F39C12"), Color.decode("#7E5109"), lblTotalWarranty = new JLabel());
+        panelTotalWarranty = createInfoPanel("Total Promotions", "\uD83C\uDF89", Color.decode("#F39C12"), Color.decode("#7E5109"), lblTotalWarranty = new JLabel());
         panelTotalSupplier = createInfoPanel("Total Suppliers", "\uD83C\uDFE2", Color.decode("#8E44AD"), Color.decode("#4A235A"), lblTotalSupplier = new JLabel());
         panelTotalCategory = createInfoPanel("Total Categories", "\uD83D\uDCDD", Color.decode("#D35400"), Color.decode("#641E16"), lblTotalCategory = new JLabel());
         panelTotalProduct = createInfoPanel("Total Products", "\uD83D\uDECD", Color.decode("#1ABC9C"), Color.decode("#0B5345"), lblTotalProduct = new JLabel());
@@ -106,7 +119,7 @@ public class Form_Home extends JPanel {
         lblTotalCustomer.setText(String.valueOf(busTotal.getTotalCustomers().getStatus()));
         lblTotalOrder.setText(String.valueOf(busTotal.getTotalOrders().getStatus()));
         lblTotalBillExport.setText(String.valueOf(busTotal.getTotalBillExports().getTotalProduct()));
-        lblTotalWarranty.setText(String.valueOf(busTotal.getTotalInsurances().getCustomerId())); 
+        lblTotalWarranty.setText(String.valueOf(busTotal.getTotalPromotions())); 
         lblTotalSupplier.setText(String.valueOf(busTotal.getTotalSuppliers().getContact()));
         lblTotalCategory.setText(String.valueOf(busTotal.getTotalCategories().getContact()));
         lblTotalProduct.setText(String.valueOf(busTotal.getTotalProducts().getQuantity()));
@@ -114,10 +127,71 @@ public class Form_Home extends JPanel {
     }
     
     private void loadChart() {
-        ChartPanel chartPanel = busChart.getbarChart(); // Lấy biểu đồ từ BUS
-        chartContainer.removeAll(); // Xóa dữ liệu cũ
-        chartContainer.add(chartPanel, BorderLayout.CENTER); // Thêm biểu đồ vào giao diện
-        chartContainer.revalidate(); // Cập nhật lại giao diện
-        chartContainer.repaint(); // Vẽ lại giao diện
+        // Tạm thời comment để tránh lỗi JFreeChart
+        // ChartPanel chartPanel = busChart.getbarChart(); // Lấy biểu đồ từ BUS
+        // chartContainer.removeAll(); // Xóa dữ liệu cũ
+        // chartContainer.add(chartPanel, BorderLayout.CENTER); // Thêm biểu đồ vào giao diện
+        // chartContainer.revalidate(); // Cập nhật lại giao diện
+        // chartContainer.repaint(); // Vẽ lại giao diện
+        
+        // Tạm thời hiển thị label thay thế
+        JLabel chartLabel = new JLabel("Chart will be displayed here", SwingConstants.CENTER);
+        chartLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        chartLabel.setForeground(Color.GRAY);
+        chartContainer.removeAll();
+        chartContainer.add(chartLabel, BorderLayout.CENTER);
+        chartContainer.revalidate();
+        chartContainer.repaint();
+    }
+    
+    private void addClickHandlers() {
+        // Thêm click handler cho Total Customer -> Customer
+        addClickHandler(panelTotalCustomer, "Customer");
+        
+        // Thêm click handler cho Total Order -> Order
+        addClickHandler(panelTotalOrder, "Order");
+        
+        // Thêm click handler cho Total Bill Export -> Export
+        addClickHandler(panelTotalBillExport, "Export");
+        
+        // Thêm click handler cho Total Warranty -> (có thể là Promotion hoặc Statistics)
+        addClickHandler(panelTotalWarranty, "Promotion");
+        
+        // Thêm click handler cho Total Supplier -> (có thể là Inventory)
+        addClickHandler(panelTotalSupplier, "Inventory");
+        
+        // Thêm click handler cho Total Category -> Category
+        addClickHandler(panelTotalCategory, "Category");
+        
+        // Thêm click handler cho Total Product -> Product
+        addClickHandler(panelTotalProduct, "Product");
+        
+        // Thêm click handler cho Total Bill Import -> Inventory
+        addClickHandler(panelTotalBillImport, "Inventory");
+    }
+    
+    private void addClickHandler(MyPanel panel, String formName) {
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                navigateToForm(formName);
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setCursor(Cursor.getDefaultCursor());
+            }
+        });
+    }
+    
+    private void navigateToForm(String formName) {
+        if (parentFrame != null) {
+            parentFrame.showForm(formName);
+        }
     }
 }

@@ -20,13 +20,12 @@ import com.ComponentandDatabase.Components.CustomDialog;
 
 public class Menu_user extends JPanel {
     
-    private JLabel lblTitle, lblHome, lblCart, lblOrder, lblProfile, lblProduct, lblExport, lblStatistics, lblMessage, lblExit, lblMenu, lblImport, lblStock, lblInsurance;
+    private JLabel lblHome, lblCart, lblOrder, lblProfile, lblExit, lblMenu;
     private JPanel menuPanel; // Panel chứa tất cả label
-    private JLabel lastHoveredLabel = null; // Lưu label được hover trước đó
      private boolean isMenuExpanded = false;
     public Dashboard_user parentFrame;
-    private Color hoverColor = Color.decode("#87CEEB"); // Màu khi hover
-    private Color selectedColor = Color.decode("#87CEEB");
+        private Color hoverColor = Color.decode("#7C3AED"); // Màu khi hover hiện đại
+        private Color selectedColor = Color.decode("#8B5CF6"); // Màu khi được chọn hiện đại
 
     private Color transparentColor = new Color(0, 0, 0, 0); // Màu trong suốt
     private JLabel selectedLabel = null; // Label đang được chọn
@@ -41,7 +40,6 @@ public class Menu_user extends JPanel {
         setOpaque(false);
     }
 
-    @SuppressWarnings("unchecked")
     private void initComponents() {
         setLayout(null); // Dùng null layout để tự thiết lập vị trí các thành phần
     }
@@ -49,17 +47,37 @@ public class Menu_user extends JPanel {
   
     private void init() {
      try {
-        // Tạo panel chứa menu
+        // Tạo panel chứa menu với design hiện đại
         menuPanel = new JPanel();
         menuPanel.setLayout(null);
-        menuPanel.setOpaque(false); // Giữ panel trong suốt
-        menuPanel.setBounds(0, 0, 300, 1000); // Điều chỉnh theo UI của bạn
+        menuPanel.setOpaque(false);
+        menuPanel.setBounds(0, 0, 300, 1000);
         
-        // Lấy tên user từ Dashboard_user (giả sử có method getUserName())
-        String userName = parentFrame.getUserName(); // Cần implement method này
-        lblProfile = createLabel(userName != null ? userName : "Your Information", "profile.png", 50);
-        // Label Menu (bấm vào để mở/đóng)
-        lblMenu = createLabel("Menu", "menu.png",120);
+        // Tạo header section với user info hiện đại
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBounds(0, 0, 300, 90);
+        
+        // User profile với design hiện đại
+        String userName = parentFrame.getUserName();
+        lblProfile = createLabelWithIcon(userName != null ? userName : "User Profile", "profile.png", 20, 20, 260, 60, true);
+        lblProfile.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblProfile.setForeground(Color.WHITE);
+        lblProfile.setHorizontalAlignment(SwingConstants.CENTER);
+        lblProfile.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#A0AEC0"), 2),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
+        
+        // Menu toggle button với design hiện đại
+        lblMenu = createLabelWithIcon("Navigation Menu", "menu.png", 20, 100, 260, 55, false);
+        lblMenu.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblMenu.setForeground(Color.WHITE);
+        lblMenu.setHorizontalAlignment(SwingConstants.CENTER);
+        lblMenu.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 3, 0, Color.decode("#A0AEC0")),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
  
         lblMenu.addMouseListener(new MouseAdapter() {
                 @Override
@@ -72,10 +90,30 @@ public class Menu_user extends JPanel {
 //        lblTitle = createLabelWithIcon("Sales Management<br><p style='margin-left: 20px;'>Application</p>",
 //                "Title_icon.png", 20, 20, 260, 55, true);
 
-        lblHome = createLabel("Home", "home.png", 190);
-        lblCart = createLabel("Cart", "cart.png", 280);
-        lblOrder = createLabel("Order", "order.png", 370);
-        lblExit= createLabel("Exit", "exit.png", 470);
+        // Menu items với design hiện đại và typography cải tiến
+        lblHome = createLabelWithIcon("Home Dashboard", "home.png", 20, 170, 260, 50, false);
+        lblHome.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblHome.setForeground(Color.WHITE);
+        lblHome.setHorizontalAlignment(SwingConstants.LEFT);
+        lblHome.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        
+        lblCart = createLabelWithIcon("Shopping Cart", "cart.png", 20, 235, 260, 50, false);
+        lblCart.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblCart.setForeground(Color.WHITE);
+        lblCart.setHorizontalAlignment(SwingConstants.LEFT);
+        lblCart.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        
+        lblOrder = createLabelWithIcon("My Orders", "order.png", 20, 300, 260, 50, false);
+        lblOrder.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblOrder.setForeground(Color.WHITE);
+        lblOrder.setHorizontalAlignment(SwingConstants.LEFT);
+        lblOrder.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        
+        lblExit = createLabelWithIcon("Logout", "exit.png", 20, 365, 260, 50, false);
+        lblExit.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblExit.setForeground(Color.WHITE);
+        lblExit.setHorizontalAlignment(SwingConstants.LEFT);
+        lblExit.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
 //        
         
         // Thêm hiệu ứng hover
@@ -86,14 +124,13 @@ public class Menu_user extends JPanel {
         addHoverEffectForExit(lblProfile);
         addHoverEffectForExit(lblExit);
 
-        // Thêm các label vào menuPanel
-        //menuPanel.add(lblTitle);
+        // Thêm các label vào menuPanel với thứ tự khoa học
+        menuPanel.add(lblProfile);
+        menuPanel.add(lblMenu);
         menuPanel.add(lblHome);
         menuPanel.add(lblCart);
         menuPanel.add(lblOrder);
-        menuPanel.add(lblProfile);
         menuPanel.add(lblExit);
-        menuPanel.add(lblMenu);
 //        
        
         lblHome.addMouseListener(new MouseAdapter() {
@@ -230,12 +267,8 @@ public class Menu_user extends JPanel {
         label.repaint();
     }
 
-   // Tạo label thường (không phải tiêu đề)
-    private JLabel createLabel(String text, String iconName, int yPosition) throws IOException {
-        return createLabelWithIcon(text, iconName, 20, yPosition, 260, 35, false);
-    }
 
-    // Tạo label có icon (dùng chung cho tiêu đề và menu)
+    // Tạo label có icon với typography khoa học
     private JLabel createLabelWithIcon(String text, String iconName, int x, int y, int width, int height, boolean isTitle) throws IOException {
         // Kiểm tra file ảnh
         File file = new File("src\\main\\resources\\Icons\\User_icon\\" + iconName);
@@ -244,28 +277,28 @@ public class Menu_user extends JPanel {
             return new JLabel(text);
         }
 
-        // Đọc và resize ảnh
-        Image img = ImageIO.read(file).getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+        // Đọc và resize ảnh với chất lượng cao
+        Image img = ImageIO.read(file).getScaledInstance(32, 32, Image.SCALE_SMOOTH);
         ImageIcon icon = new ImageIcon(img);
 
-        // Tạo JLabel
-        JLabel label = new JLabel("<html>" + text + "</html>", icon, JLabel.LEFT);
-        label.setFont(isTitle ? new Font("Arial", Font.BOLD | Font.ITALIC, 20) : new Font("sansserif", Font.BOLD, 18));
+        // Tạo JLabel với typography khoa học
+        JLabel label = new JLabel(text, icon, JLabel.LEFT);
+        
+        // Typography hierarchy
+        if (isTitle) {
+            label.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        } else {
+            label.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        }
+        
         label.setForeground(Color.WHITE);
         label.setBounds(x, y, width, height);
-        label.setIconTextGap(15);
-        label.setOpaque(false); // Ban đầu trong suốt
+        label.setIconTextGap(15); // Tăng khoảng cách giữa icon và text
+        label.setOpaque(false);
+        label.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20)); // Padding khoa học
         return label;
     }
 
-    private void resetLabelBackground(JLabel label) {
-        SwingUtilities.invokeLater(() -> {
-            label.setOpaque(false);
-            label.setBackground(new Color(0, 0, 0, 0));
-            menuPanel.revalidate();
-            menuPanel.repaint();
-        });
-    }
 
      // Hiển thị hoặc ẩn các label con khi bấm vào lblMenu
     private void toggleMenu() {
@@ -295,13 +328,19 @@ public class Menu_user extends JPanel {
     protected void paintChildren(Graphics grphcs) {
     Graphics2D g2 = (Graphics2D) grphcs;
     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-    // Tạo hiệu ứng Gradient với màu sắc nhẹ nhàng hơn
-    GradientPaint g = new GradientPaint(0, 0, Color.decode("#1CB5E0"), 0, getHeight(), Color.decode("#4682B4"));
-    g2.setPaint(g);
+        // Tạo gradient background hiện đại và chuyên nghiệp
+        GradientPaint g = new GradientPaint(0, 0, Color.decode("#667eea"), 0, getHeight(), Color.decode("#764ba2"));
+        g2.setPaint(g);
 
-    // Vẽ nền không bo góc
-    g2.fillRect(0, 0, getWidth(), getHeight());
+        // Vẽ nền với border radius hiện đại
+        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+
+        // Thêm border hiện đại với shadow effect
+        g2.setColor(Color.decode("#5a67d8"));
+        g2.setStroke(new java.awt.BasicStroke(3));
+        g2.drawRoundRect(2, 2, getWidth()-4, getHeight()-4, 15, 15);
 
     super.paintChildren(grphcs);
 }

@@ -2,29 +2,20 @@ package com.User.dashboard_user.GUI;
 
 import java.awt.*;
 import javax.swing.*;
-import java.awt.event.*;
 import javax.swing.Box;
-import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.User.home.GUI.Home_user;
 import com.User.Cart.GUI.Form_Cart;
 import com.User.order.GUI.Order_Form;
 import com.User.dashboard_user.BUS.BUSProfile_cus;
 import com.User.login_user.GUI.PanelLoginandRegister_User;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import javax.imageio.ImageIO;
 
 public class Dashboard_user extends JFrame {
     private JPanel bg, contentPanel;
-    private JLabel title, lblDateTime;
-    private MyButton logout;
+    
     private MyPanel panelTitle;
     private Menu_user menu;
     private CardLayout cardLayout;
-    private Set<JLabel> hoveredLabels = new HashSet<>();
     private BUSProfile_cus busProfile;
     public static String email, customerID;
     private String userName;
@@ -36,89 +27,114 @@ public class Dashboard_user extends JFrame {
     public Dashboard_user(String userEmail) {
         initComponents(userEmail);
         loadUserInfo(); // Load thông tin user
-        setSize(1570, 800); // KHÔNG full screen nữa
+        setSize(1400, 900); // Kích thước tối ưu cho giao diện hiện đại
         setLocationRelativeTo(null); // Hiển thị giữa màn hình
         setResizable(true);
         setVisible(true);
     }
 
-    private void initComponents() {
-        initComponents(null);
-    }
     
     private void initComponents(String userEmail) {
         // PANEL NỀN CHÍNH
         bg = new JPanel(new BorderLayout());
 
-        // PANEL TIÊU ĐỀ
+        // ===== HEADER (panelTitle) =====
         panelTitle = new MyPanel(new BorderLayout());
-        panelTitle.setPreferredSize(new Dimension(0, 50));
-        panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
+        panelTitle.setPreferredSize(new Dimension(0, 140));
+        panelTitle.setGradientColors(Color.decode("#667eea"),
+                                     Color.decode("#764ba2"),
+                                     MyPanel.VERTICAL_GRADIENT);
+        panelTitle.setBorder(BorderFactory.createMatteBorder(0, 0, 4, 0, Color.decode("#5a67d8")));
 
-        // Tiêu đề chính giữa
+        // Icon cho tiêu đề (tùy bạn giữ/đổi đường dẫn)
         ImageIcon titleIcon = new ImageIcon(getClass().getResource("/Icons/Admin_icon/Title_icon.png"));
-        Image img = titleIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-        titleIcon = new ImageIcon(img);
-        title = new JLabel("NPK Store - Electric Bicycle Sales", titleIcon, JLabel.CENTER);
-        title.setFont(new Font("Times New Roman", Font.BOLD, 20));
-        title.setForeground(Color.WHITE);
+        titleIcon = new ImageIcon(titleIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH));
 
-        // Logout và thời gian bên phải
-        logout = new MyButton("Logout", 20);
-        logout.setBackgroundColor(Color.decode("#E55454"));
-        logout.setPressedColor(Color.decode("#C04444"));
-        logout.setHoverColor(Color.decode("#FF7F7F"));
-        logout.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        logout.setForeground(Color.WHITE);
-        logout.setButtonIcon("/Icons/Admin_icon/logout.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-        logout.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Are you sure you want to logout?",
-                "Logout Confirmation",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-            );
+        // Tạo 2 label: Title & Subtitle
+        JLabel lblTitle = new JLabel("NPK STORE", titleIcon, JLabel.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 36));
+        lblTitle.setForeground(Color.WHITE);
+        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        lblTitle.setVerticalAlignment(SwingConstants.CENTER);
+        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                // Đóng frame hiện tại và quay về login
-                this.dispose();
-                // Mở lại form login
-                com.User.login_user.GUI.Login_User loginForm = new com.User.login_user.GUI.Login_User();
-                loginForm.setVisible(true);
+        // Subtitle nằm NGAY DƯỚI title
+        JLabel lblSubtitle = new JLabel("Electric Bicycle Sales Management System");
+        lblSubtitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblSubtitle.setForeground(Color.WHITE);
+        lblSubtitle.setHorizontalAlignment(SwingConstants.CENTER);
+        lblSubtitle.setVerticalAlignment(SwingConstants.CENTER);
+        lblSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblSubtitle.setBorder(BorderFactory.createEmptyBorder(4, 0, 12, 0));
+
+        // Container dọc để xếp 2 dòng
+        JPanel textContainer = new JPanel();
+        textContainer.setOpaque(false);
+        textContainer.setLayout(new BoxLayout(textContainer, BoxLayout.Y_AXIS));
+        // Thêm padding để tránh bị cắt ở cạnh dưới
+        textContainer.setBorder(BorderFactory.createEmptyBorder(10, 20, 18, 20));
+        textContainer.add(Box.createVerticalGlue());
+        textContainer.add(lblTitle);
+        textContainer.add(Box.createVerticalStrut(5)); // khoảng cách giữa 2 dòng
+        textContainer.add(lblSubtitle);
+        textContainer.add(Box.createVerticalGlue());
+
+        // Tạo lớp phủ để đặt ảnh nền trang trí mờ và text chồng lên
+        JPanel centerOverlay = new JPanel();
+        centerOverlay.setOpaque(false);
+        centerOverlay.setLayout(new OverlayLayout(centerOverlay));
+
+        // Ảnh trang trí mờ để header sinh động hơn
+        JLabel decorLabel = createTranslucentImage("/Icons/Admin_icon/title.png", 700, 220, 0.12f);
+        decorLabel.setAlignmentX(0.5f);
+        decorLabel.setAlignmentY(0.5f);
+
+        // Căn giữa khối text
+        textContainer.setAlignmentX(0.5f);
+        textContainer.setAlignmentY(0.5f);
+
+        centerOverlay.add(textContainer);
+        centerOverlay.add(decorLabel);
+
+        // Thêm lớp phủ vào header
+        panelTitle.add(centerOverlay, BorderLayout.CENTER);
+
+        // Hiệu ứng gloss nhẹ phía trên để tạo cảm giác chiều sâu
+        JComponent gloss = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(255, 255, 255, 90), 0, getHeight(), new Color(255, 255, 255, 0));
+                g2.setPaint(gp);
+                g2.fillRoundRect(8, 4, getWidth() - 16, getHeight() - 6, 20, 20);
+                g2.dispose();
             }
-        });
+        };
+        gloss.setOpaque(false);
+        gloss.setPreferredSize(new Dimension(0, 28));
+        panelTitle.add(gloss, BorderLayout.NORTH);
 
-        lblDateTime = new JLabel();
-        lblDateTime.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        lblDateTime.setForeground(Color.WHITE);
-        updateDateTime();
-
-        JPanel rightPanel = new JPanel();
-        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.X_AXIS));
-        rightPanel.setOpaque(false);
-        rightPanel.add(Box.createHorizontalGlue());
-        rightPanel.add(lblDateTime);
-        rightPanel.add(Box.createHorizontalStrut(50));
-        rightPanel.add(logout);
-
-        JPanel containerPanel = new JPanel(new BorderLayout());
-        containerPanel.setOpaque(false);
-        containerPanel.add(rightPanel, BorderLayout.EAST);
-
-        panelTitle.add(title, BorderLayout.CENTER);
-        panelTitle.add(containerPanel, BorderLayout.EAST);
+        panelTitle.add(textContainer, BorderLayout.CENTER);
         bg.add(panelTitle, BorderLayout.NORTH);
 
-        // MENU + CONTENT
+        // MENU + CONTENT với layout hiện đại
         menu = new Menu_user(this);
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
-        menu.setPreferredSize(new Dimension(260, 0));
+        menu.setPreferredSize(new Dimension(300, 0));
+        menu.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 0, 3, Color.decode("#A0AEC0")),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
 
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
+        contentPanel.setBackground(Color.WHITE); // Nền trắng sáng cho content
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
 
         JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(Color.WHITE);
         wrapper.add(menu, BorderLayout.WEST);
         wrapper.add(contentPanel, BorderLayout.CENTER);
 
@@ -161,39 +177,39 @@ public class Dashboard_user extends JFrame {
         setTitle("Dashboard Customer");
         setContentPane(bg);
 
-        // UPDATE GIỜ THỰC TẾ
-        Timer timer = new Timer(1000, e -> updateDateTime());
-        timer.start();
     }
 
-    private void updateDateTime() {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("'Date:' dd/MM/yyyy  '-' HH:mm:ss");
-        String currentTime = sdf.format(new java.util.Date());
-        lblDateTime.setText(currentTime);
+    private JLabel createTranslucentImage(String resourcePath, int width, int height, float alpha) {
+        try {
+            java.net.URL url = getClass().getResource(resourcePath);
+            if (url == null) return new JLabel();
+            ImageIcon icon = new ImageIcon(url);
+            Image scaled = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            ImageIcon scaledIcon = new ImageIcon(scaled);
+
+            JLabel label = new JLabel(scaledIcon);
+            label.setOpaque(false);
+            label = new JLabel(scaledIcon) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                    g2.drawImage(scaledIcon.getImage(), 0, 0, null);
+                    g2.dispose();
+                }
+            };
+            label.setPreferredSize(new Dimension(width, height));
+            return label;
+        } catch (Exception e) {
+            return new JLabel();
+        }
     }
+
 
     public void showForm(String formName) {
         cardLayout.show(contentPanel, formName);
     }
 
-    // Tạo Label có icon (dành cho future use)
-    private JLabel createLabelWithIcon(String text, String iconName, int x, int y, int width, int height, boolean isTitle) throws IOException {
-        File file = new File("src\\main\\resources\\Icons\\Admin_icon\\" + iconName);
-        if (!file.exists()) {
-            System.err.println("⚠️ File not found: " + file.getAbsolutePath());
-            return new JLabel(text);
-        }
-
-        Image img = ImageIO.read(file).getScaledInstance(30, 30, Image.SCALE_SMOOTH);
-        ImageIcon icon = new ImageIcon(img);
-        JLabel label = new JLabel("<html>" + text + "</html>", icon, JLabel.LEFT);
-        label.setFont(isTitle ? new Font("Arial", Font.BOLD | Font.ITALIC, 20) : new Font("sansserif", Font.BOLD, 18));
-        label.setForeground(Color.WHITE);
-        label.setBounds(x, y, width, height);
-        label.setIconTextGap(15);
-        label.setOpaque(false);
-        return label;
-    }
 
     // Method để lấy tên user
     public String getUserName() {

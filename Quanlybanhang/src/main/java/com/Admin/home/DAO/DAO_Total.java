@@ -183,5 +183,21 @@ public class DAO_Total {
         return billImportSummary; // Trả về DTO chứa tổng số hóa đơn nhập
     }
     
+    // ===== Promotions =====
+    public int showTotalPromotion() {
+        String sql = "SELECT COUNT(*) AS total FROM Promotion WHERE Status = 'Available'";
+        int total = 0;
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting promotions: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return total;
+    }
     
 }

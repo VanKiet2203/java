@@ -8,7 +8,6 @@ import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.Admin.promotion.BUS.BUSPromotion;
 import com.Admin.promotion.DTO.DTOPromotion;
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
-import com.Admin.export.DTO.DTO_WarrantyInfo;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -117,22 +116,23 @@ public class DAO_ExportBill {
 
             // 4) Insert detail
             String insertDetail = "INSERT INTO Bill_Exported_Details (Invoice_No, Admin_ID, Product_ID, "
-                                + "Unit_Price_Sell_After, Sold_Quantity, Discount_Percent, Total_Price_Before, Total_Price_After, "
+                                + "Unit_Price_Sell_Before, Unit_Price_Sell_After, Sold_Quantity, Discount_Percent, Total_Price_Before, Total_Price_After, "
                                 + "Date_Exported, Time_Exported, Start_Date, End_Date) "
-                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertDetail)) {
                 ps.setString(1, detail.getInvoiceNo());
                 ps.setString(2, detail.getAdminId());
                 ps.setString(3, detail.getProductId());
-                ps.setBigDecimal(4, detail.getUnitPrice());
-                ps.setInt(5, detail.getQuantity());
-                ps.setBigDecimal(6, percent);
-                ps.setBigDecimal(7, totalBefore);
-                ps.setBigDecimal(8, totalAfter);
-                ps.setDate(9, detail.getDateExported());
-                ps.setTime(10, detail.getTimeExported());
-                ps.setDate(11, detail.getStartDate());
-                ps.setDate(12, detail.getEndDate());
+                ps.setBigDecimal(4, detail.getUnitPriceBefore()); // Unit_Price_Sell_Before
+                ps.setBigDecimal(5, detail.getUnitPrice()); // Unit_Price_Sell_After
+                ps.setInt(6, detail.getQuantity());
+                ps.setBigDecimal(7, percent);
+                ps.setBigDecimal(8, totalBefore);
+                ps.setBigDecimal(9, totalAfter);
+                ps.setDate(10, detail.getDateExported());
+                ps.setTime(11, detail.getTimeExported());
+                ps.setDate(12, detail.getStartDate());
+                ps.setDate(13, detail.getEndDate());
                 ps.executeUpdate();
             }
 
@@ -149,8 +149,16 @@ public class DAO_ExportBill {
 
     public java.util.List<DTO_BillExportedDetail> getAllBillDetails() throws SQLException {
         java.util.List<DTO_BillExportedDetail> ls = new java.util.ArrayList<>();
+        String sql =
+            "SELECT d.Invoice_No, d.Admin_ID, b.Customer_ID, d.Product_ID, " +
+            "       d.Unit_Price_Sell_Before, d.Unit_Price_Sell_After, d.Sold_Quantity, d.Discount_Percent, " +
+            "       d.Total_Price_Before, d.Total_Price_After, d.Date_Exported, d.Time_Exported, " +
+            "       d.Start_Date, d.End_Date " +
+            "FROM Bill_Exported_Details d " +
+            "JOIN Bill_Exported b ON b.Invoice_No = d.Invoice_No AND b.Admin_ID = d.Admin_ID " +
+            "WHERE d.Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Bill_Exported_Details WHERE Status = 'Available'");
+             PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 DTO_BillExportedDetail d = new DTO_BillExportedDetail(
@@ -158,6 +166,7 @@ public class DAO_ExportBill {
                     rs.getString("Admin_ID"),
                     rs.getString("Customer_ID"),
                     rs.getString("Product_ID"),
+                    rs.getBigDecimal("Unit_Price_Sell_Before"),
                     rs.getBigDecimal("Unit_Price_Sell_After"),
                     rs.getInt("Sold_Quantity"),
                     rs.getBigDecimal("Discount_Percent"),
@@ -189,6 +198,8 @@ public class DAO_ExportBill {
                     rs.getInt("Total_Product"),
                     rs.getString("Description")
                 );
+                // Set Order_No from database
+                dto.setOrderNo(rs.getString("Order_No"));
                 list.add(dto);
             }
         }
@@ -311,38 +322,7 @@ public class DAO_ExportBill {
     /**
      * Lấy danh sách thông tin bảo hành từ view v_Warranty_Information
      */
-    public List<DTO_WarrantyInfo> getWarrantyInformation() {
-        List<DTO_WarrantyInfo> warrantyList = new ArrayList<>();
-        String sql = "SELECT * FROM v_Warranty_Information ORDER BY Date_Exported DESC";
-        
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-            
-            while (rs.next()) {
-                DTO_WarrantyInfo warranty = new DTO_WarrantyInfo(
-                    rs.getString("Invoice_No"),
-                    rs.getString("Admin_ID"),
-                    rs.getString("Customer_ID"),
-                    rs.getString("Customer_Name"),
-                    rs.getString("Product_ID"),
-                    rs.getString("Product_Name"),
-                    rs.getInt("Sold_Quantity"),
-                    rs.getDate("Date_Exported"),
-                    rs.getDate("Start_Date"),
-                    rs.getDate("End_Date"),
-                    rs.getString("Warranty_Status"),
-                    rs.getInt("Warranty_Months")
-                );
-                warrantyList.add(warranty);
-            }
-        } catch (SQLException e) {
-            System.err.println("Error getting warranty information: " + e.getMessage());
-            e.printStackTrace();
-        }
-        
-        return warrantyList;
-    }
+
     
     
     /**
@@ -370,5 +350,97 @@ public class DAO_ExportBill {
             e.printStackTrace();
             return false;
         }
+    }
+    
+    /**
+     * Search bill exported by criteria
+     */
+    public java.util.List<com.Admin.export.DTO.DTO_BillExport> searchBillExported(String searchType, String keyword) throws SQLException {
+        java.util.List<com.Admin.export.DTO.DTO_BillExport> list = new java.util.ArrayList<>();
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description FROM Bill_Exported WHERE Status = 'Available'";
+        
+        // Add search condition based on search type
+        switch (searchType.toLowerCase()) {
+            case "invoice no":
+                sql += " AND Invoice_No LIKE ?";
+                break;
+            case "customer id":
+                sql += " AND Customer_ID LIKE ?";
+                break;
+            case "admin id":
+                sql += " AND Admin_ID LIKE ?";
+                break;
+            default:
+                sql += " AND (Invoice_No LIKE ? OR Customer_ID LIKE ? OR Admin_ID LIKE ?)";
+                break;
+        }
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            if (searchType.toLowerCase().equals("invoice no") || searchType.toLowerCase().equals("customer id") || searchType.toLowerCase().equals("admin id")) {
+                ps.setString(1, "%" + keyword + "%");
+            } else {
+                ps.setString(1, "%" + keyword + "%");
+                ps.setString(2, "%" + keyword + "%");
+                ps.setString(3, "%" + keyword + "%");
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.Admin.export.DTO.DTO_BillExport dto = new com.Admin.export.DTO.DTO_BillExport(
+                        rs.getString("Invoice_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getInt("Total_Product"),
+                        rs.getString("Description")
+                    );
+                    dto.setOrderNo(rs.getString("Order_No"));
+                    list.add(dto);
+                }
+            }
+        }
+        return list;
+    }
+    
+    /**
+     * Get bill details by invoice number
+     */
+    public java.util.List<DTO_BillExportedDetail> getBillDetailsByInvoice(String invoiceNo) throws SQLException {
+        java.util.List<DTO_BillExportedDetail> ls = new java.util.ArrayList<>();
+        String sql = "SELECT d.Invoice_No, d.Admin_ID, b.Customer_ID, d.Product_ID, " +
+                    "       d.Unit_Price_Sell_Before, d.Unit_Price_Sell_After, d.Sold_Quantity, d.Discount_Percent, " +
+                    "       d.Total_Price_Before, d.Total_Price_After, d.Date_Exported, d.Time_Exported, " +
+                    "       d.Start_Date, d.End_Date " +
+                    "FROM Bill_Exported_Details d " +
+                    "JOIN Bill_Exported b ON b.Invoice_No = d.Invoice_No AND b.Admin_ID = d.Admin_ID " +
+                    "WHERE d.Invoice_No = ? AND d.Status = 'Available'";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, invoiceNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    DTO_BillExportedDetail d = new DTO_BillExportedDetail(
+                        rs.getString("Invoice_No"),
+                        rs.getString("Admin_ID"),
+                        rs.getString("Customer_ID"),
+                        rs.getString("Product_ID"),
+                        rs.getBigDecimal("Unit_Price_Sell_Before"),
+                        rs.getBigDecimal("Unit_Price_Sell_After"),
+                        rs.getInt("Sold_Quantity"),
+                        rs.getBigDecimal("Discount_Percent"),
+                        rs.getBigDecimal("Total_Price_Before"),
+                        rs.getBigDecimal("Total_Price_After"),
+                        rs.getDate("Date_Exported"),
+                        rs.getTime("Time_Exported"),
+                        rs.getDate("Start_Date"),
+                        rs.getDate("End_Date")
+                    );
+                    ls.add(d);
+                }
+            }
+        }
+        return ls;
     }
 }

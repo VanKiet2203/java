@@ -10,6 +10,7 @@ import com.ComponentandDatabase.Components.MyTextField;
 import com.Admin.export.BUS.BUS_OrderDetail;
 import com.Admin.export.BUS.BUS_ExportBill;
 import com.Admin.export.DTO.DTO_Oderdetails;
+import com.Admin.export.DTO.DTO_BillExport;
 import com.Admin.export.DTO.DTO_BillExported;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.Admin.promotion.BUS.BUSPromotion;
@@ -33,6 +34,7 @@ import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.*;
+import java.text.SimpleDateFormat;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import javax.swing.SwingConstants;
@@ -49,9 +51,11 @@ public class Form_Export extends JPanel {
     private MyTextField txtSearchOrder, txtAdminID, txtAdminName;
     private MyCombobox<String> cmbSearchOrder;
     private MyTable tableOrderDetails;
+    private MyTable tableExportBills;
     public static String invoiceNo;
     public static String orderNo;
     private DefaultTableModel model;
+    private DefaultTableModel modelExportBills;
     private MyCombobox<String> cmbPromotionCode;
     private JLabel lblPromotionInfo;
     private BUS_OrderDetail busOrderDetail;
@@ -59,6 +63,7 @@ public class Form_Export extends JPanel {
     private BUSPromotion busPromotion;
     private DTOProfile_cus customer;
     private DTOPromotion currentPromotion;
+    private JTabbedPane tablesTabbedPane;
 
     public Form_Export() {
         initComponents();
@@ -90,7 +95,7 @@ public class Form_Export extends JPanel {
         add(panel);
         
         // Title
-        JLabel lblTitle = new JLabel("MANAGE EXPORT");
+        JLabel lblTitle = new JLabel("MANAGE INVOICE");
         lblTitle.setFont(FONT_TITLE_LARGE);
         lblTitle.setForeground(PRIMARY_COLOR);
         lblTitle.setBounds(20, 10, 400, 40);
@@ -101,7 +106,7 @@ public class Form_Export extends JPanel {
         panelSearch.setLayout(null);
         panelSearch.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
-            "Export Management",
+            "Invoice Management",
             0, 0,
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
@@ -123,40 +128,25 @@ public class Form_Export extends JPanel {
           bntDetails.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\bill_export.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
           bntDetails.setBounds(750, 30, 120, 35);
           bntDetails.addActionListener((e) -> {
-              // Kiểm tra xem có dòng nào được chọn không
-              int selectedRow = tableOrderDetails.getSelectedRow();
-              if (selectedRow == -1) {
-                  CustomDialog.showError("Vui lòng chọn một hóa đơn để xem chi tiết!");
+              // Chỉ áp dụng cho tab Export Bills
+              if (tablesTabbedPane == null || tablesTabbedPane.getSelectedIndex() != 1) {
+                  CustomDialog.showError("Nút Details chỉ áp dụng cho bảng Export Bills.");
                   return;
               }
-              
-              // Lấy thông tin hóa đơn từ dòng được chọn
-              String orderNo = tableOrderDetails.getValueAt(selectedRow, 0).toString();
-              String customerID = tableOrderDetails.getValueAt(selectedRow, 1).toString();
-              String orderDate = tableOrderDetails.getValueAt(selectedRow, 2).toString();
-              String totalAmount = tableOrderDetails.getValueAt(selectedRow, 3).toString();
-              
-              // Mở cửa sổ xem chi tiết hóa đơn
-              Bill_ExportDetails billDetail = new Bill_ExportDetails();
-              billDetail.setOrderInfo(orderNo, customerID, orderDate, totalAmount);
-              billDetail.setVisible(true);
+              int selectedRow = tableExportBills.getSelectedRow();
+              if (selectedRow == -1) {
+                  CustomDialog.showError("Vui lòng chọn một export bill để xem chi tiết!");
+                  return;
+              }
+              String invoiceNoSel = tableExportBills.getValueAt(selectedRow, 0).toString();
+              String adminIdSel = tableExportBills.getValueAt(selectedRow, 1).toString();
+              Bill_ExportDetails wnd = new Bill_ExportDetails();
+              wnd.setInvoiceInfo(invoiceNoSel, adminIdSel);
+              wnd.setLocationRelativeTo(null);
+              wnd.setVisible(true);
           });
           panelSearch.add(bntDetails);
-          
-          bntWarranty = new MyButton("Warranty", 20);
-          styleWarningButton(bntWarranty);
-          bntWarranty.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\insurance.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntWarranty.setBounds(880, 30, 120, 35);
-          bntWarranty.addActionListener((e) -> {
-              WarrantyManagementForm warrantyForm = new WarrantyManagementForm();
-              JFrame warrantyFrame = new JFrame("Warranty Management");
-              warrantyFrame.setContentPane(warrantyForm);
-              warrantyFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-              warrantyFrame.setSize(1200, 700);
-              warrantyFrame.setLocationRelativeTo(null);
-              warrantyFrame.setVisible(true);
-          });
-          panelSearch.add(bntWarranty);
+
           
           
           bntExportFile = new MyButton("Export", 20);
@@ -364,11 +354,11 @@ public class Form_Export extends JPanel {
         // 5️⃣ Tạo bảng với style chuẩn giống Product
         tableOrderDetails = createStyledTable(model);
 
-        JScrollPane scrollPane = MyTable.createScrollPane(tableOrderDetails, 20, 240, 790, 480);
+        JScrollPane scrollPaneOrders = MyTable.createScrollPane(tableOrderDetails, 0, 0, 0, 0);
 
-        // 7️⃣ Tùy chỉnh thanh cuộn
-        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-        scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+        // 7️⃣ Tùy chỉnh thanh cuộn (orders tab)
+        scrollPaneOrders.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+        scrollPaneOrders.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
 
            SwingUtilities.invokeLater(() -> {
               loadConfirmedOrderDetailsToTable();
@@ -401,8 +391,37 @@ public class Form_Export extends JPanel {
            
               
            
-        // 8️⃣ Thêm scrollPane vào panel
-        panel.add(scrollPane);   
+        // ========== Tạo TabbedPane chứa 2 bảng: Orders và Export Bills ==========
+        tablesTabbedPane = new JTabbedPane();
+        tablesTabbedPane.setFont(FONT_TITLE_MEDIUM);
+        tablesTabbedPane.setBounds(20, 240, 790, 480);
+
+        // Tab Orders
+        JPanel ordersTabPanel = new JPanel(new BorderLayout());
+        ordersTabPanel.setBackground(Color.WHITE);
+        ordersTabPanel.add(scrollPaneOrders, BorderLayout.CENTER);
+        tablesTabbedPane.addTab("Orders", ordersTabPanel);
+
+        // Tab Export Bills
+        JPanel exportBillsTabPanel = new JPanel(new BorderLayout());
+        exportBillsTabPanel.setBackground(Color.WHITE);
+
+        String[] exportCols = {"Invoice No", "Admin ID", "Customer ID", "Order No", "Total Products", "Description"};
+        modelExportBills = new DefaultTableModel(exportCols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        tableExportBills = createStyledTable(modelExportBills);
+        tableExportBills.setRowHeight(30);
+        JScrollPane scrollPaneExport = new JScrollPane(tableExportBills);
+        scrollPaneExport.setBorder(null);
+        exportBillsTabPanel.add(scrollPaneExport, BorderLayout.CENTER);
+        tablesTabbedPane.addTab("Export Bills", exportBillsTabPanel);
+
+        panel.add(tablesTabbedPane);
+
+        // Load dữ liệu cho tab Export Bills
+        SwingUtilities.invokeLater(this::loadExportBillsData);
         
         
         
@@ -781,7 +800,9 @@ public class Form_Export extends JPanel {
 
         // ===== 3. Order Details =====
         JPanel orderPanel = createSectionPanel("ORDER DETAILS");
-        addInfoRow(orderPanel, "Order No:", orderItems.get(0)[0].toString());
+        // Always get Order_No from orderItems (from Orders table)
+        String orderNoToUse = orderItems.get(0)[0].toString();
+        addInfoRow(orderPanel, "Order No:", orderNoToUse);
 
         String[] columns = {"No.", "Product ID", "Product Name", "Quantity", "Unit Price", "Discount", "Total Price", "Waranty Period"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
@@ -1030,7 +1051,15 @@ public class Form_Export extends JPanel {
         bill.setInvoiceNo(invoiceNo);
         bill.setAdminId(txtAdminID.getText());
         bill.setCustomerId(customer.getCustomerID());
-        bill.setTotalProduct(orderItems.size());
+        // Always get Order_No from orderItems (from Orders table)
+        String orderNoToUse = orderItems.get(0)[0].toString();
+        bill.setOrderNo(orderNoToUse);
+        // Calculate total quantity of all products, not just number of rows
+        int totalQuantity = 0;
+        for (Object[] item : orderItems) {
+            totalQuantity += ((Number) item[4]).intValue(); // item[4] is quantity
+        }
+        bill.setTotalProduct(totalQuantity);
         
         String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : null;
 
@@ -1060,7 +1089,7 @@ public class Form_Export extends JPanel {
             );
         }
 
-        cleanupAfterExport(imeis, orderItems.get(0)[0].toString());
+        cleanupAfterExport(imeis, orderNoToUse);
     }
 
     private void processProductItem(Object[] item, BigDecimal discountPercent, 
@@ -1088,19 +1117,104 @@ public class Form_Export extends JPanel {
         }
     }
 
+    private void loadExportBillsData() {
+        try {
+            if (busExportBill == null) busExportBill = new BUS_ExportBill();
+            List<DTO_BillExport> billExports = busExportBill.getAllBillExported();
+            modelExportBills.setRowCount(0);
+            for (DTO_BillExport bill : billExports) {
+                Object[] row = {
+                    bill.getInvoiceNo(),
+                    bill.getAdminId(),
+                    bill.getCustomerId(),
+                    bill.getOrderNo() != null ? bill.getOrderNo() : "N/A",
+                    bill.getTotalProduct(),
+                    bill.getDescription() != null ? bill.getDescription() : "N/A"
+                };
+                modelExportBills.addRow(row);
+            }
+            if (tableExportBills != null) tableExportBills.adjustColumnWidths();
+        } catch (Exception ex) {
+            CustomDialog.showError("Error loading export bills: " + ex.getMessage());
+        }
+    }
+
+    private void showExportBillDetailsDialog(String invoiceNoDialog, String adminIdDialog) {
+        try {
+            if (busExportBill == null) busExportBill = new BUS_ExportBill();
+            List<com.Admin.export.DTO.DTO_BillExportedDetail> details = busExportBill.getBillDetailsByInvoice(invoiceNoDialog);
+
+            JDialog dialog = new JDialog((Frame) null, "Bill Details - " + invoiceNoDialog, true);
+            dialog.setSize(900, 540);
+            dialog.setLayout(new BorderLayout());
+            dialog.setLocationRelativeTo(null);
+
+            String[] colNames = {
+                "Invoice No", "Admin ID", "Customer ID", "Product ID",
+                "Unit Price", "Quantity", "Discount %", "Total Before",
+                "Total After", "Date Exported", "Time Exported"
+            };
+            DefaultTableModel mdl = new DefaultTableModel(colNames, 0) {
+                @Override
+                public boolean isCellEditable(int r, int c) { return false; }
+            };
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+            for (com.Admin.export.DTO.DTO_BillExportedDetail d : details) {
+                Object[] row = new Object[] {
+                    d.getInvoiceNo(),
+                    d.getAdminId(),
+                    d.getCustomerId(),
+                    d.getProductId(),
+                    d.getUnitPrice(),
+                    d.getQuantity(),
+                    d.getDiscountPercent() + "%",
+                    d.getTotalPriceBefore(),
+                    d.getTotalPriceAfter(),
+                    dateFormat.format(d.getDateExported()),
+                    timeFormat.format(d.getTimeExported())
+                };
+                mdl.addRow(row);
+            }
+
+            MyTable detailsTable = createStyledTable(mdl);
+            detailsTable.setRowHeight(28);
+            JScrollPane sp = new JScrollPane(detailsTable);
+            dialog.add(sp, BorderLayout.CENTER);
+
+            JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            MyButton closeBtn = new MyButton("Close", 18);
+            styleInfoButton(closeBtn);
+            closeBtn.addActionListener(ev -> dialog.dispose());
+            footer.add(closeBtn);
+            dialog.add(footer, BorderLayout.SOUTH);
+
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            CustomDialog.showError("Error loading bill details: " + ex.getMessage());
+        }
+    }
+
 
 
 
         private DTO_BillExportedDetail createExportDetail(
-            String productID, String imei, BigDecimal unitPrice, int quantity,
+            String productID, String imei, BigDecimal unitPriceBefore, int quantity,
             BigDecimal discountPercent, BigDecimal totalBefore, BigDecimal totalAfter, String promotionCode
         ) {
+            // Tính đơn giá sau khuyến mãi trên mỗi đơn vị
+            BigDecimal unitPriceAfter = unitPriceBefore.subtract(
+                unitPriceBefore.multiply(discountPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+            );
+
             return new DTO_BillExportedDetail(
                 invoiceNo,
                 txtAdminID.getText(),
                 customer.getCustomerID(),
                 productID,
-                unitPrice,
+                unitPriceBefore,
+                unitPriceAfter,
                 quantity,
                 discountPercent,
                 totalBefore,

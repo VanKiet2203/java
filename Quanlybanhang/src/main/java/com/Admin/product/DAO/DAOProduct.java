@@ -477,8 +477,8 @@ public class DAOProduct {
 
             // Header
             String[] headers = {
-                "Product ID", "Product Name", "Color", "Speed", "Battery Capacity",
-                "Price", "Quantity", "Category ID", "Image"
+                "Product_ID", "Product_Name", "Color", "Speed", "Battery_Capacity",
+                "Quantity", "Category_ID", "Sup_ID", "Price", "Warranty_Months", "Image"
             };
 
             XSSFRow headerRow = sheet.createRow(0);
@@ -496,13 +496,12 @@ public class DAOProduct {
                 row.createCell(2).setCellValue(rs.getString("Color"));
                 row.createCell(3).setCellValue(rs.getString("Speed"));
                 row.createCell(4).setCellValue(rs.getString("Battery_Capacity"));
-                row.createCell(5).setCellValue(rs.getBigDecimal("Price").toString());
-                row.createCell(6).setCellValue(rs.getBigDecimal("List_Price_Before").toString());
-                row.createCell(7).setCellValue(rs.getBigDecimal("List_Price_After").toString());
-                row.createCell(8).setCellValue(rs.getInt("Quantity"));
-                row.createCell(9).setCellValue(rs.getString("Category_ID"));
-                row.createCell(10).setCellValue(rs.getString("Sup_ID"));
-                row.createCell(11).setCellValue(rs.getString("Image"));
+                row.createCell(5).setCellValue(rs.getInt("Quantity"));
+                row.createCell(6).setCellValue(rs.getString("Category_ID"));
+                row.createCell(7).setCellValue(rs.getString("Sup_ID"));
+                row.createCell(8).setCellValue(rs.getBigDecimal("Price").toString());
+                row.createCell(9).setCellValue(rs.getInt("Warranty_Months"));
+                row.createCell(10).setCellValue(rs.getString("Image"));
             }
 
             // Autosize columns
@@ -725,7 +724,7 @@ public class DAOProduct {
     
     // Import products from Excel file
     public void importProductFromExcel(File excelFile) {
-        String insertSQL = "INSERT INTO Product (Product_ID, Product_Name, Color, Speed, Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String insertSQL = "INSERT INTO Product (Product_ID, Product_Name, Color, Speed, Battery_Capacity, Quantity, Category_ID, Sup_ID, Image, Price, List_Price_Before, List_Price_After, Warehouse_Item_ID, Warranty_Months) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ? AND Status = 'Available'";
         String checkProductSQL = "SELECT COUNT(*) FROM Product WHERE Product_ID = ? AND Status = 'Available'";
 
@@ -747,7 +746,7 @@ public class DAOProduct {
                 Row row = rowIterator.next();
                 int rowNum = row.getRowNum() + 1;
 
-                if (row.getPhysicalNumberOfCells() >= 9) {
+                if (row.getPhysicalNumberOfCells() >= 10) {
                     String productID = getCellValueAsString(row.getCell(0));
                     String productName = getCellValueAsString(row.getCell(1));
                     String color = getCellValueAsString(row.getCell(2));
@@ -757,12 +756,13 @@ public class DAOProduct {
                     String categoryID = getCellValueAsString(row.getCell(6));
                     String supID = getCellValueAsString(row.getCell(7));
                     double price = getCellValueAsNumber(row.getCell(8));
+                    int warrantyMonths = (int) getCellValueAsNumber(row.getCell(9));
 
                     if (productID == null || productID.trim().isEmpty() ||
                         productName == null || productName.trim().isEmpty() ||
                         categoryID == null || categoryID.trim().isEmpty() ||
                         supID == null || supID.trim().isEmpty() ||
-                        quantity <= 0 || price <= 0) {
+                        quantity < 0 || price <= 0 || warrantyMonths <= 0) {
                         errors.append("Row ").append(rowNum).append(": Missing or invalid data\n");
                         errorCount++;
                         continue;
@@ -806,9 +806,10 @@ public class DAOProduct {
                             insertStmt.setString(8, supID);
                             insertStmt.setString(9, null); // Image
                             insertStmt.setBigDecimal(10, BigDecimal.valueOf(price));
-                            insertStmt.setBigDecimal(11, BigDecimal.valueOf(price * 0.9)); // List_Price_Before
-                            insertStmt.setBigDecimal(12, BigDecimal.valueOf(price * 0.8)); // List_Price_After
+                            insertStmt.setBigDecimal(11, BigDecimal.valueOf(price)); // List_Price_Before = Price
+                            insertStmt.setBigDecimal(12, BigDecimal.valueOf(price)); // List_Price_After = Price
                             insertStmt.setString(13, productID); // Warehouse_Item_ID = Product_ID
+                            insertStmt.setInt(14, warrantyMonths); // Warranty_Months
 
                             insertStmt.executeUpdate();
                             conn.commit();
@@ -827,7 +828,7 @@ public class DAOProduct {
                         errorCount++;
                     }
                 } else {
-                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 9 columns)\n");
+                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 10 columns)\n");
                     errorCount++;
                 }
             }

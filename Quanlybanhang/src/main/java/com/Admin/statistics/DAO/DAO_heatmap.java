@@ -78,7 +78,7 @@ public class DAO_heatmap {
         Map<String, Map<String, Integer>> data = new LinkedHashMap<>();
         
         String sql = "SELECT FORMAT(bd.Date_Exported, 'yyyy-MM') AS month, " +
-                   "p.Product_ID, SUM(bd.Quantity) AS total_sold " +
+                   "p.Product_ID, SUM(bd.Sold_Quantity) AS total_sold " +
                    "FROM Bill_Exported_Details bd " +
                    "JOIN Product p ON bd.Product_ID = p.Product_ID " +
                    "JOIN Bill_Exported b ON bd.Invoice_No = b.Invoice_No " +

@@ -77,7 +77,7 @@ public class Menu extends JPanel {
         lblCategory = createLabel("Category", "category.png", 275);
         lblProduct= createLabel("Product", "product.png", 330);
         lblInventory= createLabel("Inventory", "import.png", 390);
-        lblExport= createLabel("Export", "export.png", 450);
+        lblExport= createLabel("Invoice", "export.png", 450);
         lblPromotion= createLabel("Promotion", "promotion.png", 510);
         lblStatistics= createLabel("Statistics", "statistics.png", 570);
         lblExit= createLabel("Exit", "exit.png", 630);
