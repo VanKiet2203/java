@@ -319,16 +319,6 @@ public class Form_Inventory extends JPanel {
     }
     
     private void exportPDFBillImport() {
-        // Kiểm tra xem có bill nào được chọn không
-        int selectedRow = tableBills.getSelectedRow();
-        if (selectedRow == -1) {
-            CustomDialog.showError("Vui lòng chọn bill cần export PDF!");
-            return;
-        }
-        
-        // Lấy Bill ID từ dòng được chọn
-        String billId = tableBills.getValueAt(selectedRow, 0).toString();
-        
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save PDF bill import file");
         
@@ -339,7 +329,7 @@ public class Form_Inventory extends JPanel {
                 path += ".pdf";
             }
             try {
-                busInventory.exportPDFBillImport(path, billId);
+                busInventory.exportPDFBillImport(path);
                 CustomDialog.showSuccess("PDF bill export successfully!");
             } catch (Exception e) {
                 CustomDialog.showError("PDF export failed: " + e.getMessage());

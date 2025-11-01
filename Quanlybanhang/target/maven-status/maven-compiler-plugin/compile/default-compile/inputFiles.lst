@@ -33,6 +33,7 @@ C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\login\DTO\DTOAcc
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\home\DAO\DAO_Total.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\dashboard_user\BUS\BUSProfile_cus.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\ComponentandDatabase\Components\MyTable.java
+C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\inventory\GUI\ProductDetailsDialog.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\ComponentandDatabase\Components\JDateChooser.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\login_user\DAO\ControlLogin_cus.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\login_user\GUI\Login_User.java
@@ -56,6 +57,7 @@ C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\statistics\GUI\F
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\home\DTO\productDTO.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\home\DTO\DTO_Supplier.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\order\DAO\DAO_OrderDetails.java
+C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\export\DTO\DTO_WarrantyInfo.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\User\login_user\GUI\ResetPassword_cus.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\order\DTO\DTO_order.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\dashboard_admin\DAO\DAOProfile_ad.java
@@ -110,6 +112,7 @@ C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\product\DTO\DTOP
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\login\GUI\PanelCover.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\product\GUI\Form_Product.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\promotion\DTO\DTOPromotion.java
+C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\export\GUI\WarrantyManagementForm.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\category\GUI\Form_Category.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\inventory\DTO\DTOImportBillDetails.java
 C:\Users\kiet\Downloads\Quanlybanhang_k\src\main\java\com\Admin\login\DAO\ControlLogin.java

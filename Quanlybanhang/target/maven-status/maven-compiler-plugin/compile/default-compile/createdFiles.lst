@@ -65,6 +65,7 @@ com\Admin\category\DTO\DTOCategory.class
 com\Admin\export\DTO\DTO_BillExport.class
 com\ComponentandDatabase\Components\MyTable$2.class
 com\Admin\export\DTO\DTO_BillExported.class
+com\Admin\inventory\GUI\ProductDetailsDialog.class
 com\Admin\order\GUI\order_Details$1.class
 com\User\dashboard_user\GUI\Menu_user$6.class
 com\ComponentandDatabase\Components\UIConstants.class
@@ -96,6 +97,7 @@ com\User\login_user\DAO\ControlRegister_User.class
 com\User\dashboard_user\GUI\MyProfile_cus$1.class
 com\Admin\export\DTO\DTO_Oderdetails.class
 com\ComponentandDatabase\Components\MyTreeview$CustomTreeCellRenderer.class
+com\Admin\export\DTO\DTO_WarrantyInfo.class
 com\User\order\GUI\OrderUpdateListener.class
 com\User\login_user\DAO\ControlLogin_cus$1.class
 com\Admin\dashboard_admin\GUI\MyProfile.class
@@ -109,6 +111,7 @@ com\User\login_user\DAO\ControlLogin_cus.class
 com\User\home\DAO\ControlHome.class
 com\Admin\inventory\GUI\BillDetailsDialog$1.class
 com\Admin\login\DAO\ControlLogin.class
+com\Admin\export\GUI\WarrantyManagementForm.class
 com\ComponentandDatabase\Components\MyCombobox$RoundedComboBoxUI.class
 com\Admin\order\BUS\BUS_order.class
 com\Admin\inventory\DTO\DTOInventory.class
