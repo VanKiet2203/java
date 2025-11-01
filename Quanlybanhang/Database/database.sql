@@ -36,11 +36,13 @@ CREATE TABLE dbo.Supplier(
     Sup_Name nvarchar(250) NOT NULL,
     Address nvarchar(255) NOT NULL,
     Contact varchar(100) NOT NULL,
+    Country varchar(100) NULL,
     Status varchar(20) NOT NULL CONSTRAINT DF_Supplier_Status DEFAULT('Available'),
     CONSTRAINT PK_Supplier PRIMARY KEY CLUSTERED (Sup_ID ASC)
 );
 END;
 GO
+
 
 -- ============================================
 -- CATEGORY TABLE
@@ -136,13 +138,15 @@ CREATE TABLE dbo.Product_Stock(
     Quantity_Stock int NOT NULL DEFAULT(0),       
     Unit_Price_Import decimal(18,2) NOT NULL,     
     Created_Date date NOT NULL,                  
-    Created_Time time(7) NOT NULL,                
+    Created_Time time(7) NOT NULL,
+    Production_Year int NULL,                
     Is_In_Product bit NOT NULL DEFAULT(0),
     Status varchar(20) NOT NULL CONSTRAINT DF_ProductStock_Status DEFAULT('Available'),
     CONSTRAINT PK_Product_Stock PRIMARY KEY CLUSTERED (Warehouse_Item_ID ASC)
 );
 END;
 GO
+
 
 -- Foreign Keys cho Product_Stock
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_ProductStock_Category')
@@ -178,7 +182,7 @@ GO
 IF EXISTS (SELECT 1 FROM dbo.Product WHERE Category_ID IS NULL OR Category_ID='')
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM dbo.Supplier WHERE Sup_ID='SUP00')
-        INSERT dbo.Supplier(Sup_ID,Sup_Name,Address,Contact) VALUES('SUP00',N'Unknown',N'',N'');
+        INSERT dbo.Supplier(Sup_ID,Sup_Name,Address,Contact,Country) VALUES('SUP00',N'Unknown',N'',N'',NULL);
     IF NOT EXISTS (SELECT 1 FROM dbo.Category WHERE Category_ID='UNCAT')
         INSERT dbo.Category(Category_ID,Category_Name,Sup_ID) VALUES('UNCAT',N'Uncategorized','SUP00');
     UPDATE dbo.Product SET Category_ID='UNCAT' WHERE Category_ID IS NULL OR Category_ID='';
@@ -282,6 +286,9 @@ CREATE TABLE dbo.Bill_Exported(
     Total_Product int NOT NULL CONSTRAINT DF_BE_TotalProduct DEFAULT(0),
     Description varchar(50) NULL,
     Promotion_Code varchar(50) NULL,
+    VAT_Percent decimal(5,2) NULL CONSTRAINT DF_BE_VATPercent DEFAULT(8.00),  -- Thuế VAT mặc định 8%
+    VAT_Amount decimal(15,2) NULL,  -- Số tiền VAT
+    Total_Amount decimal(15,2) NULL,  -- Tổng tiền sau VAT
     Status varchar(20) NOT NULL CONSTRAINT DF_BillExported_Status DEFAULT('Available'),
     CONSTRAINT PK_Bill_Exported PRIMARY KEY CLUSTERED (Invoice_No ASC, Admin_ID ASC)
 );
@@ -290,6 +297,16 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Bill_Exported') AND name='Promotion_Code')
     ALTER TABLE dbo.Bill_Exported ADD Promotion_Code varchar(50) NULL;
+
+-- Thêm cột VAT nếu chưa tồn tại
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Bill_Exported') AND name='VAT_Percent')
+    ALTER TABLE dbo.Bill_Exported ADD VAT_Percent decimal(5,2) NULL DEFAULT(8.00);
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Bill_Exported') AND name='VAT_Amount')
+    ALTER TABLE dbo.Bill_Exported ADD VAT_Amount decimal(15,2) NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Bill_Exported') AND name='Total_Amount')
+    ALTER TABLE dbo.Bill_Exported ADD Total_Amount decimal(15,2) NULL;
 
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_BillExported_Admin')
 BEGIN
@@ -493,14 +510,18 @@ GO
 -- ============================================
 MERGE dbo.Supplier AS t
 USING (VALUES
-('NIJIA', N'CÔNG TY NIJIA',  N'QL1A, Quất Động, Thường Tín, Hà Nội', '0936281080'),
-('TAILG', N'CÔNG TY TAILG',  N'Số 8 KCN Minh Quang, P, Thị Xã Mã Hào, Hưng Yên', '0972155557'),
-('YADEA', N'CÔNG TY YADEA',  N'Khu công nghiệp Quang Châu, Phường Nếnh, Tỉnh Bắc Ninh', '0920462988'),
-('VINFAST', N'CÔNG TY Vinfast',N'Khu Kinh tế Đình Vũ, TP. Hải Phòng', '0972155337')
-) AS s(Sup_ID,Sup_Name,Address,Contact)
+('NIJIA', N'Company NIJIA',  N'QL1A, Quất Động, Thường Tín, Hà Nội', '0936281080', 'China'),
+('TAILG', N'Company TAILG',  N'Số 8 KCN Minh Quang, P, Thị Xã Mã Hào, Hưng Yên', '0972155557', 'China'),
+('YADEA', N'Company YADEA',  N'Khu công nghiệp Quang Châu, Phường Nếnh, Tỉnh Bắc Ninh', '0920462988', 'HongKong'),
+('VINFAST', N'Company Vinfast',N'Khu Kinh tế Đình Vũ, TP. Hải Phòng', '0972155337', 'Vietnam'),
+('HONDA', N'Company Honda', N'Số 67, Hoàng Văn Thái, Phường Tân Mỹ, TP. Hồ Chí Minh', '0933.899.544', 'Japan'),
+('YAMAHA', N'Company Yamaha', N'Thôn Bình An, xã Trung Giã, Thành phố Hà Nội', '18001588', 'Japan')
+) AS s(Sup_ID,Sup_Name,Address,Contact,Country)
 ON (t.Sup_ID=s.Sup_ID)
 WHEN NOT MATCHED THEN
-  INSERT (Sup_ID,Sup_Name,Address,Contact) VALUES (s.Sup_ID,s.Sup_Name,s.Address,s.Contact);
+  INSERT (Sup_ID,Sup_Name,Address,Contact,Country) VALUES (s.Sup_ID,s.Sup_Name,s.Address,s.Contact,s.Country)
+WHEN MATCHED THEN
+  UPDATE SET t.Country = s.Country, t.Sup_Name = s.Sup_Name;
 GO
 
 -- ============================================
@@ -1123,7 +1144,202 @@ BEGIN
     WHERE p.Status = 'Available' AND (ps.Status = 'Available' OR ps.Status IS NULL)
     ORDER BY Balance_Status DESC;
     
-    PRINT '=== HOÀN THÀNH SỬA LỖI SỐ LƯỢNG ===';
     SELECT 'SUCCESS' AS Result, 'Quantity issues fixed - Reset and resync completed' AS Message;
 END;
+GO
+
+
+
+
+
+/* ============================================
+   REIMPORT: Stored Procedure & Triggers
+   (Paste nguyên khối này vào cuối database.sql)
+   ============================================ */
+
+-- Proc: Reimport vào kho & đồng bộ tồn sản phẩm
+IF OBJECT_ID(N'dbo.sp_ReimportWarehouseItem', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_ReimportWarehouseItem;
+GO
+CREATE PROCEDURE dbo.sp_ReimportWarehouseItem
+    @Warehouse_Item_ID   varchar(50),
+    @Added_Quantity      int,
+    @Unit_Price_Import   decimal(18,2),
+    @Admin_ID            varchar(20),
+    @Invoice_No          varchar(50) = NULL      -- cho phép truyền vào; nếu NULL sẽ tự sinh
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF (@Added_Quantity IS NULL OR @Added_Quantity <= 0)
+    BEGIN
+        RAISERROR (N'Added_Quantity phải > 0', 16, 1);
+        RETURN;
+    END
+
+    -- 1) Kiểm tra WH tồn tại
+    IF NOT EXISTS (SELECT 1 FROM dbo.Product_Stock WITH (UPDLOCK, HOLDLOCK)
+                   WHERE Warehouse_Item_ID = @Warehouse_Item_ID AND Status='Available')
+    BEGIN
+        RAISERROR (N'WAREHOUSE_NOT_FOUND', 16, 1);
+        RETURN;
+    END
+
+    DECLARE @today date = CAST(GETDATE() AS date);
+    DECLARE @now   time(7) = CAST(GETDATE() AS time(7));
+
+    -- 2) Bảo đảm Admin tồn tại
+    IF NOT EXISTS (SELECT 1 FROM dbo.Admin WHERE Admin_ID=@Admin_ID)
+    BEGIN
+        RAISERROR (N'ADMIN_NOT_FOUND', 16, 1);
+        RETURN;
+    END
+
+    -- 3) Lập (hoặc dùng) Bill_Imported header
+    IF @Invoice_No IS NULL OR LTRIM(RTRIM(@Invoice_No)) = ''
+    BEGIN
+        SET @Invoice_No = 'IM' + CONVERT(varchar(8), GETDATE(), 112) 
+                        + RIGHT('0000' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS varchar(4)), 4);
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.Bill_Imported WHERE Invoice_No=@Invoice_No AND Admin_ID=@Admin_ID)
+    BEGIN
+        INSERT dbo.Bill_Imported(Invoice_No, Admin_ID, Total_Product, Total_Price)
+        VALUES(@Invoice_No, @Admin_ID, 0, 0.00);
+    END
+
+    -- 4) Ghi dòng chi tiết nhập (lưu vết reimport)
+    DECLARE @line_total decimal(18,2) = @Added_Quantity * ISNULL(@Unit_Price_Import, 0.00);
+
+    MERGE dbo.Bill_Imported_Details AS t
+    USING (SELECT @Invoice_No AS Invoice_No, @Admin_ID AS Admin_ID, @Warehouse_Item_ID AS Warehouse_Item_ID) src
+    ON (t.Invoice_No=src.Invoice_No AND t.Admin_ID=src.Admin_ID AND t.Warehouse_Item_ID=src.Warehouse_Item_ID)
+    WHEN MATCHED THEN
+        UPDATE SET 
+            t.Quantity         = t.Quantity + @Added_Quantity,
+            t.Unit_Price_Import= ISNULL(@Unit_Price_Import, t.Unit_Price_Import),
+            t.Total_Price      = (t.Quantity + @Added_Quantity) * ISNULL(@Unit_Price_Import, t.Unit_Price_Import),
+            t.Date_Imported    = @today,
+            t.Time_Imported    = @now,
+            t.Status           = 'Available'
+    WHEN NOT MATCHED THEN
+        INSERT(Invoice_No, Admin_ID, Warehouse_Item_ID, Quantity, Unit_Price_Import, Total_Price, Date_Imported, Time_Imported, Status)
+        VALUES(@Invoice_No, @Admin_ID, @Warehouse_Item_ID, @Added_Quantity, ISNULL(@Unit_Price_Import,0.00), @line_total, @today, @now, 'Available');
+
+    -- 5) Cộng số lượng vào kho (Product_Stock)
+    UPDATE ps
+    SET ps.Quantity_Stock = ps.Quantity_Stock + @Added_Quantity,
+        ps.Unit_Price_Import = CASE WHEN @Unit_Price_Import IS NULL THEN ps.Unit_Price_Import ELSE @Unit_Price_Import END
+    FROM dbo.Product_Stock ps
+    WHERE ps.Warehouse_Item_ID = @Warehouse_Item_ID;
+
+    -- 6) Cập nhật lại header (tổng SL/tổng tiền) để in ấn
+    UPDATE h
+    SET h.Total_Product = ISNULL((
+            SELECT SUM(Quantity) FROM dbo.Bill_Imported_Details d
+            WHERE d.Invoice_No=h.Invoice_No AND d.Admin_ID=h.Admin_ID AND d.Status='Available'
+        ),0),
+        h.Total_Price = ISNULL((
+            SELECT SUM(Total_Price) FROM dbo.Bill_Imported_Details d
+            WHERE d.Invoice_No=h.Invoice_No AND d.Admin_ID=h.Admin_ID AND d.Status='Available'
+        ),0.00)
+    FROM dbo.Bill_Imported h
+    WHERE h.Invoice_No=@Invoice_No AND h.Admin_ID=@Admin_ID;
+
+    /* 7) Đồng bộ tồn Product cho mọi Product liên kết với Warehouse_Item_ID này
+          Tồn (Product.Quantity) = Tổng nhập - Tổng đã bán */
+    UPDATE p
+    SET p.Quantity = 
+        (SELECT ISNULL(SUM(bid.Quantity),0)
+         FROM dbo.Bill_Imported_Details bid
+         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID AND bid.Status='Available')
+        -
+        (SELECT ISNULL(SUM(bed.Sold_Quantity),0)
+         FROM dbo.Bill_Exported_Details bed
+         WHERE bed.Product_ID = p.Product_ID AND bed.Status='Available')
+    FROM dbo.Product p
+    WHERE p.Warehouse_Item_ID = @Warehouse_Item_ID;
+
+    SELECT 'SUCCESS' AS Result,
+           'Reimport thành công' AS Message,
+           @Invoice_No AS Invoice_No;
+END
+GO
+
+
+/***** Trigger nhập: tự đồng bộ tồn khi có thay đổi Import Details *****/
+
+-- AFTER INSERT
+IF OBJECT_ID(N'dbo.trg_BID_AI_SyncProduct', N'TR') IS NOT NULL
+    DROP TRIGGER dbo.trg_BID_AI_SyncProduct;
+GO
+CREATE TRIGGER dbo.trg_BID_AI_SyncProduct ON dbo.Bill_Imported_Details
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH A AS (
+        SELECT DISTINCT Warehouse_Item_ID FROM inserted
+    )
+    UPDATE p
+    SET p.Quantity = 
+        (SELECT ISNULL(SUM(bid.Quantity),0) FROM dbo.Bill_Imported_Details bid 
+         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID AND bid.Status='Available')
+        -
+        (SELECT ISNULL(SUM(bed.Sold_Quantity),0) FROM dbo.Bill_Exported_Details bed 
+         WHERE bed.Product_ID = p.Product_ID AND bed.Status='Available')
+    FROM dbo.Product p
+    JOIN A ON A.Warehouse_Item_ID = p.Warehouse_Item_ID;
+END
+GO
+
+-- AFTER UPDATE
+IF OBJECT_ID(N'dbo.trg_BID_AU_SyncProduct', N'TR') IS NOT NULL
+    DROP TRIGGER dbo.trg_BID_AU_SyncProduct;
+GO
+CREATE TRIGGER dbo.trg_BID_AU_SyncProduct ON dbo.Bill_Imported_Details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH A AS (
+        SELECT Warehouse_Item_ID FROM inserted
+        UNION
+        SELECT Warehouse_Item_ID FROM deleted
+    )
+    UPDATE p
+    SET p.Quantity = 
+        (SELECT ISNULL(SUM(bid.Quantity),0) FROM dbo.Bill_Imported_Details bid 
+         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID AND bid.Status='Available')
+        -
+        (SELECT ISNULL(SUM(bed.Sold_Quantity),0) FROM dbo.Bill_Exported_Details bed 
+         WHERE bed.Product_ID = p.Product_ID AND bed.Status='Available')
+    FROM dbo.Product p
+    JOIN A ON A.Warehouse_Item_ID = p.Warehouse_Item_ID;
+END
+GO
+
+-- AFTER DELETE (trả nhập)
+IF OBJECT_ID(N'dbo.trg_BID_AD_SyncProduct', N'TR') IS NOT NULL
+    DROP TRIGGER dbo.trg_BID_AD_SyncProduct;
+GO
+CREATE TRIGGER dbo.trg_BID_AD_SyncProduct ON dbo.Bill_Imported_Details
+AFTER DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH A AS (SELECT DISTINCT Warehouse_Item_ID FROM deleted)
+    UPDATE p
+    SET p.Quantity = 
+        (SELECT ISNULL(SUM(bid.Quantity),0) FROM dbo.Bill_Imported_Details bid 
+         WHERE bid.Warehouse_Item_ID = p.Warehouse_Item_ID AND bid.Status='Available')
+        -
+        (SELECT ISNULL(SUM(bed.Sold_Quantity),0) FROM dbo.Bill_Exported_Details bed 
+         WHERE bed.Product_ID = p.Product_ID AND bed.Status='Available')
+    FROM dbo.Product p
+    JOIN A ON A.Warehouse_Item_ID = p.Warehouse_Item_ID;
+END
 GO
