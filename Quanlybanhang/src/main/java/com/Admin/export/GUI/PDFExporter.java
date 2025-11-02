@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.pdf.draw.LineSeparator;
@@ -76,7 +77,7 @@ public class PDFExporter {
             addPdfHeader(document, finalInvoiceNo);
             addAdminCustomerInfo(document);
             addOrderDetails(document);
-            addPromotionInfo(document);
+            // Removed promotion info section - discount is already shown in order details table
             addOrderSummary(document);
             addFooter(document);
 
@@ -282,19 +283,19 @@ public class PDFExporter {
     section.setSpacingAfter(10f);
     document.add(section);
 
-        // Create table with 7 columns
-        PdfPTable table = new PdfPTable(8);
+        // Create table with 9 columns (added Start Date and End Date columns)
+        PdfPTable table = new PdfPTable(9);
         table.setWidthPercentage(110); // Mở rộng bảng hơn so với trang PDF
         table.setSpacingBefore(10f);
         table.setSpacingAfter(15f);
 
-        // Column widths (Increased width for Product ID, Quantity, and Discount)
-        float[] columnWidths = {1.2f, 2.0f, 3.5f, 2.0f, 2.5f, 1.8f, 2.5f, 2.8f}; 
+        // Column widths
+        float[] columnWidths = {1.0f, 1.8f, 3.0f, 1.5f, 2.0f, 1.5f, 2.0f, 2.0f, 2.2f}; 
         table.setWidths(columnWidths);
 
 
         // Table header
-        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.WHITE);
         BaseColor headerBgColor = new BaseColor(0, 51, 102);
 
         addTableHeader(table, "No.", headerFont, headerBgColor);
@@ -304,18 +305,31 @@ public class PDFExporter {
         addTableHeader(table, "Unit Price", headerFont, headerBgColor);
         addTableHeader(table, "Discount", headerFont, headerBgColor);
         addTableHeader(table, "Total", headerFont, headerBgColor);
-        addTableHeader(table, "Warranty_Period", headerFont, headerBgColor);
+        addTableHeader(table, "Warranty Start", headerFont, headerBgColor);
+        addTableHeader(table, "Warranty End", headerFont, headerBgColor);
         // Table data
-        Font rowFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        Font rowFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
         int rowNum = 1;
         BigDecimal grandTotal = BigDecimal.ZERO;
+        
+        // Get current date for warranty calculation
+        java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
         for (Object[] item : orderItems) {
             bus_ExportBill= new BUS_ExportBill();
             String productId = item[2].toString();
             BigDecimal unitPrice = (BigDecimal) item[3];
             int quantity = (int) item[4];
-            String warranty= bus_ExportBill.getWarranty(productId);
+            
+            // Get warranty months and calculate start/end dates
+            int warrantyMonths = bus_ExportBill.getWarrantyMonths(productId);
+            java.sql.Date warrantyStartDate = currentDate;
+            java.sql.Date warrantyEndDate = java.sql.Date.valueOf(
+                warrantyStartDate.toLocalDate().plusMonths(warrantyMonths)
+            );
+            String warrantyStartStr = dateFormat.format(warrantyStartDate);
+            String warrantyEndStr = dateFormat.format(warrantyEndDate);
             
             // Calculate item total without discount first
             BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
@@ -330,9 +344,10 @@ public class PDFExporter {
             table.addCell(createTableCell(busOrderDetail.getProductName(productId), rowFont, rowColor));
             table.addCell(createTableCell(String.valueOf(quantity), rowFont, rowColor));
             table.addCell(createTableCell(formatCurrency(unitPrice.toString()), rowFont, rowColor));
-            table.addCell(createTableCell(discount + "%", rowFont, rowColor));
+            table.addCell(createTableCell(discount > 0 ? discount + "%" : "0%", rowFont, rowColor));
             table.addCell(createTableCell(formatCurrency(itemTotal.toString()), rowFont, rowColor));
-            table.addCell(createTableCell(warranty, rowFont, rowColor));
+            table.addCell(createTableCell(warrantyStartStr, rowFont, rowColor));
+            table.addCell(createTableCell(warrantyEndStr, rowFont, rowColor));
             
             grandTotal = grandTotal.add(itemTotal);
         }
@@ -341,58 +356,6 @@ public class PDFExporter {
         addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
     }
 
-    private void addPromotionInfo(Document document) throws DocumentException {
-        if (promotionCode == null || promotionCode.trim().isEmpty()) {
-            return; // No promotion code, skip this section
-        }
-
-        // Section title
-        Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BaseColor.DARK_GRAY);
-        Paragraph section = new Paragraph("PROMOTION INFORMATION", sectionFont);
-        section.setSpacingAfter(10f);
-        document.add(section);
-
-        // Create table for promotion info
-        PdfPTable table = new PdfPTable(4);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(10f);
-        table.setSpacingAfter(15f);
-        table.setWidths(new float[]{1.5f, 2.5f, 1.5f, 1.5f});
-
-        // Header color
-        BaseColor headerBgColor = new BaseColor(0, 51, 102);
-        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
-
-        // Headers
-        addTableHeader(table, "Promotion Code", headerFont, headerBgColor);
-        addTableHeader(table, "Promotion Name", headerFont, headerBgColor);
-        addTableHeader(table, "Discount %", headerFont, headerBgColor);
-        addTableHeader(table, "Status", headerFont, headerBgColor);
-
-        // Data
-        Font rowFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
-        BaseColor rowColor = new BaseColor(248, 248, 248);
-
-        // Get promotion details
-        String promotionName = "N/A";
-        try {
-            com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
-            com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.findActivePromotion(promotionCode);
-            if (promotion != null) {
-                promotionName = promotion.getPromotionName();
-            }
-        } catch (Exception e) {
-            // Use default values if error
-        }
-
-        table.addCell(createTableCell(promotionCode, rowFont, rowColor));
-        table.addCell(createTableCell(promotionName, rowFont, rowColor));
-        table.addCell(createTableCell(String.format("%.1f%%", discount), rowFont, rowColor));
-        table.addCell(createTableCell("Active", rowFont, rowColor));
-
-        document.add(table);
-        addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
-    }
 
     private void addTableHeader(PdfPTable table, String text, Font font, BaseColor bgColor) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
@@ -448,6 +411,11 @@ public class PDFExporter {
            grandTotal = grandTotal.add(calculateTotal(item[3], item[4]));
            totalQuantity += ((Number) item[4]).intValue(); // Sum up quantities
        }
+       
+       // Calculate VAT 8%
+       BigDecimal vatPercent = BigDecimal.valueOf(8.00);
+       BigDecimal vatAmount = grandTotal.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+       BigDecimal totalWithVAT = grandTotal.add(vatAmount);
 
        // Tạo bảng chứa cả Payment method và Order Summary
        PdfPTable containerTable = new PdfPTable(2);
@@ -461,10 +429,19 @@ public class PDFExporter {
 
        if (!orderItems.isEmpty()) {
            String orderNo = orderItems.get(0)[0].toString();
-           String paymentMethod = busOrderDetail.getPayment(orderNo);
-
-           if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
-               paymentMethod = "N/A"; // đảm bảo luôn có gì đó để hiển thị
+           String paymentMethod = null;
+           
+           try {
+               paymentMethod = busOrderDetail.getPayment(orderNo);
+               // Kiểm tra nếu là "Unknown" hoặc null/empty thì thử lại hoặc dùng default
+               if (paymentMethod == null || paymentMethod.trim().isEmpty() || 
+                   paymentMethod.equalsIgnoreCase("Unknown") || paymentMethod.equals("N/A")) {
+                   // Thử lấy từ database trực tiếp nếu cần
+                   paymentMethod = "Cash"; // Default value
+               }
+           } catch (Exception e) {
+               System.err.println("Error getting payment method: " + e.getMessage());
+               paymentMethod = "Cash"; // Default fallback
            }
 
            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
@@ -502,8 +479,14 @@ public class PDFExporter {
        summaryParagraph.add(new Phrase("Total Quantity: ", labelFont));
        summaryParagraph.add(new Phrase(String.valueOf(totalQuantity) + "\n", valueFont));
 
-       summaryParagraph.add(new Phrase("Total Price: ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(grandTotal.toString()), valueFont));
+       summaryParagraph.add(new Phrase("Subtotal: ", labelFont));
+       summaryParagraph.add(new Phrase(formatCurrency(grandTotal.toString()) + "\n", valueFont));
+       
+       summaryParagraph.add(new Phrase("VAT (" + vatPercent + "%): ", labelFont));
+       summaryParagraph.add(new Phrase(formatCurrency(vatAmount.toString()) + "\n", valueFont));
+
+       summaryParagraph.add(new Phrase("Total Amount (incl. VAT): ", labelFont));
+       summaryParagraph.add(new Phrase(formatCurrency(totalWithVAT.toString()), valueFont));
 
        summaryCell.addElement(summaryParagraph);
        containerTable.addCell(summaryCell);

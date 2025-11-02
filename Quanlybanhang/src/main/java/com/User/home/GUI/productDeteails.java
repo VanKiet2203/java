@@ -39,7 +39,6 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import java.nio.file.Files;
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 
 import javax.swing.JLabel;
@@ -53,10 +52,10 @@ import net.miginfocom.swing.MigLayout;
 
 public class productDeteails extends javax.swing.JFrame {
      public JLabel lblTitle, lblID, lblProductName, lblColor, lblBatteryCapacity, lblSpeed, lblWarranty, lblCateID
-             , lblBrand, lblQuantity;
+             , lblBrand, lblCountry, lblQuantity;
      public MyPanel panelTitle;
      public MyCombobox cmbGender;
-     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtWarranty, txtCateID, txtBrand, txtPrice, txtStatus, txtQuantity;
+     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtWarranty, txtCateID, txtBrand, txtCountry, txtPrice, txtQuantity;
      private JDateChooser dateOfBirth;
      private JTextArea txtAddress;
      public JPanel panelUpload;
@@ -69,7 +68,7 @@ public class productDeteails extends javax.swing.JFrame {
     
     public productDeteails() {
         initComponents();
-        setSize(800, 700); // Tăng kích thước để hiển thị đẹp hơn
+        setSize(800, 750); // Tăng kích thước để hiển thị đầy đủ các trường mới
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
 
         // Tính toán vị trí để căn giữa và trên cùng
@@ -91,6 +90,16 @@ public class productDeteails extends javax.swing.JFrame {
     }
 
     private void fireCartUpdatedEvent(String customerID) {
+        for (CartUpdateListener listener : listeners) {
+            listener.onCartUpdated(customerID);
+        }
+    }
+    
+    /**
+     * Static method để fire cart update event từ bên ngoài class
+     * Được sử dụng bởi Home_user và các class khác
+     */
+    public static void fireCartUpdatedEventStatic(String customerID) {
         for (CartUpdateListener listener : listeners) {
             listener.onCartUpdated(customerID);
         }
@@ -176,16 +185,11 @@ public class productDeteails extends javax.swing.JFrame {
      lblQuantity.setForeground(Color.decode("#1976D2"));
      bg.add(lblQuantity, "pos 400 430, w 140!, h 30!");
      
-     // Thêm label cho Price và Status
-     JLabel lblPrice = new JLabel("Current Price:");
+     // Only show Price (not Original Price, Promo Price)
+     JLabel lblPrice = new JLabel("Price:");
      lblPrice.setFont(new Font("Arial", Font.BOLD, 14));
      lblPrice.setForeground(Color.decode("#1976D2"));
-     bg.add(lblPrice, "pos 400 470, w 140!, h 30!");
-     
-     JLabel lblStatus = new JLabel("Status:");
-     lblStatus.setFont(new Font("Arial", Font.BOLD, 14));
-     lblStatus.setForeground(Color.decode("#1976D2"));
-     bg.add(lblStatus, "pos 400 510, w 140!, h 30!");
+     bg.add(lblPrice, "pos 400 470, w 170!, h 30!");
      
      
      
@@ -282,30 +286,24 @@ public class productDeteails extends javax.swing.JFrame {
      txtBrand.setBackgroundColor(Color.WHITE);
      bg.add(txtBrand, "pos 550 390, w 150!, h 35!");
      
-     // Thêm text fields cho Price và Status
-     txtPrice = new MyTextField();
-     txtPrice.setBorder(BorderFactory.createCompoundBorder(
+     // Country (Origin) - Fixed position to avoid overlap with Quantity
+     lblCountry = new JLabel("Origin:");
+     lblCountry.setFont(new Font("Arial", Font.BOLD, 14));
+     lblCountry.setForeground(Color.decode("#1976D2"));
+     bg.add(lblCountry, "pos 400 510, w 140!, h 30!");
+     
+     txtCountry = new MyTextField();
+     txtCountry.setBorder(BorderFactory.createCompoundBorder(
          BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
          BorderFactory.createEmptyBorder(5, 10, 5, 10)
      ));
-     txtPrice.setTextColor(Color.decode("#D32F2F"));
-     txtPrice.setLocked(true);
-     txtPrice.setTextFont(new Font("Arial", Font.BOLD, 14));
-     txtPrice.setBackgroundColor(Color.WHITE);
-     bg.add(txtPrice, "pos 550 470, w 150!, h 35!");
+     txtCountry.setTextColor(Color.decode("#333333"));
+     txtCountry.setLocked(true);
+     txtCountry.setTextFont(new Font("Arial", Font.PLAIN, 14));
+     txtCountry.setBackgroundColor(Color.WHITE);
+     bg.add(txtCountry, "pos 550 510, w 150!, h 35!");
      
-     txtStatus = new MyTextField();
-     txtStatus.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
-     ));
-     txtStatus.setTextColor(Color.decode("#388E3C"));
-     txtStatus.setLocked(true);
-     txtStatus.setTextFont(new Font("Arial", Font.BOLD, 14));
-     txtStatus.setBackgroundColor(Color.WHITE);
-     bg.add(txtStatus, "pos 550 510, w 150!, h 35!");
-     
-     // Thêm text field cho Quantity
+     // Text field cho Quantity - Fixed position
      txtQuantity = new MyTextField();
      txtQuantity.setBorder(BorderFactory.createCompoundBorder(
          BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
@@ -317,18 +315,30 @@ public class productDeteails extends javax.swing.JFrame {
      txtQuantity.setBackgroundColor(Color.WHITE);
      bg.add(txtQuantity, "pos 550 430, w 150!, h 35!");
      
-     // Spinner cho Add to Cart
-      SpinnerNumberModel quantityModel = new SpinnerNumberModel(1, 0, 1000, 1);
-      spinnerQuantity = new JSpinner(quantityModel);
-      JComponent editor = spinnerQuantity.getEditor();
-      JFormattedTextField textField = ((JSpinner.DefaultEditor) editor).getTextField();
-      textField.setFont(new Font("Arial", Font.PLAIN, 14));
-      textField.setBackground(Color.WHITE);
-      textField.setBorder(BorderFactory.createCompoundBorder(
-          BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-          BorderFactory.createEmptyBorder(5, 10, 5, 10)
-      ));
-      bg.add(spinnerQuantity, "pos 550 550, w 80!, h 35!");
+     // Text field cho Price (only Price, not Original or Promo)
+     txtPrice = new MyTextField();
+     txtPrice.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtPrice.setTextColor(Color.decode("#D32F2F"));
+     txtPrice.setLocked(true);
+     txtPrice.setTextFont(new Font("Arial", Font.BOLD, 14));
+     txtPrice.setBackgroundColor(Color.WHITE);
+     bg.add(txtPrice, "pos 550 470, w 220!, h 35!"); 
+     
+     // Spinner cho Add to Cart - di chuyển xuống dưới
+     SpinnerNumberModel quantityModel = new SpinnerNumberModel(1, 0, 1000, 1);
+     spinnerQuantity = new JSpinner(quantityModel);
+     JComponent editor = spinnerQuantity.getEditor();
+     JFormattedTextField textField = ((JSpinner.DefaultEditor) editor).getTextField();
+     textField.setFont(new Font("Arial", Font.PLAIN, 14));
+     textField.setBackground(Color.WHITE);
+     textField.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     bg.add(spinnerQuantity, "pos 30 640, w 80!, h 35!");
      
      
      bntAddcart = new MyButton("Add to Cart", 20);
@@ -339,9 +349,41 @@ public class productDeteails extends javax.swing.JFrame {
      bntAddcart.setForeground(Color.WHITE);
      bntAddcart.setButtonIcon("/Icons/User_icon/cart.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);   
       bntAddcart.addActionListener(e -> {
-            // Lấy thông tin từ giao diện
-            String productID = txtID.getText();
+            // Validate quantity trước khi submit
             int quantity = (int) spinnerQuantity.getValue();
+            
+            // Kiểm tra số lượng hợp lệ
+            if (quantity <= 0) {
+                CustomDialog.showError("Quantity must be greater than 0!");
+                spinnerQuantity.setValue(1);
+                spinnerQuantity.requestFocus();
+                return;
+            }
+            
+            // Lấy thông tin sản phẩm để kiểm tra tồn kho
+            if (busProduct == null) {
+                busProduct = new productBUS();
+            }
+            String productID = txtID.getText();
+            productDTO product = busProduct.getProductById(productID);
+            
+            if (product != null) {
+                int currentStock = product.getQuantity();
+                
+                // Kiểm tra số lượng không vượt quá tồn kho
+                if (quantity > currentStock) {
+                    CustomDialog.showError(
+                        "Quantity exceeds available stock!\n\n" +
+                        "Requested: " + quantity + "\n" +
+                        "Available: " + currentStock + "\n\n" +
+                        "Please reduce the quantity."
+                    );
+                    // Tự động điều chỉnh về giá trị max
+                    spinnerQuantity.setValue(Math.min(quantity, currentStock));
+                    spinnerQuantity.requestFocus();
+                    return;
+                }
+            }
 
             String customerID = Dashboard_user.customerID;
             System.out.println("🔍 DEBUG - Customer ID from Dashboard: " + customerID);
@@ -365,10 +407,17 @@ public class productDeteails extends javax.swing.JFrame {
 
                 this.dispose();
             } else {
-                CustomDialog.showError("Add product to the cart failed!");
+                // Thông báo lỗi chi tiết hơn
+                CustomDialog.showError(
+                    "Failed to add product to cart!\n\n" +
+                    "Possible reasons:\n" +
+                    "• Quantity exceeds available stock\n" +
+                    "• Invalid product or customer\n" +
+                    "• Database connection error"
+                );
             }
         });
-     bg.add(bntAddcart, "w 160!, h 35!, span, align center, dock south, gapbottom 15, gaptop 20");
+     bg.add(bntAddcart, "w 160!, h 35!, pos 200 640, align center, gapbottom 15, gaptop 20");
  }
     
     public void displayProductDetails(productDTO product) {
@@ -419,16 +468,22 @@ public class productDeteails extends javax.swing.JFrame {
         txtColor.setText(product.getColor() != null ? product.getColor() : "N/A");
         txtBatteryCapacity.setText(product.getBatteryCapacity() != null ? product.getBatteryCapacity() : "N/A");
         txtSpeed.setText(product.getSpeed() != null ? product.getSpeed() : "N/A");
-        txtWarranty.setText(String.valueOf(product.getWarrantyMonths()));
+        txtWarranty.setText(product.getWarrantyMonths() + " tháng");
         txtCateID.setText(product.getCategoryID() != null ? product.getCategoryID() : "N/A");
         
-        // Hiển thị Price, Status và Quantity
-        txtPrice.setText(product.getPrice() != null ? product.getPrice() + " VNĐ" : "N/A");
-        txtStatus.setText(product.getStatus() != null ? product.getStatus() : "N/A");
+        // Only display Price (from database)
+        if (product.getPrice() != null) {
+            txtPrice.setText(String.format("%,.0f VNĐ", product.getPrice().doubleValue()));
+        } else {
+            txtPrice.setText("N/A");
+        }
+        
+        // Quantity and Country
         txtQuantity.setText(String.valueOf(product.getQuantity()));
+        txtCountry.setText(product.getCountry() != null ? product.getCountry() : "N/A");
         
         // Xử lý spinner quantity và nút Add/Update Cart
-        if (product.getQuantity() == 0 || "Out of Stock".equals(product.getStatus())) {
+        if (product.getQuantity() == 0) {
             setupUIForOutOfStock();
         } else {
             setupUIForAvailableProduct(product);
@@ -482,10 +537,29 @@ public class productDeteails extends javax.swing.JFrame {
         spinnerQuantity.setModel(quantityModel);
         spinnerQuantity.setEnabled(true);
 
-        // Cho phép nhập tay nhưng có validate
+        // Cho phép nhập tay nhưng có validate khi thay đổi
         JComponent editor = spinnerQuantity.getEditor();
         if (editor instanceof JSpinner.DefaultEditor) {
-            ((JSpinner.DefaultEditor)editor).getTextField().setEditable(true);
+            JSpinner.DefaultEditor defaultEditor = (JSpinner.DefaultEditor) editor;
+            defaultEditor.getTextField().setEditable(true);
+            
+            // Thêm ChangeListener để validate khi user thay đổi giá trị
+            spinnerQuantity.addChangeListener(e -> {
+                int value = (int) spinnerQuantity.getValue();
+                int maxStock = product.getQuantity();
+                
+                // Tự động điều chỉnh nếu vượt quá max
+                if (value > maxStock) {
+                    spinnerQuantity.setValue(maxStock);
+                    CustomDialog.showError(
+                        "Quantity cannot exceed available stock!\n" +
+                        "Maximum: " + maxStock
+                    );
+                } else if (value <= 0) {
+                    spinnerQuantity.setValue(1);
+                    CustomDialog.showError("Quantity must be greater than 0!");
+                }
+            });
         }
 
         // Thiết lập lại nút Add/Update Cart
@@ -495,15 +569,39 @@ public class productDeteails extends javax.swing.JFrame {
         bntAddcart.setHoverColor(Color.decode("#FFCC66"));
         bntAddcart.setPressedColor(Color.decode("#FF7F50"));
         bntAddcart.addActionListener(e -> {
-            // Kiểm tra lại trạng thái tồn kho (phòng trường hợp người dùng chỉnh sửa DOM)
-            if (product != null && (product.getQuantity() == 0 || "Out of Stock".equals(product.getStatus()))) {
+            // Validate quantity trước khi submit
+            int quantity = (int) spinnerQuantity.getValue();
+            
+            // Kiểm tra số lượng hợp lệ
+            if (quantity <= 0) {
+                CustomDialog.showError("Quantity must be greater than 0!");
+                spinnerQuantity.setValue(1);
+                spinnerQuantity.requestFocus();
+                return;
+            }
+            
+            // Kiểm tra lại trạng thái tồn kho
+            if (product != null && product.getQuantity() == 0) {
                 CustomDialog.showError("This product is out of stock and cannot be added to cart!");
+                return;
+            }
+            
+            // Kiểm tra số lượng không vượt quá tồn kho
+            if (product != null && quantity > product.getQuantity()) {
+                CustomDialog.showError(
+                    "Quantity exceeds available stock!\n\n" +
+                    "Requested: " + quantity + "\n" +
+                    "Available: " + product.getQuantity() + "\n\n" +
+                    "Please reduce the quantity."
+                );
+                // Tự động điều chỉnh về giá trị max
+                spinnerQuantity.setValue(product.getQuantity());
+                spinnerQuantity.requestFocus();
                 return;
             }
 
             // Lấy thông tin từ giao diện
             String productID = txtID.getText();
-            int quantity = (int) spinnerQuantity.getValue();
             String customerID = Dashboard_user.customerID;
 
             if (customerID == null || customerID.isEmpty()) {
@@ -520,7 +618,14 @@ public class productDeteails extends javax.swing.JFrame {
                 fireCartUpdatedEvent(customerID);
                 this.dispose();
             } else {
-                CustomDialog.showError("Failed to add product to cart!");
+                // Thông báo lỗi chi tiết hơn
+                CustomDialog.showError(
+                    "Failed to add product to cart!\n\n" +
+                    "Possible reasons:\n" +
+                    "• Quantity exceeds available stock\n" +
+                    "• Invalid product or customer\n" +
+                    "• Database connection error"
+                );
             }
         });
         

@@ -123,6 +123,15 @@ public class BUSInventory {
         }
     }
     
+    public DAOInventory.InventoryItemInfo getInventoryItemFullInfo(String warehouseItemId) {
+        try {
+            return daoInventory.getInventoryItemFullInfo(warehouseItemId);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to get inventory item info: " + e.getMessage());
+            return null;
+        }
+    }
+    
     public boolean updateInventoryItem(DTOInventory item) {
         try {
             return daoInventory.updateInventoryItem(item);
@@ -149,6 +158,20 @@ public class BUSInventory {
         } catch (Exception e) {
             CustomDialog.showError("Failed to generate warehouse ID: " + e.getMessage());
             return null;
+        }
+    }
+    
+    /**
+     * Generate nhiều Warehouse IDs cùng lúc
+     * @param count Số lượng IDs cần generate
+     * @return List các Warehouse IDs unique
+     */
+    public List<String> generateMultipleWarehouseIds(int count) {
+        try {
+            return daoInventory.generateMultipleWarehouseIds(count);
+        } catch (Exception e) {
+            CustomDialog.showError("Failed to generate warehouse IDs: " + e.getMessage());
+            return new ArrayList<>();
         }
     }
     
@@ -224,10 +247,20 @@ public class BUSInventory {
         }
     }
     
+    public void exportPDFBillImport(String filePath, String billId) {
+        try {
+            daoInventory.exportPDFBillImport(filePath, billId);
+            CustomDialog.showSuccess("PDF bill export successfully!");
+        } catch (Exception e) {
+            CustomDialog.showError("PDF bill export failed: " + e.getMessage());
+        }
+    }
+    
     // Method để nhập lại Warehouse Item (cộng thêm số lượng)
     public boolean reimportWarehouseItem(String warehouseItemId, int additionalQuantity, java.math.BigDecimal unitPrice) {
         try {
-            boolean result = daoInventory.reimportWarehouseItem(warehouseItemId, additionalQuantity, unitPrice);
+            // Use stored procedure based reimport for correct quantity sync
+            boolean result = daoInventory.reimportWarehouseItemProc(warehouseItemId, additionalQuantity, unitPrice);
             if (result) {
                 CustomDialog.showSuccess("Warehouse item reimported successfully!\n" +
                     "Warehouse ID: " + warehouseItemId + "\n" +
@@ -239,6 +272,40 @@ public class BUSInventory {
             return result;
         } catch (Exception e) {
             CustomDialog.showError("Failed to reimport warehouse item: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Batch import nhiều items vào cùng 1 hóa đơn (cùng supplier)
+     * @param items Danh sách các inventory items
+     * @param supplierId Supplier ID chung cho tất cả items
+     * @return true nếu thành công, false nếu thất bại
+     */
+    public boolean addInventoryItemsBatch(List<DTOInventory> items, String supplierId) {
+        try {
+            if (items == null || items.isEmpty()) {
+                CustomDialog.showError("Danh sách sản phẩm trống!");
+                return false;
+            }
+            
+            if (supplierId == null || supplierId.trim().isEmpty()) {
+                CustomDialog.showError("Vui lòng chọn nhà cung cấp!");
+                return false;
+            }
+            
+            boolean result = daoInventory.addInventoryItemsBatch(items, supplierId);
+            if (result) {
+                CustomDialog.showSuccess("Nhập hàng thành công!\n" +
+                    "Số lượng sản phẩm: " + items.size() + "\n" +
+                    "Nhà cung cấp: " + supplierId);
+            } else {
+                CustomDialog.showError("Nhập hàng thất bại!\n" +
+                    "Vui lòng kiểm tra lại thông tin sản phẩm và nhà cung cấp.");
+            }
+            return result;
+        } catch (Exception e) {
+            CustomDialog.showError("Lỗi nhập hàng: " + e.getMessage());
             return false;
         }
     }

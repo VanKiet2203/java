@@ -17,9 +17,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class AddInventoryItem extends JDialog {
-    private MyTextField txtWarehouseId, txtProductName, txtQuantity, txtUnitPrice;
+    private MyTextField txtWarehouseId, txtProductName, txtQuantity, txtUnitPrice, txtProductionYear;
     private MyCombobox<String> cmbCategory, cmbSupplier;
-    private MyButton btnSave, btnCancel, btnGenerateId;
+    private MyButton btnSave, btnCancel;
     private BUSInventory busInventory;
     private BusCategory busCategory;
     
@@ -31,7 +31,7 @@ public class AddInventoryItem extends JDialog {
     }
     
     private void initComponents() {
-        setSize(600, 500);
+        setSize(600, 550);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         setResizable(false);
@@ -70,20 +70,10 @@ public class AddInventoryItem extends JDialog {
         gbc.gridx = 1; gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JPanel warehouseIdPanel = new JPanel(new BorderLayout());
         txtWarehouseId = new MyTextField();
-        txtWarehouseId.setHint("Auto-generated or enter manually");
+        txtWarehouseId.setHint("Warehouse ID");
         txtWarehouseId.setTextFont(FONT_CONTENT_MEDIUM);
-        warehouseIdPanel.add(txtWarehouseId, BorderLayout.CENTER);
-        
-        btnGenerateId = new MyButton("Generate", 15);
-        btnGenerateId.setBackgroundColor(Color.decode("#2196F3"));
-        btnGenerateId.setHoverColor(Color.decode("#1976D2"));
-        btnGenerateId.setForeground(Color.WHITE);
-        btnGenerateId.setFont(FONT_CONTENT_SMALL);
-        btnGenerateId.addActionListener(e -> generateWarehouseId());
-        warehouseIdPanel.add(btnGenerateId, BorderLayout.EAST);
-        mainPanel.add(warehouseIdPanel, gbc);
+        mainPanel.add(txtWarehouseId, gbc);
         
         // Product Name
         gbc.gridx = 0; gbc.gridy = 1;
@@ -163,8 +153,24 @@ public class AddInventoryItem extends JDialog {
         txtUnitPrice.setTextFont(FONT_CONTENT_MEDIUM);
         mainPanel.add(txtUnitPrice, gbc);
         
-        // Buttons
+        // Production Year
         gbc.gridx = 0; gbc.gridy = 6;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel lblProductionYear = new JLabel("Production Year:");
+        lblProductionYear.setFont(FONT_CONTENT_MEDIUM);
+        mainPanel.add(lblProductionYear, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 6;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        txtProductionYear = new MyTextField();
+        txtProductionYear.setHint("Example: 2024");
+        txtProductionYear.setTextFont(FONT_CONTENT_MEDIUM);
+        mainPanel.add(txtProductionYear, gbc);
+        
+        // Buttons
+        gbc.gridx = 0; gbc.gridy = 7;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE;
@@ -226,15 +232,6 @@ public class AddInventoryItem extends JDialog {
         }
     }
     
-    private void generateWarehouseId() {
-        try {
-            String newId = busInventory.generateWarehouseId();
-            txtWarehouseId.setText(newId);
-        } catch (Exception e) {
-            CustomDialog.showError("Failed to generate ID: " + e.getMessage());
-        }
-    }
-    
     private void saveInventoryItem() {
         String warehouseId = txtWarehouseId.getText().trim();
         String productName = txtProductName.getText().trim();
@@ -244,11 +241,12 @@ public class AddInventoryItem extends JDialog {
             cmbSupplier.getSelectedItem().toString().split(" - ")[0] : "";
         String quantityStr = txtQuantity.getText().trim();
         String unitPriceStr = txtUnitPrice.getText().trim();
+        String productionYearStr = txtProductionYear.getText().trim();
         
         // Validation
         if (warehouseId.isEmpty() || productName.isEmpty() || 
             categoryId.isEmpty() || supplierId.isEmpty() || quantityStr.isEmpty() || unitPriceStr.isEmpty()) {
-            CustomDialog.showError("Please fill in all fields!");
+            CustomDialog.showError("Please fill in all required fields!");
             return;
         }
         
@@ -277,6 +275,22 @@ public class AddInventoryItem extends JDialog {
             return;
         }
         
+        // Validate production year (optional)
+        Integer productionYear = null;
+        if (!productionYearStr.isEmpty()) {
+            try {
+                productionYear = Integer.parseInt(productionYearStr);
+                int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+                if (productionYear < 1900 || productionYear > currentYear + 1) {
+                    CustomDialog.showError("Production year must be between 1900 and " + (currentYear + 1) + "!");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                CustomDialog.showError("Invalid production year format! Please enter a valid year (e.g., 2024)");
+                return;
+            }
+        }
+        
         try {
             // Create inventory item
             DTOInventory inventoryItem = new DTOInventory();
@@ -286,6 +300,7 @@ public class AddInventoryItem extends JDialog {
             inventoryItem.setSupId(supplierId);
             inventoryItem.setQuantityStock(quantity);
             inventoryItem.setUnitPriceImport(unitPrice);
+            inventoryItem.setProductionYear(productionYear);
             
             // Save to database
             boolean success = busInventory.addInventoryItem(inventoryItem);

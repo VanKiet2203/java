@@ -153,7 +153,7 @@ public class DAO_OrderDetail {
     
     
    public String getPayment(String orderNo) throws SQLException {
-        String payment = "Unknown"; // Giá trị mặc định nếu không tìm thấy
+        String payment = null;
 
         String sql = "SELECT Payment FROM Orders WHERE Order_No = ? AND Status = 'Available'";
 
@@ -165,6 +165,12 @@ public class DAO_OrderDetail {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     payment = rs.getString("Payment");
+                    // Xử lý trường hợp NULL từ database
+                    if (payment == null) {
+                        payment = "Cash"; // Default payment method
+                    }
+                } else {
+                    payment = "Cash"; // Default nếu không tìm thấy order
                 }
             }
         } catch (SQLException e) {
@@ -172,7 +178,7 @@ public class DAO_OrderDetail {
             throw e; // Re-throw exception để xử lý ở tầng cao hơn
         }
 
-        return payment;
+        return payment != null ? payment : "Cash"; // Đảm bảo luôn trả về giá trị
     }
     
     /**

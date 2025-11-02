@@ -1218,6 +1218,7 @@ BEGIN
         UPDATE SET 
             t.Quantity         = t.Quantity + @Added_Quantity,
             t.Unit_Price_Import= ISNULL(@Unit_Price_Import, t.Unit_Price_Import),
+            -- Calculate Total_Price using old Quantity + Added_Quantity (all right-hand values use old values)
             t.Total_Price      = (t.Quantity + @Added_Quantity) * ISNULL(@Unit_Price_Import, t.Unit_Price_Import),
             t.Date_Imported    = @today,
             t.Time_Imported    = @now,
@@ -1247,7 +1248,9 @@ BEGIN
     WHERE h.Invoice_No=@Invoice_No AND h.Admin_ID=@Admin_ID;
 
     /* 7) Đồng bộ tồn Product cho mọi Product liên kết với Warehouse_Item_ID này
-          Tồn (Product.Quantity) = Tổng nhập - Tổng đã bán */
+          Tồn (Product.Quantity) = Tổng nhập - Tổng đã bán
+          Note: Trigger trg_BID_AI_SyncProduct và trg_BID_AU_SyncProduct cũng sẽ tự động đồng bộ
+          nhưng giữ lại logic này để đảm bảo đồng bộ ngay lập tức sau khi commit */
     UPDATE p
     SET p.Quantity = 
         (SELECT ISNULL(SUM(bid.Quantity),0)

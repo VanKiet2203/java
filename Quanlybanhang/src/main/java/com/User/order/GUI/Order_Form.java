@@ -107,11 +107,11 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
 
-        JLabel orderNoLabel = new JLabel("📋 Order: " + order.getOrderNo());
+        JLabel orderNoLabel = new JLabel("Order: " + order.getOrderNo());
         orderNoLabel.setFont(new Font("Arial", Font.BOLD, 14));
         orderNoLabel.setForeground(Color.decode("#1976D2"));
 
-        JLabel dateLabel = new JLabel("📅 " + 
+        JLabel dateLabel = new JLabel("Date: " + 
             order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " +
             order.getTimeOrder().format(DateTimeFormatter.ofPattern("HH:mm"))
         );
@@ -128,37 +128,37 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         detailsPanel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
         // Customer ID
-        JLabel customerLabel = new JLabel("👤 Customer: " + order.getCustomerID());
+        JLabel customerLabel = new JLabel("Customer: " + order.getCustomerID());
         customerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         customerLabel.setForeground(Color.decode("#666666"));
         detailsPanel.add(customerLabel);
 
         // Total Items
-        JLabel itemsLabel = new JLabel("📦 Items: " + order.getTotalQuantityProduct());
+        JLabel itemsLabel = new JLabel("Items: " + order.getTotalQuantityProduct());
         itemsLabel.setFont(new Font("Arial", Font.BOLD, 12));
         itemsLabel.setForeground(Color.decode("#2E7D32"));
         detailsPanel.add(itemsLabel);
 
         // Total Price (highlighted)
-        JLabel priceLabel = new JLabel("💰 Total: " + order.getTotalPrice() + " VNĐ");
+        JLabel priceLabel = new JLabel("Total: " + order.getTotalPrice() + " VNĐ");
         priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
         priceLabel.setForeground(Color.decode("#D32F2F"));
         detailsPanel.add(priceLabel);
 
         // Payment Method
-        JLabel paymentLabel = new JLabel("💳 Payment: " + order.getPayment());
+        JLabel paymentLabel = new JLabel("Payment: " + order.getPayment());
         paymentLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         paymentLabel.setForeground(Color.decode("#666666"));
         detailsPanel.add(paymentLabel);
 
         // Date Order
-        JLabel dateOrderLabel = new JLabel("📅 Date: " + order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        JLabel dateOrderLabel = new JLabel("Date: " + order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         dateOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         dateOrderLabel.setForeground(Color.decode("#666666"));
         detailsPanel.add(dateOrderLabel);
 
         // Time Order
-        JLabel timeOrderLabel = new JLabel("⏰ Time: " + order.getTimeOrder());
+        JLabel timeOrderLabel = new JLabel("Time: " + order.getTimeOrder());
         timeOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         timeOrderLabel.setForeground(Color.decode("#666666"));
         detailsPanel.add(timeOrderLabel);
@@ -167,7 +167,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         buttonPanel.setBackground(Color.WHITE);
 
-        MyButton detailBtn = new MyButton("👁️ View Details", 10);
+        MyButton detailBtn = new MyButton("View Details", 10);
         detailBtn.setPreferredSize(new Dimension(140, 35));
         detailBtn.setBackgroundColor(Color.decode("#2196F3"));
         detailBtn.setHoverColor(Color.decode("#1976D2"));

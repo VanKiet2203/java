@@ -60,7 +60,7 @@ public class Dashboard_user extends JFrame {
         lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         // Subtitle nằm NGAY DƯỚI title
-        JLabel lblSubtitle = new JLabel("Electric Bicycle Sales Management System");
+        JLabel lblSubtitle = new JLabel("NPK STORE - Electric Bicycle Sales");
         lblSubtitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblSubtitle.setForeground(Color.WHITE);
         lblSubtitle.setHorizontalAlignment(SwingConstants.CENTER);

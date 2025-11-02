@@ -31,9 +31,11 @@ public class ControlHome {
                 p.Category_ID,
                 p.Sup_ID,
                 p.Warehouse_Item_ID,
-                p.Image
+                p.Image,
+                ISNULL(s.Country, 'N/A') AS Country
             FROM 
                 Product p
+            LEFT JOIN Supplier s ON p.Sup_ID = s.Sup_ID
             WHERE p.Status = 'Available'
             """ + (condition != null && !condition.trim().isEmpty() ? " AND " + condition : "");
 
@@ -58,6 +60,7 @@ public class ControlHome {
                     prd.setSupID(rs.getString("Sup_ID"));
                     prd.setWarehouseItemID(rs.getString("Warehouse_Item_ID"));
                     prd.setImage(rs.getString("Image"));
+                    prd.setCountry(rs.getString("Country"));
                     list.add(prd);
                 }
             }
@@ -90,8 +93,10 @@ public class ControlHome {
                 p.Category_ID,
                 p.Sup_ID,
                 p.Warehouse_Item_ID,
-                p.Image
+                p.Image,
+                ISNULL(s.Country, 'N/A') AS Country
             FROM Product p
+            LEFT JOIN Supplier s ON p.Sup_ID = s.Sup_ID
             WHERE p.Product_ID = ? AND p.Status = 'Available'
         """;
 
@@ -196,6 +201,20 @@ public class ControlHome {
                     product.setSupID(rs.getString("Sup_ID"));
                     product.setWarehouseItemID(rs.getString("Warehouse_Item_ID"));
                     product.setImage(rs.getString("Image"));
+                    
+                    // Get Country from Supplier
+                    String countrySql = "SELECT Country FROM Supplier WHERE Sup_ID = ?";
+                    try (PreparedStatement countryStmt = conn.prepareStatement(countrySql)) {
+                        countryStmt.setString(1, product.getSupID());
+                        try (ResultSet countryRs = countryStmt.executeQuery()) {
+                            if (countryRs.next()) {
+                                product.setCountry(countryRs.getString("Country"));
+                            } else {
+                                product.setCountry("N/A");
+                            }
+                        }
+                    }
+                    
                     return product;
                 }
             }

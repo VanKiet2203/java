@@ -1,7 +1,10 @@
 package com.Admin.statistics.DAO;
 
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
+import com.Admin.statistics.DTO.ChartFilterData;
+import com.Admin.statistics.DTO.ChartFilterType;
 import java.sql.*;
+import java.sql.ResultSetMetaData;
 import java.util.*;
 import java.util.concurrent.*;
 import org.jfree.chart.ChartFactory;
@@ -21,9 +24,11 @@ public class DAO_piechart {
     private static final int REFRESH_INTERVAL = 30;
     private volatile boolean isRunning = true;
     private Connection activeConnection;
+    private volatile ChartFilterData currentFilter;
 
     public DAO_piechart() {
         dataset = new DefaultPieDataset();
+        currentFilter = new ChartFilterData();
         createChart();
         initAutoRefresh();
     }
@@ -36,14 +41,26 @@ public class DAO_piechart {
             }
         }, 0, REFRESH_INTERVAL, TimeUnit.SECONDS);
     }
+    
+    public void setFilter(ChartFilterData filterData) {
+        this.currentFilter = filterData != null ? new ChartFilterData(filterData) : new ChartFilterData();
+    }
 
     public ChartPanel getChartPanel() {
+        return getChartPanel(new ChartFilterData());
+    }
+    
+    public ChartPanel getChartPanel(ChartFilterData filterData) {
+        if (filterData != null) {
+            setFilter(filterData);
+        }
+        updateChartWithFilter(currentFilter);
         return chartPanel;
     }
 
     private void createChart() {
         chart = ChartFactory.createPieChart(
-            "Product Distribution by Category ID",
+            "Thống kê",
             dataset,
             true,
             true,
@@ -72,22 +89,19 @@ public class DAO_piechart {
 
     private synchronized void refreshData() {
         try {
-            Map<String, Integer> newData = fetchDataFromDatabase();
+            Map<String, Integer> newData = fetchDataFromDatabase(currentFilter);
             if (!newData.isEmpty()) {
                 updateDataset(newData);
+                updateChartTitle(currentFilter);
             }
         } catch (SQLException e) {
             handleDatabaseError(e);
         }
     }
-
-    private Map<String, Integer> fetchDataFromDatabase() throws SQLException {
+    
+    private Map<String, Integer> fetchDataFromDatabase(ChartFilterData filterData) throws SQLException {
         Map<String, Integer> data = new LinkedHashMap<>();
-        String sql = "SELECT c.Category_ID, COUNT(*) as count " +
-                     "FROM Product p " +
-                     "JOIN Category c ON p.Category_ID = c.Category_ID " +
-                     "GROUP BY c.Category_ID " +
-                     "ORDER BY count DESC";
+        String sql = buildPieChartSQLQuery(filterData);
 
         try {
             if (activeConnection == null || activeConnection.isClosed()) {
@@ -98,10 +112,35 @@ public class DAO_piechart {
             try (PreparedStatement pst = activeConnection.prepareStatement(sql);
                  ResultSet rs = pst.executeQuery()) {
 
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                
                 while (rs.next()) {
-                    String categoryId = rs.getString("Category_ID");
-                    int count = rs.getInt("count");
-                    data.put(categoryId, count);
+                    // Get label based on query type - check which column exists
+                    String label = null;
+                    int count = 0;
+                    
+                    // Check columns to find the label column
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        if (columnName.equals("Product_Name")) {
+                            label = rs.getString(i);
+                            break;
+                        }
+                    }
+                    
+                    // Get count value
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        if (columnName.equals("count")) {
+                            count = rs.getInt(i);
+                            break;
+                        }
+                    }
+                    
+                    if (label != null) {
+                        data.put(label, count);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -160,6 +199,84 @@ public class DAO_piechart {
             System.err.println("⚠ Error closing connection: " + e.getMessage());
         }
         activeConnection = null;
+    }
+
+    private String buildPieChartSQLQuery(ChartFilterData filterData) {
+        StringBuilder sql = new StringBuilder();
+        String timeFilter = filterData.getTimeWhereClause();
+        
+        switch (filterData.getDataType()) {
+            case REVENUE:
+                sql.append("SELECT p.Product_Name, SUM(bed.Total_Price_After) as count ")
+                   .append("FROM Bill_Exported_Details bed ")
+                   .append("JOIN Product p ON bed.Product_ID = p.Product_ID ")
+                   .append("WHERE bed.Status = 'Available' AND p.Status = 'Available' ")
+                   .append(timeFilter)
+                   .append(" GROUP BY p.Product_Name ORDER BY count DESC");
+                break;
+                
+            case QUANTITY_SOLD:
+                sql.append("SELECT p.Product_Name, SUM(bed.Sold_Quantity) as count ")
+                   .append("FROM Bill_Exported_Details bed ")
+                   .append("JOIN Product p ON bed.Product_ID = p.Product_ID ")
+                   .append("WHERE bed.Status = 'Available' AND p.Status = 'Available' ")
+                   .append(timeFilter)
+                   .append(" GROUP BY p.Product_Name ORDER BY count DESC");
+                break;
+                
+            default:
+                // Default to revenue
+                sql.append("SELECT p.Product_Name, SUM(bed.Total_Price_After) as count ")
+                   .append("FROM Bill_Exported_Details bed ")
+                   .append("JOIN Product p ON bed.Product_ID = p.Product_ID ")
+                   .append("WHERE bed.Status = 'Available' AND p.Status = 'Available' ")
+                   .append(timeFilter)
+                   .append(" GROUP BY p.Product_Name ORDER BY count DESC");
+                break;
+        }
+        
+        return sql.toString();
+    }
+    
+    private void updateChartWithFilter(ChartFilterData filterData) {
+        try {
+            Map<String, Integer> newData = fetchDataFromDatabase(filterData);
+            if (!newData.isEmpty()) {
+                updateDataset(newData);
+                updateChartTitle(filterData);
+            }
+        } catch (SQLException e) {
+            handleDatabaseError(e);
+        }
+    }
+    
+    private void updateChartTitle(ChartFilterData filterData) {
+        if (chart != null) {
+            String title = getChartTitle(filterData);
+            chart.setTitle(title);
+            chart.fireChartChanged();
+        }
+    }
+    
+    private String getChartTitle(ChartFilterData filterData) {
+        String baseTitle = filterData.getDataType().getDisplayName();
+        String timeInfo = "";
+        
+        if (filterData.hasTimeFilter()) {
+            switch (filterData.getTimeFilterType()) {
+                case YEAR:
+                    timeInfo = " - Năm " + filterData.getYear();
+                    break;
+                case QUARTER:
+                    timeInfo = " - Quý " + filterData.getQuarter() + " năm " + filterData.getYear();
+                    break;
+                case MONTH:
+                    timeInfo = " - Tháng " + filterData.getMonth() + " năm " + filterData.getYear();
+                    break;
+            }
+        }
+        
+        return baseTitle + timeInfo;
     }
 
     public void shutdown() {

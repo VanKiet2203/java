@@ -4,6 +4,8 @@ import com.Admin.inventory.DTO.DTOInventory;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -35,11 +37,13 @@ public class DAOInventory {
                 s.Sup_Name,
                 ps.Quantity_Stock,
                 ps.Unit_Price_Import,
+                ps.Production_Year,
                 (ps.Quantity_Stock * ps.Unit_Price_Import) AS Total_Value,
                 ps.Created_Date
             FROM Product_Stock ps
             LEFT JOIN Category c ON ps.Category_ID = c.Category_ID
             LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
+            WHERE ps.Status = 'Available'
             ORDER BY ps.Created_Date DESC
             """;
         
@@ -57,6 +61,7 @@ public class DAOInventory {
                     rs.getString("Sup_Name"),
                     rs.getInt("Quantity_Stock"),
                     rs.getBigDecimal("Unit_Price_Import"),
+                    rs.getObject("Production_Year") != null ? rs.getInt("Production_Year") : null,
                     rs.getBigDecimal("Total_Value"),
                     rs.getDate("Created_Date")
                 };
@@ -77,12 +82,13 @@ public class DAOInventory {
                 s.Sup_Name,
                 ps.Quantity_Stock,
                 ps.Unit_Price_Import,
+                ps.Production_Year,
                 (ps.Quantity_Stock * ps.Unit_Price_Import) AS Total_Value,
                 ps.Created_Date
             FROM Product_Stock ps
             LEFT JOIN Category c ON ps.Category_ID = c.Category_ID
             LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
-            WHERE 
+            WHERE ps.Status = 'Available' AND
             """;
         
         // Add search condition based on searchType
@@ -121,6 +127,7 @@ public class DAOInventory {
                         rs.getString("Sup_Name"),
                         rs.getInt("Quantity_Stock"),
                         rs.getBigDecimal("Unit_Price_Import"),
+                        rs.getObject("Production_Year") != null ? rs.getInt("Production_Year") : null,
                         rs.getBigDecimal("Total_Value"),
                         rs.getDate("Created_Date")
                     };
@@ -136,8 +143,8 @@ public class DAOInventory {
     public boolean importInventoryFromExcel(File excelFile) {
         String upsertSQL = """
             MERGE Product_Stock AS target
-            USING (SELECT ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?) AS source 
-                (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Is_In_Product)
+            USING (SELECT ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?, ?) AS source 
+                (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
             ON target.Warehouse_Item_ID = source.Warehouse_Item_ID
             WHEN MATCHED THEN
                 UPDATE SET 
@@ -146,12 +153,13 @@ public class DAOInventory {
                     Sup_ID = source.Sup_ID,
                     Quantity_Stock = target.Quantity_Stock + source.Quantity_Stock,
                     Unit_Price_Import = source.Unit_Price_Import,
+                    Production_Year = COALESCE(source.Production_Year, target.Production_Year),
                     Is_In_Product = source.Is_In_Product
             WHEN NOT MATCHED THEN
                 INSERT (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, 
-                       Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Is_In_Product)
+                       Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
                 VALUES (source.Warehouse_Item_ID, source.Product_Name, source.Category_ID, source.Sup_ID,
-                       source.Quantity_Stock, source.Unit_Price_Import, source.Created_Date, source.Created_Time, source.Is_In_Product);
+                       source.Quantity_Stock, source.Unit_Price_Import, source.Created_Date, source.Created_Time, source.Production_Year, source.Is_In_Product);
         """;
         String checkCategorySQL = "SELECT COUNT(*) FROM Category WHERE Category_ID = ? AND Status = 'Available'";
         String checkSupplierSQL = "SELECT COUNT(*) FROM Supplier WHERE Sup_ID = ? AND Status = 'Available'";
@@ -174,20 +182,73 @@ public class DAOInventory {
                 Row row = rowIterator.next();
                 int rowNum = row.getRowNum() + 1;
 
-                if (row.getPhysicalNumberOfCells() >= 7) {
+                // Updated: Minimum 7 columns required, Production_Year (col 6) and Is_In_Product (col 7) are optional
+                // Column order should match export: Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, 
+                // Quantity_Stock, Unit_Price_Import, Production_Year, Is_In_Product
+                if (row.getPhysicalNumberOfCells() >= 6) {
                     String warehouseItemId = getCellValueAsString(row.getCell(0));
                     String productName = getCellValueAsString(row.getCell(1));
                     String categoryId = getCellValueAsString(row.getCell(2));
                     String supId = getCellValueAsString(row.getCell(3));
                     int quantity = (int) getCellValueAsNumber(row.getCell(4));
                     double unitPrice = getCellValueAsNumber(row.getCell(5));
-                    boolean isInProduct = getCellValueAsNumber(row.getCell(6)) > 0; // 1 = true, 0 = false
+                    
+                    // Production Year (optional - column 6, matches export format)
+                    Integer productionYear = null;
+                    if (row.getPhysicalNumberOfCells() > 6) {
+                        Cell yearCell = row.getCell(6);
+                        if (yearCell != null) {
+                            try {
+                                int year = 0;
+                                // Handle both numeric and string cells
+                                if (yearCell.getCellType() == org.apache.poi.ss.usermodel.CellType.NUMERIC) {
+                                    double yearValue = yearCell.getNumericCellValue();
+                                    year = (int) yearValue;
+                                } else if (yearCell.getCellType() == org.apache.poi.ss.usermodel.CellType.STRING) {
+                                    String yearStr = yearCell.getStringCellValue().trim();
+                                    if (!yearStr.isEmpty()) {
+                                        year = Integer.parseInt(yearStr);
+                                    }
+                                } else {
+                                    // Try to get as number (handles formula cells, etc.)
+                                    double yearValue = getCellValueAsNumber(yearCell);
+                                    if (yearValue > 0) {
+                                        year = (int) yearValue;
+                                    }
+                                }
+                                
+                                if (year > 0) {
+                                    int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+                                    if (year >= 1900 && year <= currentYear + 1) {
+                                        productionYear = year;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // Invalid year, leave as null
+                                System.out.println("Warning: Invalid production year in row " + rowNum + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                    
+                    // Is_In_Product (optional - column 7, matches export format, default to true if not provided)
+                    boolean isInProduct = true; // Default value
+                    if (row.getPhysicalNumberOfCells() > 7) {
+                        Cell isInProductCell = row.getCell(7);
+                        if (isInProductCell != null && !isInProductCell.toString().trim().isEmpty()) {
+                            try {
+                                double isInProductValue = getCellValueAsNumber(isInProductCell);
+                                isInProduct = isInProductValue > 0; // 1 = true, 0 = false
+                            } catch (Exception e) {
+                                // Invalid value, use default (true)
+                            }
+                        }
+                    }
 
                     if (warehouseItemId == null || warehouseItemId.trim().isEmpty() ||
                         productName == null || productName.trim().isEmpty() ||
                         categoryId == null || categoryId.trim().isEmpty() ||
                         supId == null || supId.trim().isEmpty() ||
-                        quantity <= 0 || unitPrice <= 0) {
+                        quantity < 0 || unitPrice <= 0) {
                         errors.append("Row ").append(rowNum).append(": Missing or invalid data\n");
                         errorCount++;
                         continue;
@@ -228,7 +289,8 @@ public class DAOInventory {
                             insertStmt.setString(4, supId);
                             insertStmt.setInt(5, quantity);
                             insertStmt.setBigDecimal(6, BigDecimal.valueOf(unitPrice));
-                            insertStmt.setBoolean(7, isInProduct);
+                            insertStmt.setObject(7, productionYear, Types.INTEGER);
+                            insertStmt.setBoolean(8, isInProduct);
 
                             insertStmt.executeUpdate();
                             
@@ -251,7 +313,7 @@ public class DAOInventory {
                         errorCount++;
                     }
                 } else {
-                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 6 columns)\n");
+                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 6 columns: Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, [Production_Year], [Is_In_Product])\n");
                     errorCount++;
                 }
             }
@@ -531,6 +593,7 @@ public class DAOInventory {
                 ps.Sup_ID,
                 ps.Quantity_Stock,
                 ps.Unit_Price_Import,
+                ps.Production_Year,
                 ps.Is_In_Product,
                 ps.Created_Date
             FROM Product_Stock ps
@@ -546,13 +609,27 @@ public class DAOInventory {
             
             Sheet sheet = workbook.createSheet("Inventory");
             
-            // Create header row
+            // Create header row with Production_Year
             Row headerRow = sheet.createRow(0);
             String[] headers = {"Warehouse_Item_ID", "Product_Name", "Category_ID", "Sup_ID", 
-                              "Quantity_Stock", "Unit_Price_Import", "Is_In_Product", "Created_Date"};
+                              "Quantity_Stock", "Unit_Price_Import", "Production_Year", "Is_In_Product", "Created_Date"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
+                
+                // Style header cells
+                CellStyle headerStyle = workbook.createCellStyle();
+                Font headerFont = workbook.createFont();
+                headerFont.setBold(true);
+                headerFont.setColor(IndexedColors.WHITE.getIndex());
+                headerStyle.setFont(headerFont);
+                headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+                headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                headerStyle.setBorderBottom(BorderStyle.THIN);
+                headerStyle.setBorderTop(BorderStyle.THIN);
+                headerStyle.setBorderLeft(BorderStyle.THIN);
+                headerStyle.setBorderRight(BorderStyle.THIN);
+                cell.setCellStyle(headerStyle);
             }
             
             // Add data rows
@@ -565,8 +642,32 @@ public class DAOInventory {
                 row.createCell(3).setCellValue(rs.getString("Sup_ID"));
                 row.createCell(4).setCellValue(rs.getInt("Quantity_Stock"));
                 row.createCell(5).setCellValue(rs.getDouble("Unit_Price_Import"));
-                row.createCell(6).setCellValue(rs.getBoolean("Is_In_Product") ? 1 : 0);
-                row.createCell(7).setCellValue(rs.getDate("Created_Date").toString());
+                
+                // Production Year (can be null)
+                Cell yearCell = row.createCell(6);
+                Integer productionYear = rs.getObject("Production_Year") != null ? rs.getInt("Production_Year") : null;
+                if (productionYear != null) {
+                    yearCell.setCellValue(productionYear);
+                } else {
+                    yearCell.setCellValue("");
+                }
+                
+                row.createCell(7).setCellValue(rs.getBoolean("Is_In_Product") ? 1 : 0);
+                
+                // Created Date
+                java.sql.Date createdDate = rs.getDate("Created_Date");
+                if (createdDate != null) {
+                    row.createCell(8).setCellValue(createdDate.toString());
+                } else {
+                    row.createCell(8).setCellValue("");
+                }
+            }
+            
+            // Auto-size columns
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+                // Add some padding
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
             }
             
             // Write to file
@@ -832,16 +933,19 @@ public class DAOInventory {
     public void loadBillsData(DefaultTableModel model) {
         String sql = """
             SELECT 
-                'BILL-' + CAST(ROW_NUMBER() OVER (ORDER BY Created_Date) AS VARCHAR) AS Bill_ID,
-                Created_Date AS Date,
+                bi.Invoice_No AS Bill_ID,
+                bid.Date_Imported AS Date,
                 s.Sup_Name AS Supplier,
-                COUNT(*) AS Total_Items,
-                SUM(Quantity_Stock * Unit_Price_Import) AS Total_Amount,
-                'Completed' AS Status
-            FROM Product_Stock ps
+                bi.Total_Product AS Total_Items,
+                bi.Total_Price AS Total_Amount,
+                bi.Status
+            FROM Bill_Imported bi
+            JOIN Bill_Imported_Details bid ON bi.Invoice_No = bid.Invoice_No AND bi.Admin_ID = bid.Admin_ID
+            JOIN Product_Stock ps ON bid.Warehouse_Item_ID = ps.Warehouse_Item_ID
             LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
-            GROUP BY Created_Date, s.Sup_Name
-            ORDER BY Created_Date DESC
+            WHERE bi.Status = 'Available' AND bid.Status = 'Available'
+            GROUP BY bi.Invoice_No, bi.Admin_ID, bi.Total_Product, bi.Total_Price, bi.Status, bid.Date_Imported, s.Sup_Name
+            ORDER BY bid.Date_Imported DESC
         """;
         
         try (Connection conn = getConnection();
@@ -873,12 +977,18 @@ public class DAOInventory {
                 ps.Warehouse_Item_ID,
                 ps.Product_Name,
                 ps.Category_ID,
+                c.Category_Name,
                 ps.Sup_ID,
+                s.Sup_Name,
+                ISNULL(s.Country, 'N/A') AS Country,
                 ps.Quantity_Stock,
                 ps.Unit_Price_Import,
+                ps.Production_Year,
                 ps.Created_Date
             FROM Product_Stock ps
-            WHERE ps.Warehouse_Item_ID = ?
+            LEFT JOIN Category c ON ps.Category_ID = c.Category_ID
+            LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
+            WHERE ps.Warehouse_Item_ID = ? AND ps.Status = 'Available'
         """;
         
         try (Connection conn = getConnection();
@@ -895,7 +1005,11 @@ public class DAOInventory {
                     item.setSupId(rs.getString("Sup_ID"));
                     item.setQuantityStock(rs.getInt("Quantity_Stock"));
                     item.setUnitPriceImport(rs.getBigDecimal("Unit_Price_Import"));
+                    item.setProductionYear(rs.getObject("Production_Year") != null ? rs.getInt("Production_Year") : null);
                     item.setCreatedDate(rs.getDate("Created_Date"));
+                    
+                    // Store additional info as metadata (we can extend DTO later if needed)
+                    // For now, these are retrieved but not stored in DTO
                     return item;
                 }
             }
@@ -903,6 +1017,90 @@ public class DAOInventory {
             e.printStackTrace();
         }
         return null;
+    }
+    
+    /**
+     * Get full inventory item info including related data (Category Name, Supplier Name, Country)
+     */
+    public InventoryItemInfo getInventoryItemFullInfo(String warehouseItemId) {
+        String sql = """
+            SELECT 
+                ps.Warehouse_Item_ID,
+                ps.Product_Name,
+                ps.Category_ID,
+                c.Category_Name,
+                ps.Sup_ID,
+                s.Sup_Name,
+                ISNULL(s.Country, 'N/A') AS Country,
+                ps.Quantity_Stock,
+                ps.Unit_Price_Import,
+                ps.Production_Year,
+                ps.Created_Date
+            FROM Product_Stock ps
+            LEFT JOIN Category c ON ps.Category_ID = c.Category_ID
+            LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
+            WHERE ps.Warehouse_Item_ID = ? AND ps.Status = 'Available'
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, warehouseItemId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new InventoryItemInfo(
+                        rs.getString("Warehouse_Item_ID"),
+                        rs.getString("Product_Name"),
+                        rs.getString("Category_ID"),
+                        rs.getString("Category_Name"),
+                        rs.getString("Sup_ID"),
+                        rs.getString("Sup_Name"),
+                        rs.getString("Country"),
+                        rs.getInt("Quantity_Stock"),
+                        rs.getBigDecimal("Unit_Price_Import"),
+                        rs.getObject("Production_Year") != null ? rs.getInt("Production_Year") : null,
+                        rs.getDate("Created_Date")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    /**
+     * Helper class to hold full inventory item information
+     */
+    public static class InventoryItemInfo {
+        public final String warehouseItemId;
+        public final String productName;
+        public final String categoryId;
+        public final String categoryName;
+        public final String supId;
+        public final String supName;
+        public final String country;
+        public final int quantityStock;
+        public final BigDecimal unitPriceImport;
+        public final Integer productionYear;
+        public final java.sql.Date createdDate;
+        
+        public InventoryItemInfo(String warehouseItemId, String productName, String categoryId, String categoryName,
+                                String supId, String supName, String country, int quantityStock, 
+                                BigDecimal unitPriceImport, Integer productionYear, java.sql.Date createdDate) {
+            this.warehouseItemId = warehouseItemId;
+            this.productName = productName;
+            this.categoryId = categoryId;
+            this.categoryName = categoryName;
+            this.supId = supId;
+            this.supName = supName;
+            this.country = country;
+            this.quantityStock = quantityStock;
+            this.unitPriceImport = unitPriceImport;
+            this.productionYear = productionYear;
+            this.createdDate = createdDate;
+        }
     }
     
     public boolean updateInventoryItem(DTOInventory item) {
@@ -992,6 +1190,40 @@ public class DAOInventory {
         }
     }
     
+    /**
+     * Generate nhiều Warehouse IDs cùng lúc để tránh trùng lặp
+     * @param count Số lượng IDs cần generate
+     * @return List các Warehouse IDs unique
+     */
+    public List<String> generateMultipleWarehouseIds(int count) {
+        List<String> ids = new ArrayList<>();
+        String sql = "SELECT MAX(CAST(SUBSTRING(Warehouse_Item_ID, 3, LEN(Warehouse_Item_ID)) AS INT)) FROM Product_Stock WHERE Warehouse_Item_ID LIKE 'WH%' AND Status = 'Available'";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            int maxId = 0;
+            if (rs.next()) {
+                maxId = rs.getInt(1);
+            }
+            
+            // Generate count IDs liên tiếp
+            for (int i = 1; i <= count; i++) {
+                ids.add("WH" + String.format("%03d", maxId + i));
+            }
+            
+            return ids;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Fallback: generate với số ngẫu nhiên
+            for (int i = 1; i <= count; i++) {
+                ids.add("WH" + String.format("%03d", 100 + i));
+            }
+            return ids;
+        }
+    }
+    
     public boolean addInventoryItem(DTOInventory inventoryItem) {
         // First validate that Category_ID and Sup_ID exist
         if (!validateCategoryExists(inventoryItem.getCategoryId())) {
@@ -1028,8 +1260,8 @@ public class DAOInventory {
         // SQL để upsert Product_Stock (MERGE sẽ xử lý cả insert và update)
         String upsertStockSQL = """
             MERGE Product_Stock AS target
-            USING (SELECT ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), 0) AS source 
-                (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Is_In_Product)
+            USING (SELECT ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?, 0) AS source 
+                (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
             ON target.Warehouse_Item_ID = source.Warehouse_Item_ID
             WHEN MATCHED THEN
                 UPDATE SET 
@@ -1037,12 +1269,13 @@ public class DAOInventory {
                     Category_ID = source.Category_ID,
                     Sup_ID = source.Sup_ID,
                     Quantity_Stock = target.Quantity_Stock + source.Quantity_Stock,
-                    Unit_Price_Import = source.Unit_Price_Import
+                    Unit_Price_Import = source.Unit_Price_Import,
+                    Production_Year = COALESCE(source.Production_Year, target.Production_Year)
             WHEN NOT MATCHED THEN
                 INSERT (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, 
-                       Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Is_In_Product)
+                       Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
                 VALUES (source.Warehouse_Item_ID, source.Product_Name, source.Category_ID, source.Sup_ID,
-                       source.Quantity_Stock, source.Unit_Price_Import, source.Created_Date, source.Created_Time, source.Is_In_Product);
+                       source.Quantity_Stock, source.Unit_Price_Import, source.Created_Date, source.Created_Time, source.Production_Year, source.Is_In_Product);
         """;
         
         try (Connection conn = getConnection()) {
@@ -1068,6 +1301,7 @@ public class DAOInventory {
                 stockStmt.setString(4, inventoryItem.getSupId());
                 stockStmt.setInt(5, inventoryItem.getQuantityStock());
                 stockStmt.setBigDecimal(6, inventoryItem.getUnitPriceImport());
+                stockStmt.setObject(7, inventoryItem.getProductionYear(), Types.INTEGER);
                 
                 int stockResult = stockStmt.executeUpdate();
                 System.out.println("Stock insert result: " + stockResult);
@@ -1135,9 +1369,22 @@ public class DAOInventory {
     
     // Method để nhập lại Warehouse Item (cộng thêm số lượng)
     public boolean reimportWarehouseItem(String warehouseItemId, int additionalQuantity, BigDecimal unitPrice) {
+        System.out.println("=== REIMPORT WAREHOUSE ITEM: " + warehouseItemId + " ===");
+        System.out.println("Additional Quantity: " + additionalQuantity);
+        System.out.println("Unit Price: " + (unitPrice != null ? unitPrice : "NULL"));
+        
+        // First check if Warehouse Item exists
+        String checkWarehouseSQL = "SELECT COUNT(*) FROM Product_Stock WHERE Warehouse_Item_ID = ? AND Status = 'Available'";
+        
         String updateStockSQL = """
             UPDATE Product_Stock 
             SET Quantity_Stock = Quantity_Stock + ?
+            WHERE Warehouse_Item_ID = ?
+        """;
+        
+        String updateProductSQL = """
+            UPDATE Product 
+            SET Quantity = Quantity + ?
             WHERE Warehouse_Item_ID = ?
         """;
         
@@ -1154,36 +1401,133 @@ public class DAOInventory {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             
-            try (PreparedStatement updateStmt = conn.prepareStatement(updateStockSQL);
+            // First check if Warehouse Item exists
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkWarehouseSQL)) {
+                checkStmt.setString(1, warehouseItemId);
+                System.out.println("🔍 Checking warehouse item with SQL: " + checkWarehouseSQL);
+                System.out.println("🔍 Parameter: " + warehouseItemId);
+                try (ResultSet checkRs = checkStmt.executeQuery()) {
+                    boolean hasNext = checkRs.next();
+                    int count = hasNext ? checkRs.getInt(1) : 0;
+                    System.out.println("🔍 Query result - hasNext: " + hasNext + ", count: " + count);
+                    
+                    if (!hasNext || count == 0) {
+                        System.err.println("❌ Warehouse Item does not exist: " + warehouseItemId);
+                        System.err.println("❌ Query returned count: " + count);
+                        
+                        // Kiểm tra xem có dữ liệu nào trong database không
+                        String countAllSQL = "SELECT COUNT(*) FROM Product_Stock";
+                        try (PreparedStatement countStmt = conn.prepareStatement(countAllSQL);
+                             ResultSet countRs = countStmt.executeQuery()) {
+                            if (countRs.next() && countRs.getInt(1) == 0) {                                
+                                System.err.println("❌ Database is empty, creating sample data...");
+                                // Tạo dữ liệu mẫu nếu database trống
+                                ensureSampleDataExists();
+                                
+                                // Kiểm tra lại sau khi tạo dữ liệu mẫu
+                                try (PreparedStatement recheckStmt = conn.prepareStatement(checkWarehouseSQL)) {
+                                    recheckStmt.setString(1, warehouseItemId);
+                                    try (ResultSet recheckRs = recheckStmt.executeQuery()) {
+                                        if (!recheckRs.next() || recheckRs.getInt(1) == 0) {
+                                            System.err.println("❌ Warehouse Item still not found after creating sample data: " + warehouseItemId);
+                                            return false;
+                                        } else {
+                                            System.out.println("✅ Warehouse Item found after creating sample data: " + warehouseItemId);
+                                        }
+                                    }
+                                }
+                            } else {
+                                System.err.println("❌ Database has data but Warehouse Item not found: " + warehouseItemId);
+                                return false;
+                            }
+                        }
+                    } else {
+                        System.out.println("✅ Warehouse Item found: " + warehouseItemId);
+                    }
+                }
+            }
+            
+            try (PreparedStatement updateStockStmt = conn.prepareStatement(updateStockSQL);
+                 PreparedStatement updateProductStmt = conn.prepareStatement(updateProductSQL);
                  PreparedStatement billStmt = conn.prepareStatement(insertBillSQL);
                  PreparedStatement billDetailStmt = conn.prepareStatement(insertBillDetailSQL)) {
                 
                 // 1. Cộng thêm số lượng vào Product_Stock
-                updateStmt.setInt(1, additionalQuantity);
-                updateStmt.setString(2, warehouseItemId);
-                int updateResult = updateStmt.executeUpdate();
+                updateStockStmt.setInt(1, additionalQuantity);
+                updateStockStmt.setString(2, warehouseItemId);
+                System.out.println("🔄 Updating Product_Stock - Quantity: " + additionalQuantity + ", Warehouse ID: " + warehouseItemId);
+                int stockUpdateResult = updateStockStmt.executeUpdate();
+                System.out.println("🔄 Product_Stock update result: " + stockUpdateResult + " rows affected");
                 
-                if (updateResult > 0) {
-                    // 2. Tạo hóa đơn nhập cho số lượng bổ sung
-                    String adminId = getCurrentAdminId();
+                if (stockUpdateResult > 0) {
+                    // 2. Cộng thêm số lượng vào Product (nếu có)
+                    updateProductStmt.setInt(1, additionalQuantity);
+                    updateProductStmt.setString(2, warehouseItemId);
+                    int productUpdateResult = updateProductStmt.executeUpdate();
+                    
+                    // 2.5. Cập nhật giá mới nếu có
+                    if (unitPrice != null) {
+                        String updatePriceSQL = "UPDATE Product_Stock SET Unit_Price_Import = ? WHERE Warehouse_Item_ID = ?";
+                        try (PreparedStatement updatePriceStmt = conn.prepareStatement(updatePriceSQL)) {
+                            updatePriceStmt.setBigDecimal(1, unitPrice);
+                            updatePriceStmt.setString(2, warehouseItemId);
+                            updatePriceStmt.executeUpdate();
+                            System.out.println("✅ Updated Unit_Price_Import to: " + unitPrice);
+                        }
+                    }
+                    
+                    System.out.println("✅ Updated Product_Stock: +" + additionalQuantity);
+                    System.out.println("✅ Updated Product: " + productUpdateResult + " rows affected");
+                    
+                    // 3. Tạo hóa đơn nhập cho số lượng bổ sung
+                    String adminId;
+                    try {
+                        adminId = getCurrentAdminId();
+                        System.out.println("🔍 Admin ID: " + adminId);
+                    } catch (Exception e) {
+                        System.err.println("❌ Error getting Admin ID: " + e.getMessage());
+                        e.printStackTrace();
+                        conn.rollback();
+                        return false;
+                    }
                     String invoiceNo = "BILL-" + System.currentTimeMillis() + "-" + warehouseItemId;
-                    BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(additionalQuantity));
+                    System.out.println("🔍 Invoice No: " + invoiceNo);
+                    
+                    // Nếu unitPrice là null, lấy giá từ database
+                    BigDecimal actualUnitPrice = unitPrice;
+                    if (actualUnitPrice == null) {
+                        String getPriceSQL = "SELECT Unit_Price_Import FROM Product_Stock WHERE Warehouse_Item_ID = ?";
+                        try (PreparedStatement priceStmt = conn.prepareStatement(getPriceSQL)) {
+                            priceStmt.setString(1, warehouseItemId);
+                            try (ResultSet priceRs = priceStmt.executeQuery()) {
+                                if (priceRs.next()) {
+                                    actualUnitPrice = priceRs.getBigDecimal("Unit_Price_Import");
+                                } else {
+                                    actualUnitPrice = BigDecimal.ZERO;
+                                }
+                            }
+                        }
+                    }
+                    
+                    BigDecimal totalPrice = actualUnitPrice.multiply(BigDecimal.valueOf(additionalQuantity));
                     
                     billStmt.setString(1, invoiceNo);
                     billStmt.setString(2, adminId);
-                    billStmt.setBigDecimal(3, totalPrice);
+                    billStmt.setInt(3, 1); // Total_Product = 1
+                    billStmt.setBigDecimal(4, totalPrice);
                     billStmt.executeUpdate();
                     
                     billDetailStmt.setString(1, invoiceNo);
                     billDetailStmt.setString(2, adminId);
                     billDetailStmt.setString(3, warehouseItemId);
                     billDetailStmt.setInt(4, additionalQuantity);
-                    billDetailStmt.setBigDecimal(5, unitPrice);
+                    billDetailStmt.setBigDecimal(5, actualUnitPrice);
                     billDetailStmt.setBigDecimal(6, totalPrice);
                     billDetailStmt.executeUpdate();
                     
                     conn.commit();
                     System.out.println("✅ Nhập lại Warehouse Item thành công: " + warehouseItemId + " (+" + additionalQuantity + ")");
+                    System.out.println("✅ Cả Product_Stock và Product đều đã được cập nhật");
                     return true;
                 } else {
                     conn.rollback();
@@ -1194,6 +1538,7 @@ public class DAOInventory {
             } catch (SQLException e) {
                 conn.rollback();
                 System.err.println("❌ Lỗi nhập lại Warehouse Item: " + e.getMessage());
+                e.printStackTrace();
                 return false;
             } finally {
                 conn.setAutoCommit(true);
@@ -1201,6 +1546,52 @@ public class DAOInventory {
             
         } catch (SQLException e) {
             System.err.println("❌ Lỗi kết nối: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi không xác định: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Method reimport sử dụng stored procedure sp_ReimportWarehouseItem (khuyến nghị)
+    public boolean reimportWarehouseItemProc(String warehouseItemId, int additionalQuantity, BigDecimal unitPrice) {
+        System.out.println("=== REIMPORT (PROC) Warehouse_ID: " + warehouseItemId + ", +" + additionalQuantity + " ===");
+        if (additionalQuantity <= 0) {
+            System.err.println("❌ Added quantity must be > 0");
+            return false;
+        }
+        try (Connection conn = getConnection()) {
+            String adminId = getCurrentAdminId();
+            try (CallableStatement cs = conn.prepareCall("{call dbo.sp_ReimportWarehouseItem(?,?,?,?,?)}")) {
+                cs.setString(1, warehouseItemId);
+                cs.setInt(2, additionalQuantity);
+                if (unitPrice == null) cs.setNull(3, java.sql.Types.DECIMAL); else cs.setBigDecimal(3, unitPrice);
+                cs.setString(4, adminId);
+                cs.setNull(5, java.sql.Types.VARCHAR);
+
+                boolean hasResult = cs.execute();
+                String result = "SUCCESS";
+                if (hasResult) {
+                    try (ResultSet rs = cs.getResultSet()) {
+                        if (rs.next()) {
+                            result = java.util.Objects.toString(rs.getString("Result"), result);
+                        }
+                    }
+                }
+                return "SUCCESS".equalsIgnoreCase(result);
+            }
+        } catch (SQLException e) {
+            String msg = e.getMessage();
+            if (msg != null) {
+                if (msg.contains("WAREHOUSE_NOT_FOUND")) {
+                    System.err.println("❌ Warehouse not found: " + warehouseItemId);
+                } else if (msg.contains("ADMIN_NOT_FOUND")) {
+                    System.err.println("❌ Admin not found for current session");
+                }
+            }
+            e.printStackTrace();
             return false;
         }
     }
@@ -1649,10 +2040,92 @@ public class DAOInventory {
         }
     }
     
+    public void exportPDFBillImport(String filePath, String billId) {
+        try (Connection conn = getConnection()) {
+            // Debug: Kiểm tra xem có dữ liệu không
+            System.out.println("Exporting PDF for Bill ID: " + billId);
+            
+            // Kiểm tra xem billId có tồn tại trong Bill_Imported không
+            String checkSql = "SELECT COUNT(*) FROM Bill_Imported WHERE Invoice_No = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                checkStmt.setString(1, billId);
+                try (ResultSet checkRs = checkStmt.executeQuery()) {
+                    if (checkRs.next()) {
+                        int count = checkRs.getInt(1);
+                        System.out.println("Found " + count + " bills with Invoice_No: " + billId);
+                        if (count == 0) {
+                            throw new RuntimeException("No bill found with Invoice_No: " + billId);
+                        }
+                    }
+                }
+            }
+            
+            String sql = """
+                SELECT 
+                    Invoice_No,
+                    Admin_ID,
+                    Total_Product,
+                    Total_Price,
+                    Warehouse_Item_ID,
+                    Product_Name,
+                    Quantity,
+                    Unit_Price_Import,
+                    Line_Total,
+                    Date_Imported,
+                    Time_Imported
+                FROM v_Bill_Imported_Print
+                WHERE Invoice_No = ?
+                ORDER BY Warehouse_Item_ID
+            """;
+            
+            // Kiểm tra xem có dữ liệu không trước khi tạo PDF
+            String checkDataSql = "SELECT COUNT(*) FROM v_Bill_Imported_Print WHERE Invoice_No = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkDataSql)) {
+                checkStmt.setString(1, billId);
+                try (ResultSet checkRs = checkStmt.executeQuery()) {
+                    if (checkRs.next()) {
+                        int count = checkRs.getInt(1);
+                        System.out.println("Found " + count + " records for Bill ID: " + billId);
+                        if (count == 0) {
+                            throw new RuntimeException("No data found for Bill ID: " + billId);
+                        }
+                    }
+                }
+            }
+            
+            Document document = new Document(PageSize.A4, 40, 40, 50, 50);
+            PdfWriter.getInstance(document, new FileOutputStream(filePath));
+            document.open();
+            
+            // Add beautiful header
+            addBillImportHeader(document, billId);
+            
+            // Add summary info
+            addBillImportSummary(document, billId, conn);
+            
+            // Create beautiful table with fresh ResultSet
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, billId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    // Create beautiful table
+                    addBillImportTable(document, rs);
+                }
+            }
+            
+            // Add footer
+            addBillImportFooter(document);
+            
+            document.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to export PDF bill import: " + e.getMessage());
+        }
+    }
+    
     public void exportPDFBillImport(String filePath) {
         try (Connection conn = getConnection()) {
             // Kiểm tra xem có dữ liệu trong Bill_Imported không
-            String checkSql = "SELECT COUNT(*) FROM Bill_Imported WHERE Status = 'Available'";
+            String checkSql = "SELECT COUNT(*) FROM v_Bill_Imported_Print";
             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql);
                  ResultSet checkRs = checkStmt.executeQuery()) {
                 if (checkRs.next() && checkRs.getInt(1) == 0) {
@@ -1663,22 +2136,19 @@ public class DAOInventory {
             
             String sql = """
                 SELECT 
-                    bi.Invoice_No,
-                    bi.Admin_ID,
-                    bi.Total_Product,
-                    bi.Total_Price,
-                    bid.Warehouse_Item_ID,
-                    ps.Product_Name,
-                    bid.Quantity,
-                    bid.Unit_Price_Import,
-                    bid.Total_Price,
-                    bid.Date_Imported,
-                    bid.Time_Imported
-                FROM Bill_Imported bi
-                JOIN Bill_Imported_Details bid ON bi.Invoice_No = bid.Invoice_No AND bi.Admin_ID = bid.Admin_ID
-                JOIN Product_Stock ps ON bid.Warehouse_Item_ID = ps.Warehouse_Item_ID
-                WHERE bi.Status = 'Available' AND bid.Status = 'Available'
-                ORDER BY bi.Invoice_No, bid.Warehouse_Item_ID
+                    Invoice_No,
+                    Admin_ID,
+                    Total_Product,
+                    Total_Price,
+                    Warehouse_Item_ID,
+                    Product_Name,
+                    Quantity,
+                    Unit_Price_Import,
+                    Line_Total,
+                    Date_Imported,
+                    Time_Imported
+                FROM v_Bill_Imported_Print
+                ORDER BY Invoice_No, Warehouse_Item_ID
             """;
             
             try (PreparedStatement stmt = conn.prepareStatement(sql);
@@ -1715,10 +2185,15 @@ public class DAOInventory {
     }
     
     private void addBillImportHeader(Document document) throws DocumentException {
+        addBillImportHeader(document, null);
+    }
+    
+    private void addBillImportHeader(Document document, String billId) throws DocumentException {
         // Main title
         com.itextpdf.text.Font titleFont = getVietnameseFont(18, com.itextpdf.text.Font.BOLD);
         titleFont.setColor(BaseColor.BLUE);
-        Paragraph title = new Paragraph("IMPORT BILLS REPORT", titleFont);
+        String titleText = billId != null ? "IMPORT BILL REPORT - " + billId : "IMPORT BILLS REPORT";
+        Paragraph title = new Paragraph(titleText, titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(15f);
         document.add(title);
@@ -1737,67 +2212,152 @@ public class DAOInventory {
         addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
     }
     
+    private void addBillImportSummary(Document document, String billId, Connection conn) throws DocumentException {
+        try {
+            // Query to get summary data for specific bill
+            String summarySql = """
+                SELECT 
+                    COUNT(DISTINCT Invoice_No) as totalBills,
+                    COUNT(*) as totalItems,
+                    SUM(Quantity) as totalQuantity,
+                    SUM(Line_Total) as totalValue
+                FROM v_Bill_Imported_Print
+                WHERE Invoice_No = ?
+            """;
+            
+            try (PreparedStatement stmt = conn.prepareStatement(summarySql)) {
+                stmt.setString(1, billId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        int totalBills = rs.getInt("totalBills");
+                        int totalItems = rs.getInt("totalItems");
+                        int totalQuantity = rs.getInt("totalQuantity");
+                        BigDecimal totalValue = rs.getBigDecimal("totalValue");
+                        
+                        // Handle null values
+                        if (totalValue == null) {
+                            totalValue = BigDecimal.ZERO;
+                        }
+                        
+                        // Create summary table
+                        PdfPTable summaryTable = new PdfPTable(2);
+                        summaryTable.setWidthPercentage(60);
+                        summaryTable.setSpacingBefore(10f);
+                        summaryTable.setSpacingAfter(15f);
+                        summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        
+                        // Header color
+                        BaseColor headerBgColor = new BaseColor(0, 51, 102);
+                        com.itextpdf.text.Font headerFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                        headerFont.setColor(BaseColor.WHITE);
+                        
+                        // Summary data
+                        String[][] summaryData = {
+                            {"Total Bills:", String.valueOf(totalBills)},
+                            {"Total Items:", String.valueOf(totalItems)},
+                            {"Total Quantity:", String.valueOf(totalQuantity)},
+                            {"Total Value:", formatCurrency(totalValue.toString())}
+                        };
+                        
+                        for (String[] row : summaryData) {
+                            // Label cell
+                            PdfPCell labelCell = new PdfPCell(new Phrase(row[0], headerFont));
+                            labelCell.setBackgroundColor(headerBgColor);
+                            labelCell.setPadding(8);
+                            labelCell.setBorder(Rectangle.BOX);
+                            labelCell.setBorderWidth(0.5f);
+                            summaryTable.addCell(labelCell);
+                            
+                            // Value cell
+                            com.itextpdf.text.Font valueFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                            valueFont.setColor(BaseColor.DARK_GRAY);
+                            PdfPCell valueCell = new PdfPCell(new Phrase(row[1], valueFont));
+                            valueCell.setPadding(8);
+                            valueCell.setBorder(Rectangle.BOX);
+                            valueCell.setBorderWidth(0.5f);
+                            summaryTable.addCell(valueCell);
+                        }
+                        
+                        document.add(summaryTable);
+                        addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
     private void addBillImportSummary(Document document, ResultSet rs) throws DocumentException {
         try {
-            // Calculate totals
-            BigDecimal totalValue = BigDecimal.ZERO;
-            int totalBills = 0;
-            int totalItems = 0;
-            int totalQuantity = 0;
-            String currentInvoice = "";
+            // Calculate totals using a separate query to avoid forward-only ResultSet issues
+            String summarySql = """
+                SELECT 
+                    COUNT(DISTINCT Invoice_No) as totalBills,
+                    COUNT(*) as totalItems,
+                    SUM(Quantity) as totalQuantity,
+                    SUM(Line_Total) as totalValue
+                FROM v_Bill_Imported_Print
+            """;
             
-            while (rs.next()) {
-                if (!currentInvoice.equals(rs.getString("Invoice_No"))) {
-                    totalBills++;
-                    currentInvoice = rs.getString("Invoice_No");
-                }
-                totalValue = totalValue.add(rs.getBigDecimal("Total_Price"));
-                totalItems++;
-                totalQuantity += rs.getInt("Quantity");
-            }
-            
-            // Create summary table
-            PdfPTable summaryTable = new PdfPTable(2);
-            summaryTable.setWidthPercentage(60);
-            summaryTable.setSpacingBefore(10f);
-            summaryTable.setSpacingAfter(15f);
-            summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-            
-            // Header color
-            BaseColor headerBgColor = new BaseColor(0, 51, 102);
-            com.itextpdf.text.Font headerFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
-            headerFont.setColor(BaseColor.WHITE);
-            
-            // Summary data
-            String[][] summaryData = {
-                {"Total Bills:", String.valueOf(totalBills)},
-                {"Total Items:", String.valueOf(totalItems)},
-                {"Total Quantity:", String.valueOf(totalQuantity)},
-                {"Total Value:", formatCurrency(totalValue.toString())}
-            };
-            
-            for (String[] row : summaryData) {
-                // Label cell
-                PdfPCell labelCell = new PdfPCell(new Phrase(row[0], headerFont));
-                labelCell.setBackgroundColor(headerBgColor);
-                labelCell.setPadding(8);
-                labelCell.setBorder(Rectangle.BOX);
-                labelCell.setBorderWidth(0.5f);
-                summaryTable.addCell(labelCell);
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(summarySql);
+                 ResultSet summaryRs = stmt.executeQuery()) {
                 
-                // Value cell
-                com.itextpdf.text.Font valueFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
-                valueFont.setColor(BaseColor.DARK_GRAY);
-                PdfPCell valueCell = new PdfPCell(new Phrase(row[1], valueFont));
-                valueCell.setPadding(8);
-                valueCell.setBorder(Rectangle.BOX);
-                valueCell.setBorderWidth(0.5f);
-                summaryTable.addCell(valueCell);
+                if (summaryRs.next()) {
+                    int totalBills = summaryRs.getInt("totalBills");
+                    int totalItems = summaryRs.getInt("totalItems");
+                    int totalQuantity = summaryRs.getInt("totalQuantity");
+                    BigDecimal totalValue = summaryRs.getBigDecimal("totalValue");
+                    
+                    // Handle null values
+                    if (totalValue == null) {
+                        totalValue = BigDecimal.ZERO;
+                    }
+                    
+                    // Create summary table
+                    PdfPTable summaryTable = new PdfPTable(2);
+                    summaryTable.setWidthPercentage(60);
+                    summaryTable.setSpacingBefore(10f);
+                    summaryTable.setSpacingAfter(15f);
+                    summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    
+                    // Header color
+                    BaseColor headerBgColor = new BaseColor(0, 51, 102);
+                    com.itextpdf.text.Font headerFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                    headerFont.setColor(BaseColor.WHITE);
+                    
+                    // Summary data
+                    String[][] summaryData = {
+                        {"Total Bills:", String.valueOf(totalBills)},
+                        {"Total Items:", String.valueOf(totalItems)},
+                        {"Total Quantity:", String.valueOf(totalQuantity)},
+                        {"Total Value:", formatCurrency(totalValue.toString())}
+                    };
+                    
+                    for (String[] row : summaryData) {
+                        // Label cell
+                        PdfPCell labelCell = new PdfPCell(new Phrase(row[0], headerFont));
+                        labelCell.setBackgroundColor(headerBgColor);
+                        labelCell.setPadding(8);
+                        labelCell.setBorder(Rectangle.BOX);
+                        labelCell.setBorderWidth(0.5f);
+                        summaryTable.addCell(labelCell);
+                        
+                        // Value cell
+                        com.itextpdf.text.Font valueFont = getVietnameseFont(12, com.itextpdf.text.Font.BOLD);
+                        valueFont.setColor(BaseColor.DARK_GRAY);
+                        PdfPCell valueCell = new PdfPCell(new Phrase(row[1], valueFont));
+                        valueCell.setPadding(8);
+                        valueCell.setBorder(Rectangle.BOX);
+                        valueCell.setBorderWidth(0.5f);
+                        summaryTable.addCell(valueCell);
+                    }
+                    
+                    document.add(summaryTable);
+                    addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
+                }
             }
-            
-            document.add(summaryTable);
-            addLineSeparator(document, 0.5f, 95f, BaseColor.LIGHT_GRAY);
-            
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -1858,7 +2418,7 @@ public class DAOInventory {
                 table.addCell(createBillImportCell(rs.getString("Product_Name"), rowFont, rowColor, Element.ALIGN_LEFT));
                 table.addCell(createBillImportCell(String.valueOf(rs.getInt("Quantity")), rowFont, rowColor, Element.ALIGN_CENTER));
                 table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Unit_Price_Import").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
-                table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Total_Price").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
+                table.addCell(createBillImportCell(formatCurrency(rs.getBigDecimal("Line_Total").toString()), rowFont, rowColor, Element.ALIGN_RIGHT));
                 table.addCell(createBillImportCell(rs.getDate("Date_Imported").toString(), rowFont, rowColor, Element.ALIGN_CENTER));
             }
         } catch (SQLException e) {
@@ -2019,6 +2579,209 @@ public class DAOInventory {
         } catch (SQLException e) {
             System.err.println("Error debugging Bill_Imported: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Batch import nhiều items vào cùng 1 hóa đơn (cùng supplier)
+     * Tạo 1 Bill_Imported và nhiều Bill_Imported_Details
+     */
+    public boolean addInventoryItemsBatch(List<DTOInventory> items, String supplierId) {
+        if (items == null || items.isEmpty()) {
+            System.err.println("❌ Batch import: Items list is empty");
+            return false;
+        }
+        
+        System.out.println("=== BATCH IMPORT: " + items.size() + " items from Supplier: " + supplierId + " ===");
+        
+        // Validate tất cả items trước
+        String adminId;
+        try {
+            adminId = getCurrentAdminId();
+            System.out.println("Using Admin_ID: " + adminId);
+        } catch (Exception e) {
+            System.err.println("Failed to get Admin_ID: " + e.getMessage());
+            return false;
+        }
+        
+        // Validate supplier
+        if (!validateSupplierExists(supplierId)) {
+            System.err.println("❌ Supplier ID does not exist: " + supplierId);
+            return false;
+        }
+        
+        // Validate tất cả items
+        for (DTOInventory item : items) {
+            if (item.getWarehouseItemId() == null || item.getWarehouseItemId().trim().isEmpty()) {
+                System.err.println("❌ Warehouse Item ID is required");
+                return false;
+            }
+            if (item.getProductName() == null || item.getProductName().trim().isEmpty()) {
+                System.err.println("❌ Product Name is required");
+                return false;
+            }
+            if (item.getCategoryId() == null || item.getCategoryId().trim().isEmpty()) {
+                System.err.println("❌ Category ID is required");
+                return false;
+            }
+            if (!validateCategoryExists(item.getCategoryId())) {
+                System.err.println("❌ Category ID does not exist: " + item.getCategoryId());
+                return false;
+            }
+            if (item.getQuantityStock() <= 0) {
+                System.err.println("❌ Quantity must be > 0");
+                return false;
+            }
+            if (item.getUnitPriceImport() == null || item.getUnitPriceImport().compareTo(BigDecimal.ZERO) <= 0) {
+                System.err.println("❌ Unit Price must be > 0");
+                return false;
+            }
+        }
+        
+        // SQL statements
+        String upsertStockSQL = """
+            MERGE Product_Stock AS target
+            USING (SELECT ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?, 0) AS source 
+                (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
+            ON target.Warehouse_Item_ID = source.Warehouse_Item_ID
+            WHEN MATCHED THEN
+                UPDATE SET 
+                    Product_Name = source.Product_Name,
+                    Category_ID = source.Category_ID,
+                    Sup_ID = source.Sup_ID,
+                    Quantity_Stock = target.Quantity_Stock + source.Quantity_Stock,
+                    Unit_Price_Import = source.Unit_Price_Import,
+                    Production_Year = COALESCE(source.Production_Year, target.Production_Year)
+            WHEN NOT MATCHED THEN
+                INSERT (Warehouse_Item_ID, Product_Name, Category_ID, Sup_ID, 
+                       Quantity_Stock, Unit_Price_Import, Created_Date, Created_Time, Production_Year, Is_In_Product)
+                VALUES (source.Warehouse_Item_ID, source.Product_Name, source.Category_ID, source.Sup_ID,
+                       source.Quantity_Stock, source.Unit_Price_Import, source.Created_Date, source.Created_Time, source.Production_Year, source.Is_In_Product);
+        """;
+        
+        String insertBillSQL = """
+            INSERT INTO Bill_Imported (Invoice_No, Admin_ID, Total_Product, Total_Price, Status)
+            VALUES (?, ?, ?, ?, 'Available')
+        """;
+        
+        String insertBillDetailSQL = """
+            INSERT INTO Bill_Imported_Details (Invoice_No, Admin_ID, Warehouse_Item_ID, Quantity, Unit_Price_Import, Total_Price, Date_Imported, Time_Imported, Status)
+            VALUES (?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), 'Available')
+        """;
+        
+        String updateBillTotalsSQL = """
+            UPDATE Bill_Imported 
+            SET Total_Product = (
+                SELECT COUNT(*) 
+                FROM Bill_Imported_Details 
+                WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'
+            ),
+            Total_Price = (
+                SELECT ISNULL(SUM(Total_Price), 0) 
+                FROM Bill_Imported_Details 
+                WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'
+            )
+            WHERE Invoice_No = ? AND Admin_ID = ?
+        """;
+        
+        // Tạo Invoice_No chung cho tất cả items
+        String invoiceNo = "BILL-BATCH-" + System.currentTimeMillis();
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stockStmt = conn.prepareStatement(upsertStockSQL);
+                 PreparedStatement billStmt = conn.prepareStatement(insertBillSQL);
+                 PreparedStatement billDetailStmt = conn.prepareStatement(insertBillDetailSQL);
+                 PreparedStatement updateTotalsStmt = conn.prepareStatement(updateBillTotalsSQL)) {
+                
+                // 1. Upsert tất cả Product_Stock items (dùng supplierId chung)
+                for (DTOInventory item : items) {
+                    stockStmt.setString(1, item.getWarehouseItemId());
+                    stockStmt.setString(2, item.getProductName());
+                    stockStmt.setString(3, item.getCategoryId());
+                    stockStmt.setString(4, supplierId); // Dùng supplierId chung
+                    stockStmt.setInt(5, item.getQuantityStock());
+                    stockStmt.setBigDecimal(6, item.getUnitPriceImport());
+                    stockStmt.setObject(7, item.getProductionYear(), Types.INTEGER);
+                    
+                    int stockResult = stockStmt.executeUpdate();
+                    System.out.println("✓ Stock upserted: " + item.getWarehouseItemId() + " (rows: " + stockResult + ")");
+                    
+                    // Tính tổng tiền
+                    BigDecimal itemTotal = item.getUnitPriceImport().multiply(BigDecimal.valueOf(item.getQuantityStock()));
+                    totalPrice = totalPrice.add(itemTotal);
+                }
+                
+                // 2. Tạo Bill_Imported header (tạm thời, sẽ update tổng sau)
+                billStmt.setString(1, invoiceNo);
+                billStmt.setString(2, adminId);
+                billStmt.setInt(3, items.size()); // Số lượng sản phẩm
+                billStmt.setBigDecimal(4, totalPrice); // Tổng tiền
+                
+                int billResult = billStmt.executeUpdate();
+                System.out.println("✓ Bill header created: " + invoiceNo + " (rows: " + billResult + ")");
+                
+                if (billResult > 0) {
+                    // 3. Insert tất cả Bill_Imported_Details
+                    for (DTOInventory item : items) {
+                        BigDecimal itemTotal = item.getUnitPriceImport().multiply(BigDecimal.valueOf(item.getQuantityStock()));
+                        
+                        billDetailStmt.setString(1, invoiceNo);
+                        billDetailStmt.setString(2, adminId);
+                        billDetailStmt.setString(3, item.getWarehouseItemId());
+                        billDetailStmt.setInt(4, item.getQuantityStock());
+                        billDetailStmt.setBigDecimal(5, item.getUnitPriceImport());
+                        billDetailStmt.setBigDecimal(6, itemTotal);
+                        
+                        int detailResult = billDetailStmt.executeUpdate();
+                        System.out.println("✓ Bill detail inserted: " + item.getWarehouseItemId() + " (rows: " + detailResult + ")");
+                        
+                        if (detailResult == 0) {
+                            conn.rollback();
+                            System.err.println("❌ Failed to insert Bill_Imported_Details for: " + item.getWarehouseItemId());
+                            return false;
+                        }
+                    }
+                    
+                    // 4. Update lại tổng số lượng và tổng tiền (đảm bảo chính xác)
+                    updateTotalsStmt.setString(1, invoiceNo);
+                    updateTotalsStmt.setString(2, adminId);
+                    updateTotalsStmt.setString(3, invoiceNo);
+                    updateTotalsStmt.setString(4, adminId);
+                    updateTotalsStmt.setString(5, invoiceNo);
+                    updateTotalsStmt.setString(6, adminId);
+                    
+                    int updateResult = updateTotalsStmt.executeUpdate();
+                    System.out.println("✓ Bill totals updated (rows: " + updateResult + ")");
+                    
+                    conn.commit();
+                    System.out.println("✅ BATCH IMPORT SUCCESS: " + items.size() + " items in Invoice: " + invoiceNo);
+                    System.out.println("✅ Total Price: " + totalPrice);
+                    System.out.println("✅ Trigger automatically updated Product.Quantity for all items");
+                    return true;
+                } else {
+                    conn.rollback();
+                    System.err.println("❌ Failed to create Bill_Imported header");
+                    return false;
+                }
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("❌ SQL Error in batch import: " + e.getMessage());
+                System.err.println("SQL State: " + e.getSQLState());
+                System.err.println("Error Code: " + e.getErrorCode());
+                e.printStackTrace();
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("❌ Connection Error in batch import: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 }

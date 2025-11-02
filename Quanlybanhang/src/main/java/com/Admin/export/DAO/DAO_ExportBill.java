@@ -50,10 +50,10 @@ public class DAO_ExportBill {
         return 12; // Default warranty months
     }
 
-    // Insert Export Bill (header) with optional promotion code
+    // Insert Export Bill (header) with optional promotion code and VAT
     public boolean insertBillExported(DTO_BillExported bill, String promotionCode) {
-        String sql = "INSERT INTO Bill_Exported (Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Promotion_Code) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Bill_Exported (Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Promotion_Code, VAT_Percent, VAT_Amount, Total_Amount) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, bill.getInvoiceNo());
@@ -63,6 +63,16 @@ public class DAO_ExportBill {
             pstmt.setInt(5, bill.getTotalProduct());
             if (promotionCode == null || promotionCode.isBlank()) pstmt.setNull(6, Types.VARCHAR);
             else pstmt.setString(6, promotionCode);
+            
+            // VAT fields
+            if (bill.getVatPercent() != null) {
+                pstmt.setBigDecimal(7, bill.getVatPercent());
+            } else {
+                pstmt.setBigDecimal(7, BigDecimal.valueOf(8.00)); // Default 8%
+            }
+            pstmt.setBigDecimal(8, bill.getVatAmount());
+            pstmt.setBigDecimal(9, bill.getTotalAmount());
+            
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error inserting bill exported: " + e.getMessage());
@@ -186,7 +196,7 @@ public class DAO_ExportBill {
     // Minimal implementations to satisfy BUS usage
     public java.util.List<com.Admin.export.DTO.DTO_BillExport> getAllBillExported() throws SQLException {
         java.util.List<com.Admin.export.DTO.DTO_BillExport> list = new java.util.ArrayList<>();
-        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description FROM Bill_Exported WHERE Status = 'Available'";
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, VAT_Percent, VAT_Amount, Total_Amount FROM Bill_Exported WHERE Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -200,6 +210,10 @@ public class DAO_ExportBill {
                 );
                 // Set Order_No from database
                 dto.setOrderNo(rs.getString("Order_No"));
+                // Set VAT fields
+                dto.setVatPercent(rs.getBigDecimal("VAT_Percent"));
+                dto.setVatAmount(rs.getBigDecimal("VAT_Amount"));
+                dto.setTotalAmount(rs.getBigDecimal("Total_Amount"));
                 list.add(dto);
             }
         }
@@ -266,14 +280,14 @@ public class DAO_ExportBill {
     }
 
     public DTO_BillExported getExportBillDetailsByInvoice(String invoiceNo, String adminID) throws SQLException {
-        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, Promotion_Code FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'";
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, Promotion_Code, VAT_Percent, VAT_Amount, Total_Amount FROM Bill_Exported WHERE Invoice_No = ? AND Admin_ID = ? AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, invoiceNo);
             ps.setString(2, adminID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new DTO_BillExported(
+                    DTO_BillExported bill = new DTO_BillExported(
                         rs.getString("Invoice_No"),
                         rs.getString("Admin_ID"),
                         rs.getString("Customer_ID"),
@@ -281,6 +295,11 @@ public class DAO_ExportBill {
                         rs.getString("Description"),
                         rs.getString("Promotion_Code")
                     );
+                    bill.setOrderNo(rs.getString("Order_No"));
+                    bill.setVatPercent(rs.getBigDecimal("VAT_Percent"));
+                    bill.setVatAmount(rs.getBigDecimal("VAT_Amount"));
+                    bill.setTotalAmount(rs.getBigDecimal("Total_Amount"));
+                    return bill;
                 }
             }
         }
@@ -357,7 +376,7 @@ public class DAO_ExportBill {
      */
     public java.util.List<com.Admin.export.DTO.DTO_BillExport> searchBillExported(String searchType, String keyword) throws SQLException {
         java.util.List<com.Admin.export.DTO.DTO_BillExport> list = new java.util.ArrayList<>();
-        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description FROM Bill_Exported WHERE Status = 'Available'";
+        String sql = "SELECT Invoice_No, Admin_ID, Customer_ID, Order_No, Total_Product, Description, VAT_Percent, VAT_Amount, Total_Amount FROM Bill_Exported WHERE Status = 'Available'";
         
         // Add search condition based on search type
         switch (searchType.toLowerCase()) {
@@ -396,6 +415,9 @@ public class DAO_ExportBill {
                         rs.getString("Description")
                     );
                     dto.setOrderNo(rs.getString("Order_No"));
+                    dto.setVatPercent(rs.getBigDecimal("VAT_Percent"));
+                    dto.setVatAmount(rs.getBigDecimal("VAT_Amount"));
+                    dto.setTotalAmount(rs.getBigDecimal("Total_Amount"));
                     list.add(dto);
                 }
             }

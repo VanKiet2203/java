@@ -138,6 +138,14 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             page.add(separator());
             page.add(Box.createVerticalStrut(8));
             
+            // Get bill header information for VAT
+            com.Admin.export.DTO.DTO_BillExported billHeader = null;
+            try {
+                billHeader = busExportBill.getExportBillDetailsForInsurance(first.getInvoiceNo(), first.getAdminId());
+            } catch (Exception e) {
+                // If cannot get header, continue without VAT info
+            }
+            
             // Tạo panel tổng tiền với style đặc biệt
             JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             totalPanel.setBackground(Color.WHITE);
@@ -146,18 +154,42 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             JLabel subtotalLabel = new JLabel("Subtotal: ");
             subtotalLabel.setFont(new Font("Arial", Font.BOLD, 14));
             subtotalLabel.setForeground(Color.decode("#7F8C8D"));
-            JLabel subtotalValue = new JLabel(String.valueOf(grandBefore));
+            JLabel subtotalValue = new JLabel(String.valueOf(grandAfter));
             subtotalValue.setFont(new Font("Arial", Font.PLAIN, 14));
             subtotalValue.setForeground(Color.decode("#2C3E50"));
             
             totalPanel.add(subtotalLabel);
             totalPanel.add(subtotalValue);
+            
+            // Add VAT information if available
+            if (billHeader != null && billHeader.getVatPercent() != null && billHeader.getVatAmount() != null) {
+                totalPanel.add(Box.createHorizontalStrut(20));
+                
+                JLabel vatLabel = new JLabel("VAT (" + billHeader.getVatPercent() + "%): ");
+                vatLabel.setFont(new Font("Arial", Font.BOLD, 14));
+                vatLabel.setForeground(Color.decode("#7F8C8D"));
+                JLabel vatValue = new JLabel(String.valueOf(billHeader.getVatAmount()));
+                vatValue.setFont(new Font("Arial", Font.PLAIN, 14));
+                vatValue.setForeground(Color.decode("#2C3E50"));
+                
+                totalPanel.add(vatLabel);
+                totalPanel.add(vatValue);
+            }
+            
             totalPanel.add(Box.createHorizontalStrut(20));
             
-            JLabel totalLabel = new JLabel("Total Pay: ");
+            // Total after VAT
+            java.math.BigDecimal finalTotal = grandAfter;
+            if (billHeader != null && billHeader.getTotalAmount() != null) {
+                finalTotal = billHeader.getTotalAmount();
+            } else if (billHeader != null && billHeader.getVatAmount() != null) {
+                finalTotal = grandAfter.add(billHeader.getVatAmount());
+            }
+            
+            JLabel totalLabel = new JLabel("Total Amount (incl. VAT): ");
             totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
             totalLabel.setForeground(Color.decode("#E74C3C"));
-            JLabel totalValue = new JLabel(String.valueOf(grandAfter));
+            JLabel totalValue = new JLabel(String.valueOf(finalTotal));
             totalValue.setFont(new Font("Arial", Font.BOLD, 16));
             totalValue.setForeground(Color.decode("#E74C3C"));
             

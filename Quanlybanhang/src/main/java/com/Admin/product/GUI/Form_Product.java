@@ -322,7 +322,8 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
              "Sold Quantity",      // Số lượng đã bán
              "Price", 
              "Category ID", 
-             "Category Name"
+             "Category Name",
+             "Origin"              // Country from Supplier
          };
 
          // 2️⃣ Tạo model
@@ -441,18 +442,19 @@ public class Form_Product extends JPanel  implements ProductUpdateObserver {
         
         // Định nghĩa tỷ lệ chiều rộng cho từng cột (tối ưu cho màn hình nhỏ)
         double[] columnRatios = {
-            0.10,  // Product ID - 10%
-            0.18,  // Product Name - 18%
-            0.07,  // Color - 7%
-            0.07,  // Speed - 7%
-            0.10,  // Battery Capacity - 10%
-            0.08,  // Warranty (Months) - 8%
-            0.08,  // Total Imported - 8%
-            0.08,  // Current Stock - 8%
-            0.08,  // Sold Quantity - 8%
-            0.08,  // Price - 8%
-            0.08,  // Category ID - 8%
-            0.09   // Category Name - 9%
+            0.09,  // Product ID - 9%
+            0.16,  // Product Name - 16%
+            0.06,  // Color - 6%
+            0.06,  // Speed - 6%
+            0.09,  // Battery Capacity - 9%
+            0.07,  // Warranty (Months) - 7%
+            0.07,  // Total Imported - 7%
+            0.07,  // Current Stock - 7%
+            0.07,  // Sold Quantity - 7%
+            0.07,  // Price - 7%
+            0.07,  // Category ID - 7%
+            0.08,  // Category Name - 8%
+            0.07   // Origin (Country) - 7%
         };
         
         // Áp dụng tỷ lệ cho từng cột

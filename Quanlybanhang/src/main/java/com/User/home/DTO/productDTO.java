@@ -19,6 +19,7 @@ public class productDTO {
     private String supID;
     private String warehouseItemID;
     private String image;
+    private String country; // Country from Supplier
 
     // Constructor mặc định
     public productDTO() {}
@@ -167,6 +168,14 @@ public class productDTO {
         this.image = image;
     }
 
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
     @Override
     public String toString() {
         return "productDTO{" +
@@ -185,6 +194,7 @@ public class productDTO {
                 ", supID='" + supID + '\'' +
                 ", warehouseItemID='" + warehouseItemID + '\'' +
                 ", image='" + image + '\'' +
+                ", country='" + country + '\'' +
                 '}';
     }
 }

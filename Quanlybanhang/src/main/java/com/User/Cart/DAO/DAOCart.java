@@ -133,6 +133,30 @@ public class DAOCart {
         return false;
     }
     
+    // Lấy số lượng hiện tại của sản phẩm trong cart
+    public int getQuantityInCart(String customerID, String productID) {
+        String sql = "SELECT Quantity FROM Cart WHERE Customer_ID = ? AND Product_ID = ? AND Status = 'Available'";
+        
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, customerID);
+            stmt.setString(2, productID);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int quantity = rs.getInt("Quantity");
+                    System.out.println("Quantity in cart for Product " + productID + ": " + quantity);
+                    return quantity;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error getting quantity in cart: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+    
     public boolean updateCartItem(DTOCart cartItem) {
         String sql = "UPDATE Cart SET Quantity = ? WHERE Customer_ID = ? AND Product_ID = ? AND Status = 'Available'";
 
@@ -141,7 +165,15 @@ public class DAOCart {
 
             // Validate stock to prevent exceeding available
             int currentStock = getCurrentStock(cartItem.getProductID());
-            if (cartItem.getQuantity() <= 0 || cartItem.getQuantity() > currentStock) {
+            System.out.println("Updating cart item - Quantity: " + cartItem.getQuantity() + ", Stock: " + currentStock);
+            
+            if (cartItem.getQuantity() <= 0) {
+                System.out.println("❌ Invalid quantity: " + cartItem.getQuantity());
+                return false;
+            }
+            
+            if (cartItem.getQuantity() > currentStock) {
+                System.out.println("❌ Quantity exceeds stock: " + cartItem.getQuantity() + " > " + currentStock);
                 return false;
             }
 
@@ -150,9 +182,11 @@ public class DAOCart {
             stmt.setString(3, cartItem.getProductID());
 
             int rowsAffected = stmt.executeUpdate();
+            System.out.println("Rows affected by update: " + rowsAffected);
             return rowsAffected > 0;
 
         } catch (SQLException e) {
+            System.out.println("Error updating cart item: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

@@ -2,6 +2,8 @@
 package com.Admin.statistics.GUI;
 
 import com.Admin.statistics.BUS.BUS_Chart;
+import com.Admin.statistics.Components.FilterPanel;
+import com.Admin.statistics.DTO.ChartFilterData;
 import com.ComponentandDatabase.Components.MyButton;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -12,14 +14,15 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import org.jfree.chart.ChartPanel;
+import java.awt.BorderLayout;
 
-
-public class Form_Heatmap extends JPanel {
+public class Form_Heatmap extends JPanel implements FilterPanel.FilterChangeListener {
    private JPanel panel;
     private JLabel lblTitle;
     private MyButton bntRefresh;
     private BUS_Chart busChart;
     private ChartPanel chartPanel;
+    private FilterPanel filterPanel;
 
     public Form_Heatmap() {
         initComponents();
@@ -33,26 +36,37 @@ public class Form_Heatmap extends JPanel {
     }
 
     private void init() {
+        setLayout(new BorderLayout());
+        
+        // Tạo FilterPanel
+        filterPanel = new FilterPanel();
+        filterPanel.addFilterChangeListener(this);
+        add(filterPanel, BorderLayout.NORTH);
+        
+        // Tạo panel chính cho chart
         panel = new JPanel();
         panel.setLayout(null);
-        panel.setBounds(0, 0, 1270, 700);
         panel.setBackground(Color.WHITE);
         panel.setBorder(null);
-        add(panel);
+        add(panel, BorderLayout.CENTER);
 
         // Khởi tạo BUS
         busChart = new BUS_Chart();
         
+        // Set filter từ FilterPanel trước khi lấy chart
+        ChartFilterData initialFilter = filterPanel.getCurrentFilter();
+        busChart.updateFilter(initialFilter);
+        
         // Lấy ChartPanel từ BUS
         chartPanel = busChart.getHeatmap();
-        chartPanel.setBounds(50, 100, 1170, 550); // Đặt vị trí và kích thước cho biểu đồ
+        chartPanel.setBounds(50, 50, 1170, 500); // Đặt vị trí và kích thước cho biểu đồ
         panel.add(chartPanel);
 
         // Tiêu đề
-        lblTitle = new JLabel("Popular Products Statistics");
+        lblTitle = new JLabel("Thống kê sản phẩm phổ biến");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
         lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
-        lblTitle.setBounds(50, 50, 1170, 40);
+        lblTitle.setBounds(50, 10, 1170, 30);
         panel.add(lblTitle);
 
         // Nút Refresh
@@ -60,7 +74,7 @@ public class Form_Heatmap extends JPanel {
         bntRefresh.setBackgroundColor(Color.WHITE);
         bntRefresh.setPressedColor(Color.decode("#D3D3D3"));
         bntRefresh.setHoverColor(Color.decode("#EEEEEE"));
-        bntRefresh.setBounds(1100, 40, 140, 35);
+        bntRefresh.setBounds(1100, 10, 140, 35);
         bntRefresh.setFont(new Font("sansserif", Font.BOLD, 16));
         bntRefresh.setForeground(Color.BLACK);
         bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 
@@ -81,14 +95,25 @@ public class Form_Heatmap extends JPanel {
         // Xóa chartPanel cũ
         panel.remove(chartPanel);
         
-        // Tạo lại chartPanel mới
+        // Tạo lại chartPanel mới với filter hiện tại
+        ChartFilterData currentFilter = filterPanel.getCurrentFilter();
+        busChart.updateFilter(currentFilter);
         chartPanel = busChart.getHeatmap();
-        chartPanel.setBounds(50, 100, 1170, 550);
+        chartPanel.setBounds(50, 50, 1170, 500);
         panel.add(chartPanel);
         
         // Cập nhật giao diện
         panel.revalidate();
         panel.repaint();
+    }
+    
+    @Override
+    public void onFilterChanged(ChartFilterData filterData) {
+        // Cập nhật filter trong BUS
+        busChart.updateFilter(filterData);
+        
+        // Refresh chart với filter mới
+        refreshChart();
     }
 
     @Override

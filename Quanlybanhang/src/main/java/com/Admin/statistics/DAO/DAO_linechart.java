@@ -1,6 +1,7 @@
 package com.Admin.statistics.DAO;
 
 import com.ComponentandDatabase.Database_Connection.DatabaseConnection;
+import com.Admin.statistics.DTO.ChartFilterData;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.sql.*;
@@ -25,9 +26,11 @@ public class DAO_linechart {
     private String statisticsType = "month";
     private volatile boolean isRunning = true;
     private Connection activeConnection;
+    private volatile ChartFilterData currentFilter;
 
     public DAO_linechart() {
         dataset = new TimeSeriesCollection();
+        currentFilter = new ChartFilterData();
         createChart();
         initAutoRefresh();
     }
@@ -40,6 +43,10 @@ public class DAO_linechart {
             }
         }, 0, REFRESH_INTERVAL, TimeUnit.SECONDS);
     }
+    
+    public void setFilter(ChartFilterData filterData) {
+        this.currentFilter = filterData != null ? new ChartFilterData(filterData) : new ChartFilterData();
+    }
 
     public void setStatisticsType(String type) {
         if (Arrays.asList("day", "month", "year").contains(type)) {
@@ -49,6 +56,14 @@ public class DAO_linechart {
     }
 
     public ChartPanel getChartPanel() {
+        return getChartPanel(new ChartFilterData());
+    }
+    
+    public ChartPanel getChartPanel(ChartFilterData filterData) {
+        if (filterData != null) {
+            setFilter(filterData);
+        }
+        updateChartWithFilter(currentFilter);
         return chartPanel;
     }
 
@@ -94,25 +109,22 @@ public class DAO_linechart {
     }
     private synchronized void refreshData() {
         try {
-            Map<String, BigDecimal> revenueData = fetchDataFromDatabase();
+            Map<String, BigDecimal> revenueData = fetchDataFromDatabase(currentFilter);
             if (!revenueData.isEmpty()) {
-                updateDataset(revenueData);
+                updateDataset(revenueData, currentFilter);
+                updateChartTitle(currentFilter);
             }
         } catch (SQLException e) {
             handleDatabaseError(e);
         }
     }
-
-    private Map<String, BigDecimal> fetchDataFromDatabase() throws SQLException {
+    
+    private Map<String, BigDecimal> fetchDataFromDatabase(ChartFilterData filterData) throws SQLException {
         Map<String, BigDecimal> data = new TreeMap<>();
-        String dateFormat = statisticsType.equals("day") ? "yyyy-MM-dd" : 
-                          statisticsType.equals("month") ? "yyyy-MM" : "yyyy";
-
-        String sql = "SELECT FORMAT(bd.Date_Exported, '" + dateFormat + "') AS period, " +
-                     "SUM(bd.Total_Price_After) AS total_revenue " +
-                     "FROM Bill_Exported_Details bd " +
-                     "GROUP BY FORMAT(bd.Date_Exported, '" + dateFormat + "') " +
-                     "ORDER BY period";
+        
+        // Xác định date format dựa trên time filter
+        String dateFormat = getDateFormat(filterData);
+        String sql = buildLineChartSQLQuery(filterData, dateFormat);
 
         try {
             // Use active connection or create new one
@@ -127,8 +139,18 @@ public class DAO_linechart {
 
                 while (rs.next()) {
                     String period = rs.getString("period");
-                    BigDecimal revenue = rs.getBigDecimal("total_revenue");
-                    data.put(period, revenue);
+                    BigDecimal revenue = null;
+                    
+                    // Try to get total_revenue first, then total_quantity
+                    revenue = rs.getBigDecimal("total_revenue");
+                    if (revenue == null) {
+                        BigDecimal quantity = rs.getBigDecimal("total_quantity");
+                        revenue = quantity != null ? quantity : BigDecimal.ZERO;
+                    }
+                    
+                    if (period != null && revenue != null) {
+                        data.put(period, revenue);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -137,34 +159,6 @@ public class DAO_linechart {
         }
 
         return data;
-    }
-
-    private void updateDataset(Map<String, BigDecimal> revenueData) {
-        dataset.removeAllSeries();
-        TimeSeries series = new TimeSeries("Revenue");
-
-        revenueData.forEach((period, revenue) -> {
-            String[] parts = period.split("-");
-            int year = Integer.parseInt(parts[0]);
-            
-            if (statisticsType.equals("day")) {
-                int month = Integer.parseInt(parts[1]);
-                int day = Integer.parseInt(parts[2]);
-                series.add(new Day(day, month, year), revenue);
-            } 
-            else if (statisticsType.equals("month")) {
-                int month = Integer.parseInt(parts[1]);
-                series.add(new Month(month, year), revenue);
-            } 
-            else {
-                series.add(new Year(year), revenue);
-            }
-        });
-
-        dataset.addSeries(series);
-        if (chart != null) {
-            chart.fireChartChanged();
-        }
     }
 
     private void handleDatabaseError(SQLException e) {
@@ -185,6 +179,172 @@ public class DAO_linechart {
             System.err.println("Error closing connection: " + e.getMessage());
         }
         activeConnection = null;
+    }
+
+    private String getDateFormat(ChartFilterData filterData) {
+        if (!filterData.hasTimeFilter()) {
+            return "yyyy-MM"; // Default to month
+        }
+        
+        switch (filterData.getTimeFilterType()) {
+            case YEAR:
+                return "yyyy";
+            case QUARTER:
+                return "yyyy-Q"; // Custom format for quarters
+            case MONTH:
+                return "yyyy-MM";
+            default:
+                return "yyyy-MM";
+        }
+    }
+    
+    private String buildLineChartSQLQuery(ChartFilterData filterData, String dateFormat) {
+        StringBuilder sql = new StringBuilder();
+        String timeFilter = filterData.getTimeWhereClause();
+        
+        switch (filterData.getDataType()) {
+            case REVENUE:
+                if (dateFormat.equals("yyyy-Q")) {
+                    sql.append("SELECT CONCAT(YEAR(bd.Date_Exported), '-Q', DATEPART(QUARTER, bd.Date_Exported)) AS period, ")
+                       .append("SUM(bd.Total_Price_After) AS total_revenue ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported) ")
+                       .append("ORDER BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported)");
+                } else {
+                    sql.append("SELECT FORMAT(bd.Date_Exported, '").append(dateFormat).append("') AS period, ")
+                       .append("SUM(bd.Total_Price_After) AS total_revenue ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY FORMAT(bd.Date_Exported, '").append(dateFormat).append("') ")
+                       .append("ORDER BY period");
+                }
+                break;
+                
+            case QUANTITY_SOLD:
+                if (dateFormat.equals("yyyy-Q")) {
+                    sql.append("SELECT CONCAT(YEAR(bd.Date_Exported), '-Q', DATEPART(QUARTER, bd.Date_Exported)) AS period, ")
+                       .append("SUM(bd.Sold_Quantity) AS total_quantity ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported) ")
+                       .append("ORDER BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported)");
+                } else {
+                    sql.append("SELECT FORMAT(bd.Date_Exported, '").append(dateFormat).append("') AS period, ")
+                       .append("SUM(bd.Sold_Quantity) AS total_quantity ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY FORMAT(bd.Date_Exported, '").append(dateFormat).append("') ")
+                       .append("ORDER BY period");
+                }
+                break;
+                
+            default:
+                // Default to revenue
+                if (dateFormat.equals("yyyy-Q")) {
+                    sql.append("SELECT CONCAT(YEAR(bd.Date_Exported), '-Q', DATEPART(QUARTER, bd.Date_Exported)) AS period, ")
+                       .append("SUM(bd.Total_Price_After) AS total_revenue ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported) ")
+                       .append("ORDER BY YEAR(bd.Date_Exported), DATEPART(QUARTER, bd.Date_Exported)");
+                } else {
+                    sql.append("SELECT FORMAT(bd.Date_Exported, '").append(dateFormat).append("') AS period, ")
+                       .append("SUM(bd.Total_Price_After) AS total_revenue ")
+                       .append("FROM Bill_Exported_Details bd ")
+                       .append("WHERE bd.Status = 'Available' ")
+                       .append(timeFilter)
+                       .append(" GROUP BY FORMAT(bd.Date_Exported, '").append(dateFormat).append("') ")
+                       .append("ORDER BY period");
+                }
+                break;
+        }
+        
+        return sql.toString();
+    }
+    
+    private void updateChartWithFilter(ChartFilterData filterData) {
+        try {
+            Map<String, BigDecimal> newData = fetchDataFromDatabase(filterData);
+            if (!newData.isEmpty()) {
+                updateDataset(newData, filterData);
+                updateChartTitle(filterData);
+            }
+        } catch (SQLException e) {
+            handleDatabaseError(e);
+        }
+    }
+    
+    private void updateDataset(Map<String, BigDecimal> data, ChartFilterData filterData) {
+        dataset.removeAllSeries();
+        TimeSeries series = new TimeSeries(getSeriesName(filterData));
+        
+        String dateFormat = getDateFormat(filterData);
+        
+        data.forEach((period, value) -> {
+            String[] parts = period.split("-");
+            int year = Integer.parseInt(parts[0]);
+            
+            if (dateFormat.equals("yyyy")) {
+                series.add(new Year(year), value);
+            } else if (dateFormat.equals("yyyy-Q")) {
+                int quarter = Integer.parseInt(parts[1].substring(1)); // Remove 'Q' prefix
+                series.add(new Quarter(quarter, year), value);
+            } else if (dateFormat.equals("yyyy-MM")) {
+                int month = Integer.parseInt(parts[1]);
+                series.add(new Month(month, year), value);
+            } else {
+                // Default to month
+                int month = Integer.parseInt(parts[1]);
+                series.add(new Month(month, year), value);
+            }
+        });
+        
+        dataset.addSeries(series);
+        if (chart != null) {
+            chart.fireChartChanged();
+        }
+    }
+    
+    private String getSeriesName(ChartFilterData filterData) {
+        return filterData.getDataType().getDisplayName();
+    }
+    
+    private void updateChartTitle(ChartFilterData filterData) {
+        if (chart != null) {
+            String title = getChartTitle(filterData);
+            chart.setTitle(title);
+            chart.fireChartChanged();
+        }
+    }
+    
+    private String getChartTitle(ChartFilterData filterData) {
+        String baseTitle = filterData.getDataType().getDisplayName();
+        String timeInfo = "";
+        
+        if (filterData.hasTimeFilter()) {
+            switch (filterData.getTimeFilterType()) {
+                case YEAR:
+                    timeInfo = " - Năm " + filterData.getYear();
+                    break;
+                case QUARTER:
+                    timeInfo = " - Quý " + filterData.getQuarter() + " năm " + filterData.getYear();
+                    break;
+                case MONTH:
+                    timeInfo = " - Tháng " + filterData.getMonth() + " năm " + filterData.getYear();
+                    break;
+                case ALL_TIME:
+                    // Không cần thêm thông tin thời gian
+                    break;
+            }
+        }
+        
+        return baseTitle + timeInfo;
     }
 
     public void shutdown() {

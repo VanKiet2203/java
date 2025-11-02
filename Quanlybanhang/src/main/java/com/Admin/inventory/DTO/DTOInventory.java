@@ -12,13 +12,14 @@ public class DTOInventory {
     private BigDecimal unitPriceImport;
     private Date createdDate;
     private String createdTime;
+    private Integer productionYear;
     
     public DTOInventory() {
     }
     
     public DTOInventory(String warehouseItemId, String productName, String categoryId, 
                         String supId, int quantityStock, BigDecimal unitPriceImport, 
-                        Date createdDate, String createdTime) {
+                        Date createdDate, String createdTime, Integer productionYear) {
         this.warehouseItemId = warehouseItemId;
         this.productName = productName;
         this.categoryId = categoryId;
@@ -27,6 +28,7 @@ public class DTOInventory {
         this.unitPriceImport = unitPriceImport;
         this.createdDate = createdDate;
         this.createdTime = createdTime;
+        this.productionYear = productionYear;
     }
     
     // Getters and Setters
@@ -94,6 +96,14 @@ public class DTOInventory {
         this.createdTime = createdTime;
     }
     
+    public Integer getProductionYear() {
+        return productionYear;
+    }
+    
+    public void setProductionYear(Integer productionYear) {
+        this.productionYear = productionYear;
+    }
+    
     @Override
     public String toString() {
         return "DTOInventory{" +
@@ -105,6 +115,7 @@ public class DTOInventory {
                 ", unitPriceImport=" + unitPriceImport +
                 ", createdDate=" + createdDate +
                 ", createdTime='" + createdTime + '\'' +
+                ", productionYear=" + productionYear +
                 '}';
     }
 }

@@ -8,6 +8,9 @@ public class DTO_BillExported {
     private int totalProduct;
     private String description;
     private String promotionCode;
+    private java.math.BigDecimal vatPercent; // Thuế VAT (%)
+    private java.math.BigDecimal vatAmount; // Số tiền VAT
+    private java.math.BigDecimal totalAmount; // Tổng tiền sau VAT
 
     public DTO_BillExported() {
     }
@@ -84,6 +87,30 @@ public class DTO_BillExported {
         this.promotionCode = promotionCode;
     }
 
+    public java.math.BigDecimal getVatPercent() {
+        return vatPercent;
+    }
+
+    public void setVatPercent(java.math.BigDecimal vatPercent) {
+        this.vatPercent = vatPercent;
+    }
+
+    public java.math.BigDecimal getVatAmount() {
+        return vatAmount;
+    }
+
+    public void setVatAmount(java.math.BigDecimal vatAmount) {
+        this.vatAmount = vatAmount;
+    }
+
+    public java.math.BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(java.math.BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
     @Override
     public String toString() {
         return "DTO_BillExported{" +
@@ -93,6 +120,9 @@ public class DTO_BillExported {
                 ", totalProduct=" + totalProduct +
                 ", description='" + description + '\'' +
                 ", promotionCode='" + promotionCode + '\'' +
+                ", vatPercent=" + vatPercent +
+                ", vatAmount=" + vatAmount +
+                ", totalAmount=" + totalAmount +
                 '}';
     }
 }

@@ -343,8 +343,25 @@ public class Form_Promotion extends JPanel {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         
         int stt = 1;
+        // Chỉ hiển thị các promotion có Status = 'Available' (đã được filter trong getAllPromotions)
+        // Và translate status để hiển thị đúng
         for (DTOPromotion p : promotions) {
             String status = busPromotion.getPromotionStatus(p);
+            // Translate status
+            String displayStatus;
+            switch (status) {
+                case "Đang hoạt động":
+                    displayStatus = "Active";
+                    break;
+                case "Đã hết hạn":
+                    displayStatus = "Expired";
+                    break;
+                case "Sắp diễn ra":
+                    displayStatus = "Upcoming";
+                    break;
+                default:
+                    displayStatus = status;
+            }
             
             tableModel.addRow(new Object[]{
                 stt++,
@@ -353,7 +370,7 @@ public class Form_Promotion extends JPanel {
                 p.getStartDate().format(formatter),
                 p.getEndDate().format(formatter),
                 p.getDiscountPercent() + "%",
-                status
+                displayStatus
             });
         }
         
@@ -438,6 +455,8 @@ public class Form_Promotion extends JPanel {
                     showMessage("Delete promotion successfully!", "success");
                     loadPromotionData();
                     clearForm();
+                    // Refresh promotion list in Form_Export if it exists
+                    com.Admin.export.GUI.Form_Export.refreshPromotionsIfExists();
                 } else {
                     showMessage("Delete promotion failed!", "error");
                 }
@@ -503,6 +522,8 @@ public class Form_Promotion extends JPanel {
                 );
                 loadPromotionData();
                 clearForm();
+                // Refresh promotion list in Form_Export if it exists
+                com.Admin.export.GUI.Form_Export.refreshPromotionsIfExists();
             } else {
                 showMessage(
                     isEditing ? "Update promotion failed!" : "Add promotion failed!",

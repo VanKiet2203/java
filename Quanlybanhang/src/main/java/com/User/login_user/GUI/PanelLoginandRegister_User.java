@@ -122,23 +122,60 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         JLabel lblDOB = new JLabel("Date of Birth");
         lblDOB.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lblDOB.setForeground(Color.BLACK);
-        lblDOB.setBounds(60 + labelOffsetX, 300, 120, 30);
+        lblDOB.setBounds(60 + labelOffsetX, 300, 200, 30);
         register.add(lblDOB);
+        
+        // Add hint label for age requirement
+        JLabel lblAgeHint = new JLabel("(Must be 18 years or older)");
+        lblAgeHint.setFont(new Font("Arial", Font.ITALIC, 12));
+        lblAgeHint.setForeground(new Color(100, 100, 100));
+        lblAgeHint.setBounds(60 + labelOffsetX, 325, 250, 20);
+        register.add(lblAgeHint);
     
         dateOfBirth = new JDateChooser();
-        dateOfBirth.setFont(new Font("Times New Roman", Font.PLAIN, 18));
+        dateOfBirth.setFont(new Font("Times New Roman", Font.PLAIN, 16));
         dateOfBirth.setDateFormatString("dd/MM/yyyy");
         dateOfBirth.setBounds((519 - 280) / 2 + fieldOffsetX, 295, 280, 35);
+        
+        // Set date limits: max = today, min = 18 years ago
+        java.util.Calendar maxDate = java.util.Calendar.getInstance();
+        maxDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        maxDate.set(java.util.Calendar.MINUTE, 0);
+        maxDate.set(java.util.Calendar.SECOND, 0);
+        maxDate.set(java.util.Calendar.MILLISECOND, 0);
+        dateOfBirth.setMaxSelectableDate(maxDate.getTime());
+        
+        java.util.Calendar minDate = java.util.Calendar.getInstance();
+        minDate.add(java.util.Calendar.YEAR, -100); // Allow up to 100 years old
+        dateOfBirth.setMinSelectableDate(minDate.getTime());
+        
+        // Improve appearance
         dateOfBirth.setBackground(Color.WHITE);
         dateOfBirth.setOpaque(true);
-        dateOfBirth.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
+        dateOfBirth.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(7, 164, 121), 2),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        
+        // Customize calendar popup appearance
+        try {
+            // Set calendar button icon and style
+            dateOfBirth.getCalendarButton().setBackground(new Color(7, 164, 121));
+            dateOfBirth.getCalendarButton().setForeground(Color.WHITE);
+            dateOfBirth.getCalendarButton().setPreferredSize(new java.awt.Dimension(35, 35));
+            dateOfBirth.getCalendarButton().setFont(new Font("Arial", Font.BOLD, 14));
+        } catch (Exception ex) {
+            // If calendar button customization fails, continue without it
+            System.out.println("Date chooser button customization: " + ex.getMessage());
+        }
+        
         register.add(dateOfBirth);
     
-        // Email
+        // Email - Shifted down by 10px to accommodate DOB hint
         JLabel lblEmail = new JLabel("Email");
         lblEmail.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lblEmail.setForeground(Color.BLACK);
-        lblEmail.setBounds(60 + labelOffsetX, 363, 120, 30);
+        lblEmail.setBounds(60 + labelOffsetX, 373, 120, 30);
         register.add(lblEmail);
     
         txtEmail = new MyTextField();
@@ -146,14 +183,14 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         txtEmail.setHint("Enter your Email");
         txtEmail.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtEmail.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\mail.png");
-        txtEmail.setBounds((519 - 280) / 2 + fieldOffsetX, 358, 280, 35);
+        txtEmail.setBounds((519 - 280) / 2 + fieldOffsetX, 368, 280, 35);
         register.add(txtEmail);
     
-        // Contact
+        // Contact - Shifted down by 10px
         JLabel lblContact = new JLabel("Contact");
         lblContact.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lblContact.setForeground(Color.BLACK);
-        lblContact.setBounds(60 + labelOffsetX, 425, 120, 30);
+        lblContact.setBounds(60 + labelOffsetX, 435, 120, 30);
         register.add(lblContact);
     
         txtContact = new MyTextField();
@@ -161,14 +198,14 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         txtContact.setHint("Enter your contact");
         txtContact.setBorder(BorderFactory.createLineBorder(new Color(7, 164, 121), 2));
         txtContact.setPreFixIcon("src\\main\\resources\\Icons\\User_icon\\contact.png");
-        txtContact.setBounds((519 - 280) / 2 + fieldOffsetX, 423, 280, 35);
+        txtContact.setBounds((519 - 280) / 2 + fieldOffsetX, 433, 280, 35);
         register.add(txtContact);
     
-        // Address
+        // Address - Shifted down by 10px
         JLabel lblAddress = new JLabel("Address");
         lblAddress.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lblAddress.setForeground(Color.BLACK);
-        lblAddress.setBounds(60 + labelOffsetX, 500, 120, 30);
+        lblAddress.setBounds(60 + labelOffsetX, 510, 120, 30);
         register.add(lblAddress);
     
         txtAddress = new JTextArea();
@@ -178,14 +215,14 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         txtAddress.setWrapStyleWord(true);
     
         JScrollPane scrollAddress = new JScrollPane(txtAddress);
-        scrollAddress.setBounds((519 - 280) / 2 + fieldOffsetX, 480, 280, 80);
+        scrollAddress.setBounds((519 - 280) / 2 + fieldOffsetX, 490, 280, 80);
         register.add(scrollAddress);
     
-        // Password
+        // Password - Shifted down by 10px
         JLabel lblpass = new JLabel("Password");
         lblpass.setFont(new Font("goudy old style", Font.PLAIN, 20));
         lblpass.setForeground(Color.BLACK);
-        lblpass.setBounds(60 + labelOffsetX, 585, 120, 30);
+        lblpass.setBounds(60 + labelOffsetX, 595, 120, 30);
         register.add(lblpass);
     
         txtPassword = new MyTextField();
@@ -205,8 +242,8 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
             borderThickness
         );
 
-     // Cập nhật vị trí
-     passwordPanel.setBounds((519 - 280) / 2 + fieldOffsetX, 585, 280, 35);
+     // Cập nhật vị trí - Shifted down by 10px
+     passwordPanel.setBounds((519 - 280) / 2 + fieldOffsetX, 595, 280, 35);
 
      // Thêm vào giao diện
      register.add(passwordPanel);
@@ -216,22 +253,22 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
         signup.setBackgroundColor(new Color(0, 150, 136)); // Màu nền
         signup.setPressedColor(new Color(0, 100, 90)); // Màu khi nhấn
         signup.setHoverColor(new Color(0, 180, 150)); // Màu khi rê chuột vào
-        // Center SIGN UP button on register
-        signup.setBounds((519 - 200) / 2, 650, 200, 35);
+        // Center SIGN UP button on register - Shifted down by 10px
+        signup.setBounds((519 - 200) / 2, 660, 200, 35);
         signup.setFont(new Font("Times New Roman", Font.BOLD, 18));
         signup.setForeground(Color.WHITE);
 
         // Thêm vào panel
         register.add(signup);
 
-        // Nút Back to Sign In
+        // Nút Back to Sign In - Shifted down by 10px
         MyButton backToSignIn = new MyButton("Back to Sign In", 20);
         // Give Back to Sign In a filled blue theme and center it
         backToSignIn.setBackgroundColor(new Color(66, 133, 244));
         backToSignIn.setPressedColor(new Color(52, 103, 189));
         backToSignIn.setHoverColor(new Color(92, 153, 255));
         backToSignIn.setForeground(Color.WHITE);
-        backToSignIn.setBounds((519 - 200) / 2, 690, 200, 35);
+        backToSignIn.setBounds((519 - 200) / 2, 700, 200, 35);
         backToSignIn.setFont(new Font("Times New Roman", Font.BOLD, 18));
         register.add(backToSignIn);
         backToSignIn.addActionListener(ev -> showRegister(true));
@@ -244,12 +281,38 @@ public class PanelLoginandRegister_User extends javax.swing.JLayeredPane {
                 String idCard = txtIDCard.getText().trim();
                 String fullName = txtFullName.getText().trim();
                 String gender = rdoMale.isSelected() ? "Male" : (rdoFemale.isSelected() ? "Female" : "");
-                        // Kiểm tra ngày sinh
+                
+                // Kiểm tra ngày sinh
                 java.util.Date utilDob = dateOfBirth.getDate();
                 if (utilDob == null) {
-                    CustomDialog.showError("Please fill in all required fields! ");
-                    return; // Dừng sự kiện nếu ngày sinh không hợp lệ
+                    CustomDialog.showError("Please select your date of birth!");
+                    dateOfBirth.requestFocus();
+                    return;
                 }
+                
+                // Validate age >= 18 years old
+                java.util.Calendar dob = java.util.Calendar.getInstance();
+                dob.setTime(utilDob);
+                
+                java.util.Calendar today = java.util.Calendar.getInstance();
+                int age = today.get(java.util.Calendar.YEAR) - dob.get(java.util.Calendar.YEAR);
+                
+                // Check if birthday has occurred this year
+                if (today.get(java.util.Calendar.DAY_OF_YEAR) < dob.get(java.util.Calendar.DAY_OF_YEAR)) {
+                    age--;
+                }
+                
+                if (age < 18) {
+                    CustomDialog.showError(
+                        "Registration Error!\n\n" +
+                        "You must be at least 18 years old to register.\n" +
+                        "Your age: " + age + " years old\n" +
+                        "Please select a valid date of birth."
+                    );
+                    dateOfBirth.requestFocus();
+                    return;
+                }
+                
                 java.sql.Date sqlDob = new java.sql.Date(utilDob.getTime());
                 String email = txtEmail.getText().trim();
                 String contact = txtContact.getText().trim();

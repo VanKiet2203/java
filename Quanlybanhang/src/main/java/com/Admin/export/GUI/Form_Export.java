@@ -64,10 +64,14 @@ public class Form_Export extends JPanel {
     private DTOProfile_cus customer;
     private DTOPromotion currentPromotion;
     private JTabbedPane tablesTabbedPane;
+    
+    // Static reference để Form_Promotion có thể refresh promotion list
+    private static Form_Export currentInstance = null;
 
     public Form_Export() {
         initComponents();
         init();
+        currentInstance = this; // Đăng ký instance hiện tại
     }
     
     /**
@@ -77,8 +81,20 @@ public class Form_Export extends JPanel {
         Form_Export.orderNo = orderNo;
         initComponents();
         init();
+        currentInstance = this; // Đăng ký instance hiện tại
         // Tự động load dữ liệu cho Order đã chọn
         loadSpecificOrderData(orderNo, customerID);
+    }
+    
+    /**
+     * Static method để refresh promotion list từ Form_Promotion
+     */
+    public static void refreshPromotionsIfExists() {
+        if (currentInstance != null) {
+            SwingUtilities.invokeLater(() -> {
+                currentInstance.loadActivePromotions();
+            });
+        }
     }
 
     private void initComponents() {
@@ -421,7 +437,17 @@ public class Form_Export extends JPanel {
         panel.add(tablesTabbedPane);
 
         // Load dữ liệu cho tab Export Bills
-        SwingUtilities.invokeLater(this::loadExportBillsData);
+        SwingUtilities.invokeLater(() -> {
+            loadExportBillsData();
+        });
+        
+        // Add tab change listener để refresh data khi chuyển tab
+        tablesTabbedPane.addChangeListener(e -> {
+            if (tablesTabbedPane.getSelectedIndex() == 1) {
+                // Tab Export Bills được chọn, refresh data
+                loadExportBillsData();
+            }
+        });
         
         
         
@@ -601,23 +627,32 @@ public class Form_Export extends JPanel {
         billBody.removeAll();
         billBody.revalidate();
         billBody.repaint();
+        // Refresh Export Bills table
+        loadExportBillsData();
 
     }
     
     /**
      * Load active promotions into ComboBox
+     * Public method để có thể gọi từ bên ngoài (Form_Promotion)
      */
-    private void loadActivePromotions() {
+    public void loadActivePromotions() {
         try {
             if (busPromotion == null) {
                 busPromotion = new BUSPromotion();
             }
             
-            // Clear existing items except the first one
+            // Remove existing action listeners to avoid duplicates
+            for (java.awt.event.ActionListener al : cmbPromotionCode.getActionListeners()) {
+                cmbPromotionCode.removeActionListener(al);
+            }
+            
+            // Clear existing items
             cmbPromotionCode.removeAllItems();
             cmbPromotionCode.addItem("-- Select Promotion --");
             
-            // Get all promotions and filter active ones
+            // Get all available promotions (already filtered by Status = 'Available' in DAO)
+            // Then filter only active ones (currently running)
             List<DTOPromotion> allPromotions = busPromotion.getAllPromotions();
             for (DTOPromotion promotion : allPromotions) {
                 String status = busPromotion.getPromotionStatus(promotion);
@@ -886,7 +921,16 @@ public class Form_Export extends JPanel {
             addInfoRow(summaryPanel, "Discount (" + String.format("%.1f%%", discount) + "):", "-" + String.format("%,d VND", discountAmount.intValue()));
             totalNetPay = totalNetPay.subtract(discountAmount);
         }
-        addInfoRow(summaryPanel, "Total Net Pay:", String.format("%,d VND", totalNetPay.intValue()));
+        addInfoRow(summaryPanel, "Subtotal (after discount):", String.format("%,d VND", totalNetPay.intValue()));
+        
+        // ===== 6. VAT Calculation =====
+        BigDecimal vatPercent = BigDecimal.valueOf(8.00); // VAT 8%
+        BigDecimal vatAmount = totalNetPay.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalWithVAT = totalNetPay.add(vatAmount);
+        
+        addInfoRow(summaryPanel, "VAT (" + vatPercent + "%):", String.format("%,d VND", vatAmount.intValue()));
+        addInfoRow(summaryPanel, "Total Amount (incl. VAT):", String.format("%,d VND", totalWithVAT.intValue()));
+        
         billBody.add(summaryPanel);
         billBody.add(createSeparator());
         billBody.add(Box.createVerticalStrut(15));
@@ -1046,7 +1090,28 @@ public class Form_Export extends JPanel {
 
 
     private void processExportData(List<Object[]> orderItems, List<String> imeis) throws Exception {
-        // 1. Insert Bill Exported with promotion code
+        // Calculate total before VAT
+        BigDecimal totalNetPay = BigDecimal.ZERO;
+        BigDecimal discountPercent = BigDecimal.valueOf(0.0);
+        if (currentPromotion != null) {
+            discountPercent = currentPromotion.getDiscountPercent();
+        }
+        
+        // Calculate subtotal
+        for (Object[] item : orderItems) {
+            BigDecimal unitPrice = (BigDecimal) item[3];
+            int quantity = ((Number) item[4]).intValue();
+            BigDecimal discountAmount = unitPrice.multiply(discountPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal totalPrice = unitPrice.subtract(discountAmount).multiply(BigDecimal.valueOf(quantity));
+            totalNetPay = totalNetPay.add(totalPrice);
+        }
+        
+        // Calculate VAT
+        BigDecimal vatPercent = BigDecimal.valueOf(8.00); // VAT 8%
+        BigDecimal vatAmount = totalNetPay.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalWithVAT = totalNetPay.add(vatAmount);
+        
+        // 1. Insert Bill Exported with promotion code and VAT
         DTO_BillExported bill = new DTO_BillExported();
         bill.setInvoiceNo(invoiceNo);
         bill.setAdminId(txtAdminID.getText());
@@ -1060,6 +1125,9 @@ public class Form_Export extends JPanel {
             totalQuantity += ((Number) item[4]).intValue(); // item[4] is quantity
         }
         bill.setTotalProduct(totalQuantity);
+        bill.setVatPercent(vatPercent);
+        bill.setVatAmount(vatAmount);
+        bill.setTotalAmount(totalWithVAT);
         
         String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : null;
 
@@ -1067,11 +1135,7 @@ public class Form_Export extends JPanel {
             throw new Exception("Failed to insert exported bill!");
         }
 
-        // Get the discount value from promotion
-        BigDecimal discountPercent = BigDecimal.valueOf(0.0);
-        if (currentPromotion != null) {
-            discountPercent = currentPromotion.getDiscountPercent();
-        }
+        // Get the discount value from promotion (already calculated above)
 
         for (Object[] item : orderItems) {
             String productID = item[2].toString();
@@ -1121,7 +1185,27 @@ public class Form_Export extends JPanel {
         try {
             if (busExportBill == null) busExportBill = new BUS_ExportBill();
             List<DTO_BillExport> billExports = busExportBill.getAllBillExported();
+            
+            if (billExports == null) {
+                System.err.println("Warning: getAllBillExported() returned null");
+                modelExportBills.setRowCount(0); // Clear table
+                return;
+            }
+            
+            // Clear existing rows
             modelExportBills.setRowCount(0);
+            
+            if (billExports.isEmpty()) {
+                System.out.println("Info: No export bills found in database");
+                // Vẫn cần refresh table để hiển thị trạng thái rỗng
+                if (tableExportBills != null) {
+                    tableExportBills.revalidate();
+                    tableExportBills.repaint();
+                }
+                return;
+            }
+            
+            // Add rows to model
             for (DTO_BillExport bill : billExports) {
                 Object[] row = {
                     bill.getInvoiceNo(),
@@ -1133,9 +1217,24 @@ public class Form_Export extends JPanel {
                 };
                 modelExportBills.addRow(row);
             }
-            if (tableExportBills != null) tableExportBills.adjustColumnWidths();
+            
+            // Refresh table display
+            if (tableExportBills != null) {
+                tableExportBills.adjustColumnWidths();
+                tableExportBills.revalidate();
+                tableExportBills.repaint();
+                System.out.println("Successfully loaded " + billExports.size() + " export bills");
+            } else {
+                System.err.println("Warning: tableExportBills is null when loading data");
+            }
         } catch (Exception ex) {
+            ex.printStackTrace(); // In stack trace để debug
             CustomDialog.showError("Error loading export bills: " + ex.getMessage());
+            System.err.println("Exception details: " + ex.getClass().getName() + ": " + ex.getMessage());
+            // Clear table on error
+            if (modelExportBills != null) {
+                modelExportBills.setRowCount(0);
+            }
         }
     }
 

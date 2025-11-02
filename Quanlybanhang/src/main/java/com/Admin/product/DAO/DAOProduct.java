@@ -213,6 +213,7 @@ public class DAOProduct {
                    ISNULL(ps.Quantity_Stock, 0) - p.Quantity AS Sold_Quantity, -- Số lượng đã bán (Nhập - Tồn)
                    ISNULL(p.Price, 0) AS Price,                        -- Giá bán (đảm bảo không null)
                    c.Category_ID, c.Category_Name,
+                   ISNULL(s.Country, 'N/A') AS Country,
                    CASE 
                        WHEN ISNULL(ps.Quantity_Stock, 0) = p.Quantity + (ISNULL(ps.Quantity_Stock, 0) - p.Quantity)
                        THEN N'✓ Cân bằng'
@@ -221,6 +222,7 @@ public class DAOProduct {
             FROM Product p 
             JOIN Category c ON p.Category_ID = c.Category_ID
             LEFT JOIN Product_Stock ps ON p.Warehouse_Item_ID = ps.Warehouse_Item_ID
+            LEFT JOIN Supplier s ON p.Sup_ID = s.Sup_ID
             WHERE p.Status = 'Available' 
                 AND c.Status = 'Available'
                 AND (ps.Status = 'Available' OR ps.Status IS NULL)
@@ -251,7 +253,8 @@ public class DAOProduct {
                     rs.getInt("Sold_Quantity"),       // Số lượng đã bán
                     formattedPrice,
                     rs.getString("Category_ID"),
-                    rs.getString("Category_Name")
+                    rs.getString("Category_Name"),
+                    rs.getString("Country")           // Country (Origin)
                 };
                 model.addRow(row);
             }
@@ -746,6 +749,7 @@ public class DAOProduct {
                 Row row = rowIterator.next();
                 int rowNum = row.getRowNum() + 1;
 
+                // Updated: Minimum 10 columns required, 11th column (index 10) is Image (optional)
                 if (row.getPhysicalNumberOfCells() >= 10) {
                     String productID = getCellValueAsString(row.getCell(0));
                     String productName = getCellValueAsString(row.getCell(1));
@@ -757,6 +761,18 @@ public class DAOProduct {
                     String supID = getCellValueAsString(row.getCell(7));
                     double price = getCellValueAsNumber(row.getCell(8));
                     int warrantyMonths = (int) getCellValueAsNumber(row.getCell(9));
+                    
+                    // Image (optional - column 11, index 10)
+                    String imagePath = null;
+                    if (row.getPhysicalNumberOfCells() > 10) {
+                        Cell imageCell = row.getCell(10);
+                        if (imageCell != null) {
+                            String imageValue = getCellValueAsString(imageCell);
+                            if (imageValue != null && !imageValue.trim().isEmpty()) {
+                                imagePath = imageValue.trim();
+                            }
+                        }
+                    }
 
                     if (productID == null || productID.trim().isEmpty() ||
                         productName == null || productName.trim().isEmpty() ||
@@ -804,7 +820,7 @@ public class DAOProduct {
                             insertStmt.setInt(6, quantity);
                             insertStmt.setString(7, categoryID);
                             insertStmt.setString(8, supID);
-                            insertStmt.setString(9, null); // Image
+                            insertStmt.setString(9, imagePath); // Image - read from Excel (can be null)
                             insertStmt.setBigDecimal(10, BigDecimal.valueOf(price));
                             insertStmt.setBigDecimal(11, BigDecimal.valueOf(price)); // List_Price_Before = Price
                             insertStmt.setBigDecimal(12, BigDecimal.valueOf(price)); // List_Price_After = Price
@@ -828,7 +844,7 @@ public class DAOProduct {
                         errorCount++;
                     }
                 } else {
-                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 10 columns)\n");
+                    errors.append("Row ").append(rowNum).append(": Insufficient data (need at least 10 columns: Product_ID, Product_Name, Color, Speed, Battery_Capacity, Quantity, Category_ID, Sup_ID, Price, Warranty_Months, [Image])\n");
                     errorCount++;
                 }
             }

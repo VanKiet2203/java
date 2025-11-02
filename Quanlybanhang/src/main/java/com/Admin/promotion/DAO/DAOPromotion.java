@@ -14,12 +14,12 @@ public class DAOPromotion {
     // ============================================
     
     /**
-     * Lấy tất cả mã giảm giá
+     * Lấy tất cả mã giảm giá (chỉ lấy các mã có Status = 'Available')
      */
     public List<DTOPromotion> getAllPromotions() throws SQLException {
         List<DTOPromotion> list = new ArrayList<>();
         String sql = "SELECT Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent "
-                   + "FROM Promotion ORDER BY Start_Date DESC";
+                   + "FROM Promotion WHERE Status = 'Available' ORDER BY Start_Date DESC";
         
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -39,11 +39,11 @@ public class DAOPromotion {
     }
     
     /**
-     * Lấy mã giảm giá theo code
+     * Lấy mã giảm giá theo code (chỉ lấy nếu Status = 'Available')
      */
     public DTOPromotion getPromotionByCode(String code) throws SQLException {
         String sql = "SELECT Promotion_Code, Promotion_Name, Start_Date, End_Date, Discount_Percent "
-                   + "FROM Promotion WHERE Promotion_Code = ?";
+                   + "FROM Promotion WHERE Promotion_Code = ? AND Status = 'Available'";
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, code);

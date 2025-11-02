@@ -17,7 +17,7 @@ import javax.swing.SwingConstants;
 
 public class Form_Inventory extends JPanel {
     private JPanel panel, panelSearch;
-    private MyButton bntRefresh, bntSearch, bntAddNew, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntReimportItem;
+    private MyButton bntRefresh, bntSearch, bntAddNew, bntBatchImport, bntImportInventory, bntExportInventory, bntExportExcelBill, bntExportPDFBill, bntViewBills, bntReimportItem;
     private MyTextField txtSearch;
     private MyCombobox<String> cmbSearch;
     private JTable tableInventory, tableBills;
@@ -132,26 +132,34 @@ public class Form_Inventory extends JPanel {
         bntAddNew.addActionListener(e -> addNewInventoryItem());
         actionPanel.add(bntAddNew);
         
-        // 2. Import Existing Item button - Nhập thêm sản phẩm đã có
+        // 2. Batch Import button - Nhập nhiều sản phẩm cùng lúc từ 1 nhà cung cấp
+        bntBatchImport = new MyButton("Batch Import", 20);
+        stylePrimaryButton(bntBatchImport);
+        bntBatchImport.setBounds(180, 30, 150, 35);
+        bntBatchImport.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\new.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntBatchImport.addActionListener(e -> addBatchInventoryItems());
+        actionPanel.add(bntBatchImport);
+        
+        // 3. Import Existing Item button - Nhập thêm sản phẩm đã có
         bntReimportItem = new MyButton("Reimport Item", 20);
         styleWarningButton(bntReimportItem);
-        bntReimportItem.setBounds(180, 30, 150, 35);
+        bntReimportItem.setBounds(340, 30, 150, 35);
         bntReimportItem.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntReimportItem.addActionListener(e -> reimportExistingItem());
         actionPanel.add(bntReimportItem);
         
-        // 3. Import Inventory button - Import từ file Excel
+        // 4. Import Inventory button - Import từ file Excel
         bntImportInventory = new MyButton("Import File", 20);
         styleSuccessButton(bntImportInventory);
-        bntImportInventory.setBounds(340, 30, 150, 35);
+        bntImportInventory.setBounds(500, 30, 150, 35);
         bntImportInventory.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\import.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntImportInventory.addActionListener(e -> importInventory());
         actionPanel.add(bntImportInventory);
         
-        // 4. Refresh button - Làm mới dữ liệu
+        // 5. Refresh button - Làm mới dữ liệu
         bntRefresh = new MyButton("Refresh", 20);
         styleInfoButton(bntRefresh);
-        bntRefresh.setBounds(500, 30, 150, 35);
+        bntRefresh.setBounds(660, 30, 150, 35);
         bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         bntRefresh.addActionListener(e -> refreshData());
         actionPanel.add(bntRefresh);
@@ -202,7 +210,7 @@ public class Form_Inventory extends JPanel {
         JPanel inventoryPanel = new JPanel(new BorderLayout());
         String[] inventoryColumns = {
             "Warehouse ID", "Product Name", "Category", "Supplier", 
-            "Quantity", "Unit Price", "Total Value", "Last Updated"
+            "Quantity", "Unit Price", "Production Year", "Total Value", "Last Updated"
         };
         DefaultTableModel inventoryModel = new DefaultTableModel(inventoryColumns, 0);
         tableInventory = createStyledTable(inventoryModel);
@@ -319,6 +327,16 @@ public class Form_Inventory extends JPanel {
     }
     
     private void exportPDFBillImport() {
+        // Kiểm tra xem có bill nào được chọn không
+        int selectedRow = tableBills.getSelectedRow();
+        if (selectedRow == -1) {
+            CustomDialog.showError("Vui lòng chọn bill cần export PDF!");
+            return;
+        }
+        
+        // Lấy Bill ID từ dòng được chọn
+        String billId = tableBills.getValueAt(selectedRow, 0).toString();
+        
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save PDF bill import file");
         
@@ -329,7 +347,7 @@ public class Form_Inventory extends JPanel {
                 path += ".pdf";
             }
             try {
-                busInventory.exportPDFBillImport(path);
+                busInventory.exportPDFBillImport(path, billId);
                 CustomDialog.showSuccess("PDF bill export successfully!");
             } catch (Exception e) {
                 CustomDialog.showError("PDF export failed: " + e.getMessage());
@@ -425,21 +443,19 @@ public class Form_Inventory extends JPanel {
             // Kiểm tra xem có sản phẩm nào được chọn không
             int selectedRow = tableInventory.getSelectedRow();
             if (selectedRow == -1) {
-                CustomDialog.showError("Vui lòng chọn sản phẩm cần nhập thêm!");
+                CustomDialog.showError("Please select a product to reimport!");
                 return;
             }
             
-            // Lấy thông tin sản phẩm được chọn
+            // Lấy Warehouse ID từ dòng được chọn
             String warehouseId = tableInventory.getValueAt(selectedRow, 0).toString();
-            String productName = tableInventory.getValueAt(selectedRow, 1).toString();
-            int currentQuantity = Integer.parseInt(tableInventory.getValueAt(selectedRow, 4).toString());
             
-            // Mở dialog nhập thêm sản phẩm
+            // Mở dialog nhập thêm sản phẩm (form sẽ tự load thông tin đầy đủ)
             ReimportItemDialog reimportDialog = new ReimportItemDialog(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
                 warehouseId,
-                productName,
-                currentQuantity
+                null,  // productName - không cần vì form sẽ tự load
+                0      // currentQuantity - không cần vì form sẽ tự load
             );
             reimportDialog.setVisible(true);
             
@@ -448,6 +464,19 @@ public class Form_Inventory extends JPanel {
         } catch (Exception e) {
             e.printStackTrace();
             CustomDialog.showError("Failed to open Reimport Item dialog: " + e.getMessage());
+        }
+    }
+    
+    private void addBatchInventoryItems() {
+        try {
+            AddInventoryItemBatch batchDialog = new AddInventoryItemBatch((JFrame) SwingUtilities.getWindowAncestor(this));
+            batchDialog.setVisible(true);
+            
+            // Refresh data after batch import
+            refreshData();
+        } catch (Exception e) {
+            e.printStackTrace();
+            CustomDialog.showError("Failed to open Batch Import dialog: " + e.getMessage());
         }
     }
     

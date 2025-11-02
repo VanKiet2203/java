@@ -98,6 +98,18 @@ public class BUS_ExportBill {
     }
     
     /**
+     * Get warranty months for a product
+     */
+    public int getWarrantyMonths(String productID) {
+        try {
+            return daoExportBill.getWarrantyMonths(productID);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 12; // Default warranty months
+        }
+    }
+    
+    /**
      * Tính toán Start_Date và End_Date từ Warranty_Months của sản phẩm
      */
     private void calculateWarrantyDates(DTO_BillExportedDetail detail) {
