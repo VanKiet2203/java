@@ -68,7 +68,7 @@ public class Dashboard_ad extends JFrame {
 
     // --- Icon và text cho tiêu đề trung tâm ---
     ImageIcon titleIcon = loadIconResource("/Icons/Admin_icon/Title_icon.png", 40, 40);
-    title = new JLabel("Electric Bicycle Sales", titleIcon, JLabel.CENTER);
+    title = new JLabel("Electric Bicycle Management System", titleIcon, JLabel.CENTER);
     title.setFont(new Font("Times New Roman", Font.BOLD, 20));
     title.setForeground(Color.WHITE);
 

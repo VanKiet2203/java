@@ -18,6 +18,8 @@ import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.export.GUI.Bill_ExportDetails;
 import com.Admin.product.GUI.NewProduct;
 import com.Admin.product.GUI.EditProduct;
+import com.Admin.dashboard_admin.BUS.BusProfile_ad;
+import com.Admin.dashboard_admin.DAO.DAOProfile_ad;
 
 
 public class Menu extends JPanel {
@@ -56,7 +58,8 @@ public class Menu extends JPanel {
         menuPanel.setOpaque(false); // Giữ panel trong suốt
         menuPanel.setBounds(0, 0, 300, 1000); // Điều chỉnh theo UI của bạn
         
-        lblProfile = createLabel("My Profile", "profile.png", 20);
+        // Tạo profile label với thông tin admin đang đăng nhập
+        lblProfile = createProfileLabel();
         // Label Menu (bấm vào để mở/đóng)
         lblMenu = createLabel("Menu", "menu.png",80);
  
@@ -124,7 +127,7 @@ public class Menu extends JPanel {
         lblProfile.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                MyProfile profile= new MyProfile();
+                MyProfile profile = new MyProfile(Menu.this);
                 profile.setVisible(true);
               
             }
@@ -316,6 +319,106 @@ public class Menu extends JPanel {
    // Tạo label thường (không phải tiêu đề)
     private JLabel createLabel(String text, String iconName, int yPosition) throws IOException {
         return createLabelWithIcon(text, iconName, 20, yPosition, 260, 35, false);
+    }
+    
+    // Tạo profile label với tên và ảnh của admin đang đăng nhập
+    private JLabel createProfileLabel() {
+        try {
+            // Lấy adminID từ Dashboard_ad
+            String adminID = Dashboard_ad.adminID;
+            if (adminID == null || adminID.trim().isEmpty()) {
+                // Nếu không có adminID, dùng mặc định
+                return createLabel("My Profile", "profile.png", 20);
+            }
+            
+            // Lấy tên admin
+            BusProfile_ad busProfile = new BusProfile_ad();
+            String adminName = busProfile.getAdminName(adminID);
+            if (adminName == null || adminName.trim().isEmpty()) {
+                adminName = "My Profile";
+            }
+            
+            // Lấy ảnh profile
+            DAOProfile_ad daoProfile = new DAOProfile_ad();
+            String imagePath = daoProfile.getProfileImagePath(adminID);
+            
+            ImageIcon profileIcon = null;
+            if (imagePath != null && !imagePath.trim().isEmpty()) {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    try {
+                        // Load ảnh từ file
+                        Image img = ImageIO.read(imageFile).getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+                        profileIcon = new ImageIcon(img);
+                    } catch (IOException e) {
+                        // Nếu không load được, dùng ảnh mặc định
+                        profileIcon = loadDefaultProfileIcon();
+                    }
+                } else {
+                    // Nếu file không tồn tại, dùng ảnh mặc định
+                    profileIcon = loadDefaultProfileIcon();
+                }
+            } else {
+                // Nếu không có ảnh, dùng ảnh mặc định
+                profileIcon = loadDefaultProfileIcon();
+            }
+            
+            // Đảm bảo profileIcon không null
+            if (profileIcon == null) {
+                // Nếu không có ảnh mặc định, tạo icon rỗng
+                profileIcon = new ImageIcon(new java.awt.image.BufferedImage(30, 30, java.awt.image.BufferedImage.TYPE_INT_ARGB));
+            }
+            
+            // Tạo JLabel với tên và ảnh
+            JLabel label = new JLabel("<html>" + adminName + "</html>", profileIcon, JLabel.LEFT);
+            label.setFont(new Font("sansserif", Font.BOLD, 18));
+            label.setForeground(Color.WHITE);
+            label.setBounds(20, 20, 260, 35);
+            label.setIconTextGap(15);
+            label.setOpaque(false);
+            return label;
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Nếu có lỗi, trả về label mặc định
+            try {
+                return createLabel("My Profile", "profile.png", 20);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                return new JLabel("My Profile");
+            }
+        }
+    }
+    
+    // Load ảnh profile mặc định
+    private ImageIcon loadDefaultProfileIcon() throws IOException {
+        File file = new File("src\\main\\resources\\Icons\\Admin_icon\\profile.png");
+        if (file.exists()) {
+            Image img = ImageIO.read(file).getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
+        }
+        return null;
+    }
+    
+    // Method để refresh profile label (có thể gọi sau khi update profile)
+    public void refreshProfileLabel() {
+        if (lblProfile != null) {
+            menuPanel.remove(lblProfile);
+            lblProfile = createProfileLabel();
+            menuPanel.add(lblProfile);
+            addHoverEffectForExit(lblProfile);
+            
+            // Thêm lại event listener
+            lblProfile.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    MyProfile profile = new MyProfile(Menu.this);
+                    profile.setVisible(true);
+                }
+            });
+            
+            menuPanel.revalidate();
+            menuPanel.repaint();
+        }
     }
 
     // Tạo label có icon (dùng chung cho tiêu đề và menu)

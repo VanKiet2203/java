@@ -41,14 +41,30 @@ public class MyProfile_cus extends javax.swing.JFrame {
      public JPanel panelUpload;
      public MyButton bntUpload, bntUpdate;
      private BUSProfile_cus busProfile;
+     private Menu_user menuRef; // Reference đến Menu_user để refresh profile label
     
     public MyProfile_cus() {
+        this(null);
+    }
+    
+    public MyProfile_cus(Menu_user menuRef) {
+        this.menuRef = menuRef;
         initComponents();
         setSize(430, 650); 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
+        
+        // Add WindowListener để refresh menu khi đóng
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                if (menuRef != null) {
+                    menuRef.refreshProfileLabel();
+                }
+            }
+        });
+        
         init();
         showProfile();
-
     }
     public void init(){
       // Thiết lập layout chính với các cột và dòng linh hoạt
@@ -166,7 +182,10 @@ public class MyProfile_cus extends javax.swing.JFrame {
           bntUpdate.addActionListener((e) -> {
               busProfile= new BUSProfile_cus();
               busProfile.updateProfile(txtID, txtFullName, cmbGender, dateOfBirth, txtEmail, txtContact, txtAddress);
-              
+              // Refresh profile label trong menu nếu có
+              if (menuRef != null) {
+                  menuRef.refreshProfileLabel();
+              }
           });
           bg.add(bntUpdate, "w 100!, h 30!, span, align center, dock south, gapbottom 10");
           

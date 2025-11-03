@@ -2,10 +2,8 @@
 package com.Admin.export.GUI;
 
 import com.ComponentandDatabase.Components.MyButton;
-import com.ComponentandDatabase.Components.MyCombobox;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.ComponentandDatabase.Components.MyTable;
-import com.ComponentandDatabase.Components.MyTextField;
 import com.Admin.export.BUS.BUS_ExportBill;
 import com.Admin.export.DTO.DTO_BillExportedDetail;
 import com.ComponentandDatabase.Components.CustomDialog;
@@ -15,11 +13,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.List;
-import java.util.Date;
-import java.text.ParseException;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.BorderFactory;
@@ -36,9 +31,6 @@ import java.awt.BorderLayout;
 public class Bill_ExportDetails extends javax.swing.JFrame {
      private JLabel lblTitle;
      private MyPanel panelTitle;
-     private MyCombobox<String> cmbSearch;
-     private MyButton bntSearch, bntRefresh;
-     private MyTextField txtSearch;
      private MyTable tableBillDetail;
      private BUS_ExportBill busExportBill;
      private javax.swing.JLayeredPane bg;
@@ -57,7 +49,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
     // Set bằng Invoice_No + Admin_ID
     public void setInvoiceInfo(String invoiceNo, String adminId) {
         if (lblTitle != null) {
-            lblTitle.setText("CHI TIẾT HÓA ĐƠN - " + invoiceNo);
+            lblTitle.setText("Bill Export Details - " + invoiceNo);
         }
         loadBillDetails(invoiceNo);
     }
@@ -68,7 +60,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             busExportBill = new BUS_ExportBill();
             List<DTO_BillExportedDetail> details = busExportBill.getBillDetailsByInvoice(invoiceNo);
             if (details == null || details.isEmpty()) {
-                CustomDialog.showError("Không tìm thấy chi tiết hóa đơn cho Invoice: " + invoiceNo);
+                CustomDialog.showError("No bill details found for Invoice: " + invoiceNo);
                 return;
             }
 
@@ -83,7 +75,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
             SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
-            JLabel title = new JLabel("SALES INVOICE", JLabel.CENTER);
+            JLabel title = new JLabel("Bill Export Details", JLabel.CENTER);
             title.setFont(new Font("Arial", Font.BOLD, 24));
             title.setForeground(Color.decode("#2C3E50"));
             title.setAlignmentX(0.5f);
@@ -98,7 +90,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             page.add(infoRow("Time Exported:", timeFormat.format(first.getTimeExported())));
             page.add(separator());
 
-            JLabel prodTitle = new JLabel("PRODUCTS", JLabel.LEFT);
+            JLabel prodTitle = new JLabel("Products", JLabel.LEFT);
             prodTitle.setFont(new Font("Arial", Font.BOLD, 16));
             prodTitle.setForeground(Color.decode("#34495E"));
             page.add(prodTitle);
@@ -199,7 +191,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
 
             contentScroll.setViewportView(page);
         } catch (Exception e) {
-            CustomDialog.showError("Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
+            CustomDialog.showError("Error loading bill details: " + e.getMessage());
         }
     }
 
@@ -247,7 +239,7 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
      panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
      panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
 
-     lblTitle = new JLabel("Sales Invoice Details", JLabel.CENTER);
+     lblTitle = new JLabel("Bill Export Details", JLabel.CENTER);
      lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
      lblTitle.setForeground(Color.WHITE);
 
@@ -271,167 +263,9 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         contentScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
         contentScroll.setViewportBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         bg.add(contentScroll, "pos 10 140, w 1360!, h 820!");
-        
-       
-            // TextField search
-            txtSearch = new MyTextField();
-            txtSearch.setHint("Search something...");
-            txtSearch.setTextFont(FONT_CONTENT_MEDIUM);
-            bg.add(txtSearch, "pos 510 75, w 300!, h 35!");
-            
-            // ComboBox search
-            String[] items = {"Invoice.No", "Admin.ID", "Customer.ID", "Date"};
-            cmbSearch = new MyCombobox<>(items);
-            cmbSearch.setBounds(30, 10, 165,35);
-            cmbSearch.setCustomFont(FONT_CONTENT_MEDIUM);
-            cmbSearch.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-            //cmbSearch.setMaximumRowCount(5); // Giới hạn dòng dropdown nếu dài
-            cmbSearch.repaint();
-            cmbSearch.revalidate();
-
-           bg.add(cmbSearch, "pos 350 75, w 140!, h 35!");
-            
-            bntSearch = new MyButton("Tìm kiếm", 20);
-            stylePrimaryButton(bntSearch);
-            bntSearch.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\search.png", 25, 25, 5, SwingConstants.RIGHT, SwingConstants.CENTER);    
-            bntSearch.addActionListener((e) -> {
-                String searchType = cmbSearch.getSelectedItem().toString();
-                String keyword = txtSearch.getText().trim();
-                busExportBill= new BUS_ExportBill();
-                busExportBill.searchBillDetails(searchType, keyword);
-                // Xử lý đặc biệt nếu tìm kiếm theo ngày
-                    if (searchType.equals("Date")) {
-                        try {
-                            // Chuẩn hóa chuỗi ngày tháng (cho phép nhập 1 hoặc 2 chữ số cho ngày/tháng)
-                            keyword = normalizeDateString(keyword);
-
-                            // Chuyển từ dd/MM/yyyy sang yyyy-MM-dd để tìm kiếm trong SQL
-                            SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
-                            inputFormat.setLenient(false); // Không chấp nhận ngày không hợp lệ
-
-                            SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-                            // Parse và format lại ngày
-                            Date parsedDate = inputFormat.parse(keyword);
-                            keyword = sqlFormat.format(parsedDate);
-                        } catch (ParseException ex) {
-                            CustomDialog.showError("Invalid date format. Please enter date in dd/MM/yyyy format (e.g. 01/01/2023)");
-                            return;
-                        }
-                }
-                 // Lấy kết quả từ BUS
-                List<DTO_BillExportedDetail> results = busExportBill.searchBillDetails(searchType, keyword);
-
-                // Cập nhật dữ liệu lên bảng
-                updateTableData(results);
-        });
-        bg.add(bntSearch, "pos 820 75, w 120!, h 35");
-        
-          bntRefresh = new MyButton("Refresh", 20);
-          styleInfoButton(bntRefresh);
-          bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-          bntRefresh.addActionListener((e) -> {
-              Refresh();
-          });
-          
-          bg.add(bntRefresh, "pos 100 75, w 140!, h 35");
-        
      
    }
 
-    // Method này đã được thay thế bằng loadBillDetails(String invoiceNo)
-    // để chỉ load dữ liệu của hóa đơn được chọn 
-    private void updateTableData(List<DTO_BillExportedDetail> data) {
-        
-           // 1️⃣ Tên cột
-        String[] columnNames = {
-            "Invoice.No", "Admin.ID", "Customer.ID", "Product.ID", 
-            "Unit Price", "Quantity" , "Promotion Code", "Promotion Name", "Discount %", "Total Price Before",
-            "Total Price After", "Date Exported", "Time Exported"
-        };
-        model.setRowCount(0);
-        model.setColumnIdentifiers(columnNames); // columnNames là mảng String chứa tên cột
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-
-        for (DTO_BillExportedDetail detail : data) {
-            // Get promotion name
-            String promotionName = "N/A";
-            if (detail.getPromotionCode() != null && !detail.getPromotionCode().isEmpty()) {
-                try {
-                    com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
-                    com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.getPromotionByCode(detail.getPromotionCode());
-                    if (promotion != null) {
-                        promotionName = promotion.getPromotionName();
-                    }
-                } catch (Exception e) {
-                    // Use default value if error
-                }
-            }
-            
-            Object[] row = new Object[]{
-                detail.getInvoiceNo(),
-                detail.getAdminId(),
-                detail.getCustomerId(),
-                detail.getProductId(),
-                detail.getUnitPrice(),
-                detail.getQuantity(),
-                detail.getPromotionCode() != null ? detail.getPromotionCode() : "N/A",
-                promotionName,
-                detail.getDiscountPercent()+"%",
-                detail.getTotalPriceBefore(),
-                detail.getTotalPriceAfter(),
-                detail.getDateExported() != null ? dateFormat.format(detail.getDateExported()) : "",
-                detail.getTimeExported() != null ? timeFormat.format(detail.getTimeExported()) : ""
-            };
-
-            // Kiểm tra số lượng cột trước khi thêm
-            if (row.length == model.getColumnCount()) {
-                model.addRow(row);
-            } else {
-                System.err.println("The number of columns does not match: " + row.length + " vs " + model.getColumnCount());
-            }
-        }
-
-      
-        if (tableBillDetail.getCellEditor() != null) {
-            tableBillDetail.getCellEditor().stopCellEditing();
-        }
-
-        tableBillDetail.adjustColumnWidths();
-    }
-    private void Refresh(){
-        // Không cần refresh vì dữ liệu đã được load theo hóa đơn cụ thể
-        // Chỉ clear search
-        cmbSearch.setSelectedIndex(0);
-        txtSearch.setText(null);
-    }
-    
-    private String normalizeDateString(String dateString) {
-        // Xóa tất cả ký tự không phải số
-        String numbersOnly = dateString.replaceAll("[^0-9]", "");
-
-        // Đảm bảo đủ 8 chữ số (thêm số 0 nếu cần)
-        if (numbersOnly.length() == 6) {
-            numbersOnly = "0" + numbersOnly; // Thêm 0 vào ngày nếu cần
-            numbersOnly = numbersOnly.substring(0, 2) + "0" + numbersOnly.substring(2); // Thêm 0 vào tháng nếu cần
-        } else if (numbersOnly.length() == 7) {
-            // Xác định xem cần thêm 0 vào ngày hay tháng
-            if (dateString.indexOf('/') == 1) { // Ngày có 1 chữ số
-                numbersOnly = "0" + numbersOnly;
-            } else { // Tháng có 1 chữ số
-                numbersOnly = numbersOnly.substring(0, 2) + "0" + numbersOnly.substring(2);
-            }
-        }
-
-        // Định dạng lại thành dd/MM/yyyy
-        if (numbersOnly.length() >= 8) {
-            return numbersOnly.substring(0, 2) + "/" + numbersOnly.substring(2, 4) + "/" + numbersOnly.substring(4, 8);
-        }
-
-        return dateString; 
-    }
     
     // ============================================
     // HELPER METHODS FOR UI STYLING

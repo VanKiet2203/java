@@ -16,6 +16,8 @@ import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.awt.event.*; // Import đầy đủ các sự kiện
 import com.ComponentandDatabase.Components.CustomDialog;
+import com.User.dashboard_user.BUS.BUSProfile_cus;
+import com.User.dashboard_user.DAO.DAOProfile_cus;
 
 
 public class Menu_user extends JPanel {
@@ -58,16 +60,8 @@ public class Menu_user extends JPanel {
         headerPanel.setOpaque(false);
         headerPanel.setBounds(0, 0, 300, 90);
         
-        // User profile với design hiện đại
-        String userName = parentFrame.getUserName();
-        lblProfile = createLabelWithIcon(userName != null ? userName : "User Profile", "profile.png", 20, 20, 260, 60, true);
-        lblProfile.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblProfile.setForeground(Color.WHITE);
-        lblProfile.setHorizontalAlignment(SwingConstants.CENTER);
-        lblProfile.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.decode("#A0AEC0"), 2),
-            BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
+        // User profile với design hiện đại - hiển thị tên và ảnh của user
+        lblProfile = createProfileLabel();
         
         // Menu toggle button với design hiện đại
         lblMenu = createLabelWithIcon("Navigation Menu", "menu.png", 20, 100, 260, 55, false);
@@ -143,7 +137,7 @@ public class Menu_user extends JPanel {
          lblProfile.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                MyProfile_cus profile= new MyProfile_cus();
+                MyProfile_cus profile = new MyProfile_cus(Menu_user.this);
                 profile.setVisible(true);
             }
         });
@@ -267,6 +261,130 @@ public class Menu_user extends JPanel {
         label.repaint();
     }
 
+
+    // Tạo profile label với tên và ảnh của user đang đăng nhập
+    private JLabel createProfileLabel() {
+        try {
+            // Lấy email từ Dashboard_user
+            String email = Dashboard_user.email;
+            if (email == null || email.trim().isEmpty()) {
+                // Nếu không có email, dùng mặc định
+                try {
+                    return createLabelWithIcon("My Profile", "profile.png", 20, 20, 260, 55, false);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return new JLabel("My Profile");
+                }
+            }
+            
+            // Lấy customerID từ email
+            DAOProfile_cus daoProfile = new DAOProfile_cus();
+            String customerID = daoProfile.getCustomerID(email);
+            if (customerID == null || customerID.trim().isEmpty()) {
+                // Nếu không có customerID, dùng mặc định
+                try {
+                    return createLabelWithIcon("My Profile", "profile.png", 20, 20, 260, 55, false);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return new JLabel("My Profile");
+                }
+            }
+            
+            // Lấy tên customer
+            String customerName = daoProfile.getCustomerName(customerID);
+            if (customerName == null || customerName.trim().isEmpty()) {
+                customerName = "My Profile";
+            }
+            
+            // Lấy ảnh profile
+            String imagePath = daoProfile.getProfileImagePath(customerID);
+            
+            ImageIcon profileIcon = null;
+            if (imagePath != null && !imagePath.trim().isEmpty()) {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    try {
+                        // Load ảnh từ file
+                        Image img = ImageIO.read(imageFile).getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                        profileIcon = new ImageIcon(img);
+                    } catch (IOException e) {
+                        // Nếu không load được, dùng ảnh mặc định
+                        profileIcon = loadDefaultProfileIcon();
+                    }
+                } else {
+                    // Nếu file không tồn tại, dùng ảnh mặc định
+                    profileIcon = loadDefaultProfileIcon();
+                }
+            } else {
+                // Nếu không có ảnh, dùng ảnh mặc định
+                profileIcon = loadDefaultProfileIcon();
+            }
+            
+            // Đảm bảo profileIcon không null
+            if (profileIcon == null) {
+                // Nếu không có ảnh mặc định, tạo icon rỗng
+                profileIcon = new ImageIcon(new java.awt.image.BufferedImage(40, 40, java.awt.image.BufferedImage.TYPE_INT_ARGB));
+            }
+            
+            // Tạo JLabel với tên và ảnh
+            JLabel label = new JLabel("<html>" + customerName + "</html>", profileIcon, JLabel.LEFT);
+            label.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            label.setForeground(Color.WHITE);
+            label.setBounds(20, 20, 260, 55);
+            label.setIconTextGap(15);
+            label.setOpaque(false);
+            label.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, Color.decode("#A0AEC0")),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+            ));
+            return label;
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Nếu có lỗi, trả về label mặc định
+            try {
+                return createLabelWithIcon("My Profile", "profile.png", 20, 20, 260, 55, false);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                return new JLabel("My Profile");
+            }
+        }
+    }
+    
+    // Load ảnh profile mặc định
+    private ImageIcon loadDefaultProfileIcon() throws IOException {
+        File file = new File("src\\main\\resources\\Icons\\User_icon\\profile.png");
+        if (!file.exists()) {
+            // Thử với Admin_icon nếu không có trong User_icon
+            file = new File("src\\main\\resources\\Icons\\Admin_icon\\profile.png");
+        }
+        if (file.exists()) {
+            Image img = ImageIO.read(file).getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
+        }
+        return null;
+    }
+    
+    // Method để refresh profile label (có thể gọi sau khi update profile)
+    public void refreshProfileLabel() {
+        if (lblProfile != null) {
+            menuPanel.remove(lblProfile);
+            lblProfile = createProfileLabel();
+            menuPanel.add(lblProfile);
+            addHoverEffectForExit(lblProfile);
+            
+            // Thêm lại event listener
+            lblProfile.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    MyProfile_cus profile = new MyProfile_cus(Menu_user.this);
+                    profile.setVisible(true);
+                }
+            });
+            
+            menuPanel.revalidate();
+            menuPanel.repaint();
+        }
+    }
 
     // Tạo label có icon với typography khoa học
     private JLabel createLabelWithIcon(String text, String iconName, int x, int y, int width, int height, boolean isTitle) throws IOException {

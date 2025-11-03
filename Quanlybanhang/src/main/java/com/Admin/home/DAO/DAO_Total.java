@@ -59,7 +59,8 @@ public class DAO_Total {
 
     public DTO_Orders showTotalOrder() {
         DTO_Orders orderSummary = new DTO_Orders();
-        String sql = "SELECT COUNT(*) AS total FROM Orders WHERE Status = 'Available'"; // Chỉ đếm orders có Status = 'Available'
+        // Đếm tất cả orders có Status là Waiting, Confirmed, hoặc Cancelled (Record_Status = 'Available')
+        String sql = "SELECT COUNT(*) AS total FROM Orders WHERE Record_Status = 'Available' AND Status IN ('Waiting', 'Confirmed', 'Cancelled')";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement pst = conn.prepareStatement(sql);

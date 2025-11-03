@@ -192,4 +192,42 @@ public class DAOProfile_cus {
         return "User";
     }
     
+    public String getProfileImagePath(String customerID) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        String imagePath = null;
+
+        try {
+            conn = DatabaseConnection.connect();
+            // Kiểm tra xem cột Image có tồn tại không
+            String sql = "SELECT Image FROM Customer WHERE Customer_ID = ?";
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, customerID);
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                try {
+                    imagePath = rs.getString("Image");
+                } catch (SQLException e) {
+                    // Cột Image không tồn tại, trả về null
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            // Nếu lỗi do cột không tồn tại, trả về null
+            return null;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return imagePath;
+    }
+    
 }

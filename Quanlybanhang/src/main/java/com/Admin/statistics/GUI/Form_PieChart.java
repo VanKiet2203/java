@@ -1,4 +1,3 @@
-
 package com.Admin.statistics.GUI;
 
 import com.Admin.statistics.BUS.BUS_Chart;
@@ -16,13 +15,15 @@ import javax.swing.SwingConstants;
 import org.jfree.chart.ChartPanel;
 import java.awt.BorderLayout;
 
-public class Form_PieChart extends JPanel implements FilterPanel.FilterChangeListener {
-   private JPanel panel;
+public class Form_PieChart extends JPanel {
+    private JPanel panel;
     private JLabel lblTitle;
     private MyButton bntRefresh;
     private BUS_Chart busChart;
     private ChartPanel chartPanel;
     private FilterPanel filterPanel;
+    private ChartFilterData currentFilter;
+
     public Form_PieChart() {
         initComponents();
         init();
@@ -30,16 +31,16 @@ public class Form_PieChart extends JPanel implements FilterPanel.FilterChangeLis
 
     private void initComponents() {
         setLayout(null);
-        setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
-        setBackground(Color.WHITE); // Kiểm tra hiển thị
+        setPreferredSize(new Dimension(1530, 860));
+        setBackground(Color.WHITE);
     }
 
-   private void init() {
+    private void init() {
         setLayout(new BorderLayout());
         
-        // Tạo FilterPanel
-        filterPanel = new FilterPanel();
-        filterPanel.addFilterChangeListener(this);
+        // Tạo FilterPanel với listener
+        currentFilter = new ChartFilterData();
+        filterPanel = new FilterPanel(this::onFilterApplied);
         add(filterPanel, BorderLayout.NORTH);
         
         // Tạo panel chính cho chart
@@ -52,17 +53,13 @@ public class Form_PieChart extends JPanel implements FilterPanel.FilterChangeLis
         // Khởi tạo BUS
         busChart = new BUS_Chart();
         
-        // Set filter từ FilterPanel trước khi lấy chart
-        ChartFilterData initialFilter = filterPanel.getCurrentFilter();
-        busChart.updateFilter(initialFilter);
-        
-        // Lấy ChartPanel từ BUS
-        chartPanel = busChart.getPieChartPanel();
-        chartPanel.setBounds(50, 50, 1170, 500); // Đặt vị trí và kích thước cho biểu đồ
+        // Lấy ChartPanel từ BUS với filter mặc định
+        chartPanel = busChart.getPie(currentFilter);
+        chartPanel.setBounds(50, 50, 1170, 500);
         panel.add(chartPanel);
 
-        // Tiêu đề
-        lblTitle = new JLabel("Biểu đồ thống kê độ phổ biến danh mục");
+        // Title
+        lblTitle = new JLabel("Category Popularity Statistics Chart");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
         lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
         lblTitle.setBounds(50, 10, 1170, 30);
@@ -90,35 +87,22 @@ public class Form_PieChart extends JPanel implements FilterPanel.FilterChangeLis
         panel.add(bntRefresh);
     }
 
+    private void onFilterApplied(ChartFilterData filterData) {
+        currentFilter = filterData;
+        refreshChart();
+    }
+
     private void refreshChart() {
         // Xóa chartPanel cũ
         panel.remove(chartPanel);
         
         // Tạo lại chartPanel mới với filter hiện tại
-        ChartFilterData currentFilter = filterPanel.getCurrentFilter();
-        busChart.updateFilter(currentFilter);
-        chartPanel = busChart.getPieChartPanel();
+        chartPanel = busChart.getPie(currentFilter);
         chartPanel.setBounds(50, 50, 1170, 500);
         panel.add(chartPanel);
         
         // Cập nhật giao diện
         panel.revalidate();
         panel.repaint();
-    }
-    
-    @Override
-    public void onFilterChanged(ChartFilterData filterData) {
-        // Cập nhật filter trong BUS
-        busChart.updateFilter(filterData);
-        
-        // Refresh chart với filter mới
-        refreshChart();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        // Dọn dẹp tài nguyên khi không dùng nữa
-        busChart.shutdownChartUpdaters();
-        super.finalize();
     }
 }

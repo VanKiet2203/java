@@ -38,10 +38,27 @@ public class MyProfile extends javax.swing.JFrame {
      private BusProfile_ad busProfile;
      public static String selectedImagePath = null; // Lưu đường dẫn ảnh đã xử lý
      private DTOProfile_ad DTOProfile;
+     private Menu menuRef; // Reference đến Menu để refresh profile label
     
     public MyProfile() {
+        this(null);
+    }
+    
+    public MyProfile(Menu menuRef) {
+        this.menuRef = menuRef;
         initComponents();
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
+        
+        // Add WindowListener để refresh menu khi đóng
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                if (menuRef != null) {
+                    menuRef.refreshProfileLabel();
+                }
+            }
+        });
+        
         init();
         loadProfile();
     }
@@ -166,6 +183,10 @@ public class MyProfile extends javax.swing.JFrame {
               boolean success= busProfile.updateProfile(DTOProfile);
                if (success) {
                    CustomDialog.showSuccess("Profile updated successfully !");
+                   // Refresh profile label trong menu nếu có
+                   if (menuRef != null) {
+                       menuRef.refreshProfileLabel();
+                   }
                 } else {
                     CustomDialog.showError("Profile updated failure !");
                 }

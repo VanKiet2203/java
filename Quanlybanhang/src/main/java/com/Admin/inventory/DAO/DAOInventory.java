@@ -937,14 +937,13 @@ public class DAOInventory {
                 bid.Date_Imported AS Date,
                 s.Sup_Name AS Supplier,
                 bi.Total_Product AS Total_Items,
-                bi.Total_Price AS Total_Amount,
-                bi.Status
+                bi.Total_Price AS Total_Amount
             FROM Bill_Imported bi
             JOIN Bill_Imported_Details bid ON bi.Invoice_No = bid.Invoice_No AND bi.Admin_ID = bid.Admin_ID
             JOIN Product_Stock ps ON bid.Warehouse_Item_ID = ps.Warehouse_Item_ID
             LEFT JOIN Supplier s ON ps.Sup_ID = s.Sup_ID
             WHERE bi.Status = 'Available' AND bid.Status = 'Available'
-            GROUP BY bi.Invoice_No, bi.Admin_ID, bi.Total_Product, bi.Total_Price, bi.Status, bid.Date_Imported, s.Sup_Name
+            GROUP BY bi.Invoice_No, bi.Admin_ID, bi.Total_Product, bi.Total_Price, bid.Date_Imported, s.Sup_Name
             ORDER BY bid.Date_Imported DESC
         """;
         
@@ -960,8 +959,7 @@ public class DAOInventory {
                     rs.getDate("Date"),
                     rs.getString("Supplier"),
                     rs.getInt("Total_Items"),
-                    rs.getBigDecimal("Total_Amount"),
-                    rs.getString("Status")
+                    rs.getBigDecimal("Total_Amount")
                 };
                 model.addRow(row);
             }

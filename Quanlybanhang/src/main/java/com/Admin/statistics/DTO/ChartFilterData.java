@@ -1,119 +1,67 @@
 package com.Admin.statistics.DTO;
 
-/**
- * Class chứa dữ liệu filter cho biểu đồ
- */
+import java.time.LocalDate;
+
+/** Dữ liệu filter cho biểu đồ */
 public class ChartFilterData {
     private TimeFilterType timeFilterType;
     private int year;
-    private int quarter;
-    private int month;
+    private int quarter;   // 1..4
+    private int month;     // 1..12
     private ChartFilterType dataType;
-    
+
     public ChartFilterData() {
         this.timeFilterType = TimeFilterType.ALL_TIME;
-        this.year = java.time.LocalDate.now().getYear();
+        this.year = LocalDate.now().getYear();
         this.quarter = 1;
-        this.month = 1;
-        this.dataType = ChartFilterType.REVENUE;
+        this.month = LocalDate.now().getMonthValue();
+        this.dataType = ChartFilterType.PRODUCT_REVENUE;
     }
-    
-    public ChartFilterData(TimeFilterType timeFilterType, int year, int quarter, int month, ChartFilterType dataType) {
-        this.timeFilterType = timeFilterType;
-        this.year = year;
-        this.quarter = quarter;
-        this.month = month;
-        this.dataType = dataType;
-    }
-    
-    // Copy constructor
-    public ChartFilterData(ChartFilterData other) {
-        if (other != null) {
-            this.timeFilterType = other.timeFilterType;
-            this.year = other.year;
-            this.quarter = other.quarter;
-            this.month = other.month;
-            this.dataType = other.dataType;
-        } else {
-            this.timeFilterType = TimeFilterType.ALL_TIME;
-            this.year = java.time.LocalDate.now().getYear();
-            this.quarter = 1;
-            this.month = 1;
-            this.dataType = ChartFilterType.REVENUE;
-        }
-    }
-    
-    // Getters and Setters
-    public TimeFilterType getTimeFilterType() {
-        return timeFilterType;
-    }
-    
-    public void setTimeFilterType(TimeFilterType timeFilterType) {
-        this.timeFilterType = timeFilterType;
-    }
-    
-    public int getYear() {
-        return year;
-    }
-    
-    public void setYear(int year) {
-        this.year = year;
-    }
-    
-    public int getQuarter() {
-        return quarter;
-    }
-    
-    public void setQuarter(int quarter) {
-        this.quarter = quarter;
-    }
-    
-    public int getMonth() {
-        return month;
-    }
-    
-    public void setMonth(int month) {
-        this.month = month;
-    }
-    
-    public ChartFilterType getDataType() {
-        return dataType;
-    }
-    
-    public void setDataType(ChartFilterType dataType) {
-        this.dataType = dataType;
-    }
-    
-    /**
-     * Kiểm tra xem có cần filter theo thời gian không
-     */
-    public boolean hasTimeFilter() {
-        return timeFilterType != TimeFilterType.ALL_TIME;
-    }
-    
-    /**
-     * Lấy điều kiện WHERE cho SQL query
-     */
+
+    public TimeFilterType getTimeFilterType() { return timeFilterType; }
+    public void setTimeFilterType(TimeFilterType t) { this.timeFilterType = t; }
+
+    public int getYear() { return year; }
+    public void setYear(int y) { this.year = y; }
+
+    public int getQuarter() { return quarter; }
+    public void setQuarter(int q) { this.quarter = Math.max(1, Math.min(4, q)); }
+
+    public int getMonth() { return month; }
+    public void setMonth(int m) { this.month = Math.max(1, Math.min(12, m)); }
+
+    public ChartFilterType getDataType() { return dataType; }
+    public void setDataType(ChartFilterType d) { this.dataType = d; }
+
+    public boolean hasTimeFilter() { return timeFilterType != TimeFilterType.ALL_TIME; }
+
+    /** WHERE cho alias mặc định "bed" (Bill_Exported_Details) */
     public String getTimeWhereClause() {
-        if (!hasTimeFilter()) {
-            return "";
-        }
-        
+        return getTimeWhereClause("bed");
+    }
+
+    /** WHERE theo alias tuỳ chỉnh (mặc định lọc theo bed.Date_Exported) */
+    public String getTimeWhereClause(String tableAlias) {
+        LocalDate now = LocalDate.now();
+
         switch (timeFilterType) {
             case YEAR:
-                return String.format("AND YEAR(bed.Date_Exported) = %d", year);
-            case QUARTER:
-                return String.format("AND YEAR(bed.Date_Exported) = %d AND DATEPART(QUARTER, bed.Date_Exported) = %d", year, quarter);
+                return " AND YEAR(" + tableAlias + ".Date_Exported) = " + year +
+                       " AND " + tableAlias + ".Date_Exported <= CAST(GETDATE() AS date)";
+            case QUARTER: {
+                int startMonth = (quarter - 1) * 3 + 1; // 1,4,7,10
+                int endMonth = startMonth + 2;
+                return " AND YEAR(" + tableAlias + ".Date_Exported) = " + year +
+                       " AND MONTH(" + tableAlias + ".Date_Exported) BETWEEN " + startMonth + " AND " + endMonth +
+                       " AND " + tableAlias + ".Date_Exported <= CAST(GETDATE() AS date)";
+            }
             case MONTH:
-                return String.format("AND YEAR(bed.Date_Exported) = %d AND MONTH(bed.Date_Exported) = %d", year, month);
+                return " AND YEAR(" + tableAlias + ".Date_Exported) = " + year +
+                       " AND MONTH(" + tableAlias + ".Date_Exported) = " + month +
+                       " AND " + tableAlias + ".Date_Exported <= CAST(GETDATE() AS date)";
+            case ALL_TIME:
             default:
-                return "";
+                return " AND " + tableAlias + ".Date_Exported <= CAST(GETDATE() AS date)";
         }
-    }
-    
-    @Override
-    public String toString() {
-        return String.format("ChartFilterData{timeFilter=%s, year=%d, quarter=%d, month=%d, dataType=%s}", 
-                           timeFilterType.getDisplayName(), year, quarter, month, dataType.getDisplayName());
     }
 }

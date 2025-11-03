@@ -1,133 +1,145 @@
-// Form_Statistics.java
 package com.Admin.statistics.GUI;
 
+import com.Admin.statistics.BUS.BUS_Chart;
+import com.Admin.statistics.Components.FilterPanel;
+import com.Admin.statistics.DTO.ChartFilterData;
 import com.ComponentandDatabase.Components.MyButton;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import java.awt.Color;
-import java.awt.Font;
-import javax.swing.SwingConstants;
-import java.awt.Dimension;
+import org.jfree.chart.ChartPanel;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class Form_Statistics extends JPanel {
-    private JPanel panel;
-    private JLabel lblTitle;
-    private MyButton bntbarChart, bntpieChart, bntLinechart, bntHeatmap;
-    private CardLayout cardLayout;
-    private JPanel cardPanel;
-    
+    private final JPanel cardPanel = new JPanel(new CardLayout());
+    private final BUS_Chart bus = new BUS_Chart();
+    private ChartFilterData currentFilter = new ChartFilterData();
+    private MyButton btnLine, btnBar, btnPie;
+    private String currentCard = "LINE";
+
     public Form_Statistics() {
         initComponents();
         init();
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout()); // Thay đổi sang BorderLayout
-        setPreferredSize(new Dimension(1530, 860));
+        setLayout(null);
+        setPreferredSize(new Dimension(1200, 700));
         setBackground(Color.WHITE);
     }
 
     private void init() {
-        // Tạo CardLayout để quản lý các form
-        cardLayout = new CardLayout();
-        cardPanel = new JPanel(cardLayout);
-        cardPanel.setPreferredSize(new Dimension(1530, 860));
+        // Top filter panel - giảm height để tiết kiệm không gian
+        FilterPanel filter = new FilterPanel(this::applyFilter);
+        filter.setBounds(10, 5, 1180, 45);
+        add(filter);
+
+        // Buttons switch panel - loại bỏ border, giảm height
+        JPanel tabBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        tabBtns.setBounds(10, 55, 1180, 38);
+        tabBtns.setBackground(Color.WHITE);
+        // Loại bỏ border để tiết kiệm không gian
+
+        btnLine = new MyButton("Line Chart", 12);
+        btnLine.setPreferredSize(new Dimension(130, 35));
+        btnLine.setForeground(Color.WHITE);
+        btnLine.setBackgroundColor(new Color(0x2196F3));
+        btnLine.setHoverColor(new Color(0x42A5F5));
+        btnLine.setPressedColor(new Color(0x1976D2));
+        btnLine.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\linechart.png", 
+                              20, 20, 6, SwingConstants.LEFT, SwingConstants.CENTER);
+        btnLine.addActionListener(e -> switchCard("LINE"));
         
-        // Tạo panel chứa nút điều khiển
-        JPanel controlPanel = new JPanel(null);
-        controlPanel.setPreferredSize(new Dimension(1530, 100));
-        controlPanel.setBackground(Color.WHITE);
+        btnBar = new MyButton("Bar Chart", 12);
+        btnBar.setPreferredSize(new Dimension(130, 35));
+        btnBar.setForeground(Color.WHITE);
+        btnBar.setBackgroundColor(new Color(0x4CAF50));
+        btnBar.setHoverColor(new Color(0x66BB6A));
+        btnBar.setPressedColor(new Color(0x388E3C));
+        btnBar.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\barchart.png", 
+                             20, 20, 6, SwingConstants.LEFT, SwingConstants.CENTER);
+        btnBar.addActionListener(e -> switchCard("BAR"));
         
-        // Thêm nút bntbarChart
-        bntbarChart = new MyButton("Bar Chart", 20);
-        bntbarChart.setBackgroundColor(Color.WHITE);
-        bntbarChart.setPressedColor(Color.decode("#D3D3D3"));
-        bntbarChart.setHoverColor(Color.decode("#EEEEEE"));
-        bntbarChart.setBounds(50, 40, 140, 35);
-        bntbarChart.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntbarChart.setForeground(Color.BLACK);
-        bntbarChart.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\barchart.png", 
-                               25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        btnPie = new MyButton("Pie Chart", 12);
+        btnPie.setPreferredSize(new Dimension(130, 35));
+        btnPie.setForeground(Color.WHITE);
+        btnPie.setBackgroundColor(new Color(0xFF9800));
+        btnPie.setHoverColor(new Color(0xFFB74D));
+        btnPie.setPressedColor(new Color(0xF57C00));
+        btnPie.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\pie_chart.png", 
+                             20, 20, 6, SwingConstants.LEFT, SwingConstants.CENTER);
+        btnPie.addActionListener(e -> switchCard("PIE"));
+
+        tabBtns.add(btnLine);
+        tabBtns.add(btnBar);
+        tabBtns.add(btnPie);
+        add(tabBtns);
+
+        // Chart cards panel
+        cardPanel.setBounds(10, 105, 1180, 585);
+        cardPanel.setBackground(Color.WHITE);
+        cardPanel.add(new JPanel(), "LINE");
+        cardPanel.add(new JPanel(), "BAR");
+        cardPanel.add(new JPanel(), "PIE");
+        add(cardPanel);
+
+        // Default load
+        applyFilter(new ChartFilterData());
+        switchCard("LINE");
+        updateButtonStates();
+    }
+
+    private void switchCard(String cardName) {
+        currentCard = cardName;
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, cardName);
+        updateButtonStates();
+    }
+
+    private void updateButtonStates() {
+        // Reset all buttons
+        btnLine.setBackgroundColor(new Color(0x2196F3));
+        btnBar.setBackgroundColor(new Color(0x4CAF50));
+        btnPie.setBackgroundColor(new Color(0xFF9800));
         
-        // Thêm ActionListener cho nút
-        bntbarChart.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "barChart");
-            }
-        });
+        // Highlight current button
+        switch (currentCard) {
+            case "LINE":
+                btnLine.setBackgroundColor(new Color(0x1976D2));
+                break;
+            case "BAR":
+                btnBar.setBackgroundColor(new Color(0x388E3C));
+                break;
+            case "PIE":
+                btnPie.setBackgroundColor(new Color(0xF57C00));
+                break;
+        }
+    }
+
+    private void applyFilter(ChartFilterData f) {
+        currentFilter = f;
+        // Build panels
+        ChartPanel pLine = bus.getLine(f);
+        ChartPanel pBar  = bus.getBar(f);
+        ChartPanel pPie  = bus.getPie(f);
+
+        // Clear and replace all cards
+        cardPanel.removeAll();
         
+        JPanel holdLine = new JPanel(new BorderLayout());
+        holdLine.setBackground(Color.WHITE);
+        holdLine.add(pLine, BorderLayout.CENTER);
+        cardPanel.add(holdLine, "LINE");
         
-        bntLinechart = new MyButton("Line Chart", 20);
-        bntLinechart.setBackgroundColor(Color.WHITE);
-        bntLinechart.setPressedColor(Color.decode("#D3D3D3"));
-        bntLinechart.setHoverColor(Color.decode("#EEEEEE"));
-        bntLinechart.setBounds(300, 40, 180, 35);
-        bntLinechart.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntLinechart.setForeground(Color.BLACK);
-        bntLinechart.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\linechart.png", 
-                               25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-        bntLinechart.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "lineChart");
-            }
-        });
+        JPanel holdBar = new JPanel(new BorderLayout());
+        holdBar.setBackground(Color.WHITE);
+        holdBar.add(pBar, BorderLayout.CENTER);
+        cardPanel.add(holdBar, "BAR");
         
-        bntpieChart = new MyButton("Pie Chart", 20);
-        bntpieChart.setBackgroundColor(Color.WHITE);
-        bntpieChart.setPressedColor(Color.decode("#D3D3D3"));
-        bntpieChart.setHoverColor(Color.decode("#EEEEEE"));
-        bntpieChart.setBounds(620, 40, 180, 35);
-        bntpieChart.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntpieChart.setForeground(Color.BLACK);
-        bntpieChart.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\pie_chart.png", 
-                               25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-        bntpieChart.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "pieChart");
-            }
-        });
+        JPanel holdPie = new JPanel(new BorderLayout());
+        holdPie.setBackground(Color.WHITE);
+        holdPie.add(pPie, BorderLayout.CENTER);
+        cardPanel.add(holdPie, "PIE");
         
-        
-        bntHeatmap = new MyButton("Area chart", 20);
-        bntHeatmap.setBackgroundColor(Color.WHITE);
-        bntHeatmap.setPressedColor(Color.decode("#D3D3D3"));
-        bntHeatmap.setHoverColor(Color.decode("#EEEEEE"));
-        bntHeatmap.setBounds(950, 40, 180, 35);
-        bntHeatmap.setFont(new Font("sansserif", Font.BOLD, 16));
-        bntHeatmap.setForeground(Color.BLACK);
-        bntHeatmap.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\heatmap.png", 
-                               25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
-        bntHeatmap.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "heatmap");
-            }
-        });
-        
-        
-        
-        controlPanel.add(bntLinechart);
-        controlPanel.add(bntpieChart);
-        controlPanel.add(bntbarChart);
-        controlPanel.add(bntHeatmap);
-        // Thêm các form vào cardPanel
-        cardPanel.add(new Form_BarChart(), "barChart");
-        cardPanel.add(new Form_PieChart(), "pieChart"); // Thêm sau nếu cần
-        cardPanel.add(new Form_LineChart(), "lineChart"); // Thêm sau nếu cần
-        cardPanel.add(new Form_Heatmap(), "heatmap"); // Thêm sau nếu cần
-        // Hiển thị form mặc định
-        cardLayout.show(cardPanel, "barChart");
-        //cardLayout.show(cardPanel, "lineChart");
-        
-        // Thêm các panel vào form chính
-        add(controlPanel, BorderLayout.NORTH);
-        add(cardPanel, BorderLayout.CENTER);
+        // Show current card
+        switchCard(currentCard);
     }
 }

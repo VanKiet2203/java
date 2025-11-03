@@ -221,7 +221,7 @@ public class Form_Inventory extends JPanel {
         // Bills Tab
         JPanel billsPanel = new JPanel(new BorderLayout());
         String[] billsColumns = {
-            "Bill ID", "Date", "Supplier", "Total Items", "Total Amount", "Status"
+            "Bill ID", "Date", "Supplier", "Total Items", "Total Amount"
         };
         DefaultTableModel billsModel = new DefaultTableModel(billsColumns, 0);
         tableBills = createStyledTable(billsModel);
@@ -327,10 +327,17 @@ public class Form_Inventory extends JPanel {
     }
     
     private void exportPDFBillImport() {
+        // Kiểm tra xem có đang ở tab Import Bills không
+        int selectedTabIndex = tabbedPane.getSelectedIndex();
+        if (selectedTabIndex != 1) {
+            CustomDialog.showError("Please select a bill to export PDF from Import Bills tab!");
+            return;
+        }
+        
         // Kiểm tra xem có bill nào được chọn không
         int selectedRow = tableBills.getSelectedRow();
         if (selectedRow == -1) {
-            CustomDialog.showError("Vui lòng chọn bill cần export PDF!");
+            CustomDialog.showError("Please select a bill to export PDF from Import Bills tab!");
             return;
         }
         

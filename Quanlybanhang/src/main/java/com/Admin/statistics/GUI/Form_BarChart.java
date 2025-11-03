@@ -15,13 +15,14 @@ import javax.swing.SwingConstants;
 import org.jfree.chart.ChartPanel;
 import java.awt.BorderLayout;
 
-public class Form_BarChart extends JPanel implements FilterPanel.FilterChangeListener {
+public class Form_BarChart extends JPanel {
     private JPanel panel;
     private JLabel lblTitle;
     private MyButton bntRefresh;
     private BUS_Chart busChart;
     private ChartPanel chartPanel;
     private FilterPanel filterPanel;
+    private ChartFilterData currentFilter;
 
     public Form_BarChart() {
         initComponents();
@@ -37,9 +38,9 @@ public class Form_BarChart extends JPanel implements FilterPanel.FilterChangeLis
     private void init() {
         setLayout(new BorderLayout());
         
-        // Tạo FilterPanel
-        filterPanel = new FilterPanel();
-        filterPanel.addFilterChangeListener(this);
+        // Tạo FilterPanel với listener
+        currentFilter = new ChartFilterData();
+        filterPanel = new FilterPanel(this::onFilterApplied);
         add(filterPanel, BorderLayout.NORTH);
         
         // Tạo panel chính cho chart
@@ -52,17 +53,13 @@ public class Form_BarChart extends JPanel implements FilterPanel.FilterChangeLis
         // Khởi tạo BUS
         busChart = new BUS_Chart();
         
-        // Set filter từ FilterPanel trước khi lấy chart
-        ChartFilterData initialFilter = filterPanel.getCurrentFilter();
-        busChart.updateFilter(initialFilter);
-        
-        // Lấy ChartPanel từ BUS
-        chartPanel = busChart.getBarChartPanel();
-        chartPanel.setBounds(50, 50, 1170, 500); // Đặt vị trí và kích thước cho biểu đồ
+        // Lấy ChartPanel từ BUS với filter mặc định
+        chartPanel = busChart.getBar(currentFilter);
+        chartPanel.setBounds(50, 50, 1170, 500);
         panel.add(chartPanel);
 
-        // Tiêu đề
-        lblTitle = new JLabel("Thống kê nhà cung cấp phổ biến");
+        // Title
+        lblTitle = new JLabel("Revenue Statistics");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
         lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
         lblTitle.setBounds(50, 10, 1170, 30);
@@ -90,35 +87,22 @@ public class Form_BarChart extends JPanel implements FilterPanel.FilterChangeLis
         panel.add(bntRefresh);
     }
 
+    private void onFilterApplied(ChartFilterData filterData) {
+        currentFilter = filterData;
+        refreshChart();
+    }
+
     private void refreshChart() {
         // Xóa chartPanel cũ
         panel.remove(chartPanel);
         
         // Tạo lại chartPanel mới với filter hiện tại
-        ChartFilterData currentFilter = filterPanel.getCurrentFilter();
-        busChart.updateFilter(currentFilter);
-        chartPanel = busChart.getBarChartPanel();
+        chartPanel = busChart.getBar(currentFilter);
         chartPanel.setBounds(50, 50, 1170, 500);
         panel.add(chartPanel);
         
         // Cập nhật giao diện
         panel.revalidate();
         panel.repaint();
-    }
-    
-    @Override
-    public void onFilterChanged(ChartFilterData filterData) {
-        // Cập nhật filter trong BUS
-        busChart.updateFilter(filterData);
-        
-        // Refresh chart với filter mới
-        refreshChart();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        // Dọn dẹp tài nguyên khi không dùng nữa
-        busChart.shutdownChartUpdaters();
-        super.finalize();
     }
 }

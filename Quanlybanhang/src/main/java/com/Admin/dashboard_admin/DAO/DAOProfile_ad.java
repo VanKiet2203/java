@@ -155,5 +155,36 @@ public class DAOProfile_ad {
 
         return adminName;
     }
+    
+    public String getProfileImagePath(String adminID) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        String imagePath = null;
+
+        try {
+            conn = DatabaseConnection.connect();
+            String sql = "SELECT Image FROM Admin WHERE Admin_ID = ? AND Status = 'Available'";
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, adminID);
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                imagePath = rs.getString("Image");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return imagePath;
+    }
   
 }
