@@ -56,10 +56,9 @@ public class Home_user extends JPanel {
     }
 
     private void initSearchComponents() {
-        // Tạo panel search với border đẹp
+        // Tạo panel search với border đẹp và responsive layout
         JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(null);
-        searchPanel.setPreferredSize(new Dimension(1260, 100));
+        searchPanel.setLayout(new BorderLayout());
         searchPanel.setBackground(Color.WHITE);
         searchPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
@@ -67,122 +66,145 @@ public class Home_user extends JPanel {
         ));
         add(searchPanel, BorderLayout.NORTH);
 
-        // Filter combo box với icon
+        // Main container panel với FlowLayout để tự động wrap - giảm spacing
+        JPanel mainContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        mainContainer.setBackground(Color.WHITE);
+        searchPanel.add(mainContainer, BorderLayout.CENTER);
+
+        // Filter combo box - giảm kích thước một chút
         String[] items = {"All Products", "Product ID", "Product Name", "Price Range"};
         comboBoxSearch = new MyCombobox(items);
-        comboBoxSearch.setBounds(20, 35, 200, 35);
+        comboBoxSearch.setPreferredSize(new Dimension(180, 35));
+        comboBoxSearch.setMinimumSize(new Dimension(140, 35));
         comboBoxSearch.setCustomFont(new Font("Arial", Font.PLAIN, 14));
         selectedComboBoxItem = (String) comboBoxSearch.getSelectedItem();
-        searchPanel.add(comboBoxSearch);
+        mainContainer.add(comboBoxSearch);
 
-        // Search input với border đẹp
+        // Container cho search input (text field) - sẽ co giãn nhưng có max width
+        JPanel searchInputContainer = new JPanel(new BorderLayout());
+        searchInputContainer.setOpaque(false);
         inputText = new MyTextField();
-        inputText.setBounds(240, 35, 400, 35);
+        inputText.setPreferredSize(new Dimension(350, 35)); // Giảm từ 400 xuống 350
+        inputText.setMinimumSize(new Dimension(180, 35)); // Giảm từ 200 xuống 180
+        inputText.setMaximumSize(new Dimension(400, 35)); // Thêm max width
         inputText.setHint("Enter search keyword...");
         inputText.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         inputText.setTextFont(new Font("Arial", Font.PLAIN, 14));
-        searchPanel.add(inputText);
+        searchInputContainer.add(inputText, BorderLayout.CENTER);
+        mainContainer.add(searchInputContainer);
 
-        // Price range labels
+        // Container cho price range inputs - ẩn ban đầu
+        JPanel priceRangeContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        priceRangeContainer.setOpaque(false);
+        priceRangeContainer.setVisible(false);
+        
+        // Price range labels và inputs với BoxLayout
+        JPanel minPricePanel = new JPanel();
+        minPricePanel.setLayout(new BoxLayout(minPricePanel, BoxLayout.Y_AXIS));
+        minPricePanel.setOpaque(false);
         minlbl = new JLabel("Min Price:");
-        minlbl.setBounds(240, 20, 80, 20);
         minlbl.setFont(new Font("Arial", Font.BOLD, 12));
         minlbl.setForeground(Color.decode("#666666"));
-        minlbl.setVisible(false);
-        searchPanel.add(minlbl);
-
+        minPricePanel.add(minlbl);
         inputMin = new MyTextField();
-        inputMin.setBounds(240, 35, 190, 35);
+        inputMin.setPreferredSize(new Dimension(170, 35)); // Giảm từ 190 xuống 170
+        inputMin.setMinimumSize(new Dimension(140, 35)); // Giảm từ 150 xuống 140
         inputMin.setHint("Min price...");
         inputMin.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
-        inputMin.setVisible(false);
-        searchPanel.add(inputMin);
+        minPricePanel.add(inputMin);
+        priceRangeContainer.add(minPricePanel);
 
+        JPanel maxPricePanel = new JPanel();
+        maxPricePanel.setLayout(new BoxLayout(maxPricePanel, BoxLayout.Y_AXIS));
+        maxPricePanel.setOpaque(false);
         maxlbl = new JLabel("Max Price:");
-        maxlbl.setBounds(450, 20, 80, 20);
         maxlbl.setFont(new Font("Arial", Font.BOLD, 12));
         maxlbl.setForeground(Color.decode("#666666"));
-        maxlbl.setVisible(false);
-        searchPanel.add(maxlbl);
-
+        maxPricePanel.add(maxlbl);
         inputMax = new MyTextField();
-        inputMax.setBounds(450, 35, 190, 35);
+        inputMax.setPreferredSize(new Dimension(170, 35)); // Giảm từ 190 xuống 170
+        inputMax.setMinimumSize(new Dimension(140, 35)); // Giảm từ 150 xuống 140
         inputMax.setHint("Max price...");
         inputMax.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#4CAF50"), 2),
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
-        inputMax.setVisible(false);
-        searchPanel.add(inputMax);
+        maxPricePanel.add(inputMax);
+        priceRangeContainer.add(maxPricePanel);
+        
+        // Lưu reference để có thể show/hide
+        priceRangeContainer.setName("priceRangeContainer");
+        mainContainer.add(priceRangeContainer);
 
-        comboBoxSearch.addActionListener(e -> {
-            selectedComboBoxItem = (String) comboBoxSearch.getSelectedItem();
-            boolean isPriceSearch = selectedComboBoxItem.contains("Price");
-            
-            inputText.setVisible(!isPriceSearch);
-            inputMin.setVisible(isPriceSearch);
-            inputMax.setVisible(isPriceSearch);
-            minlbl.setVisible(isPriceSearch);
-            maxlbl.setVisible(isPriceSearch);
-            
-            revalidate();
-            repaint();
-        });
-
-        // Search button với icon
+        // Search button - giảm kích thước một chút
         MyButton btnSearch = new MyButton("Search", 10);
-        btnSearch.setBounds(660, 35, 120, 35);
+        btnSearch.setPreferredSize(new Dimension(110, 35)); // Giảm từ 120 xuống 110
+        btnSearch.setMinimumSize(new Dimension(90, 35)); // Giảm từ 100 xuống 90
         btnSearch.setBackgroundColor(Color.decode("#4CAF50"));
         btnSearch.setHoverColor(Color.decode("#45A049"));
         btnSearch.setForeground(Color.WHITE);
         btnSearch.setFont(new Font("Arial", Font.BOLD, 14));
         btnSearch.setButtonIcon("/Icons/Admin_icon/search.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         btnSearch.addActionListener(e -> searchProducts());
-        searchPanel.add(btnSearch);
+        mainContainer.add(btnSearch);
 
-        // All Products button với icon
+        // All Products button - giảm kích thước một chút
         MyButton reShowAllProducts = new MyButton("All Products", 10);
-        reShowAllProducts.setBounds(800, 35, 160, 35);
+        reShowAllProducts.setPreferredSize(new Dimension(150, 35)); // Giảm từ 160 xuống 150
+        reShowAllProducts.setMinimumSize(new Dimension(110, 35)); // Giảm từ 120 xuống 110
         reShowAllProducts.setBackgroundColor(Color.decode("#2196F3"));
         reShowAllProducts.setHoverColor(Color.decode("#1976D2"));
         reShowAllProducts.setForeground(Color.WHITE);
         reShowAllProducts.setFont(new Font("Arial", Font.BOLD, 14));
         reShowAllProducts.setButtonIcon("/Icons/Admin_icon/refresh.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);
         reShowAllProducts.addActionListener(e -> updateProductList());
-        searchPanel.add(reShowAllProducts);
+        mainContainer.add(reShowAllProducts);
         
-        // Sort combobox
+        // Sort container với label và combobox - sử dụng FlowLayout ngang thay vì BoxLayout dọc để tiết kiệm không gian
+        JPanel sortContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        sortContainer.setOpaque(false);
+        
         JLabel sortLabel = new JLabel("Sort by:");
-        sortLabel.setBounds(980, 20, 80, 20);
         sortLabel.setFont(new Font("Arial", Font.BOLD, 12));
         sortLabel.setForeground(Color.decode("#666666"));
-        searchPanel.add(sortLabel);
+        sortContainer.add(sortLabel);
         
         String[] sortOptions = {"None", "Price: Low to High", "Price: High to Low", 
                                 "Name: A to Z", "Name: Z to A", "Color: A to Z"};
         comboBoxSort = new MyCombobox(sortOptions);
-        comboBoxSort.setBounds(980, 35, 200, 35);
+        comboBoxSort.setPreferredSize(new Dimension(180, 35)); // Giảm từ 200 xuống 180
+        comboBoxSort.setMinimumSize(new Dimension(140, 35)); // Giảm từ 150 xuống 140
         comboBoxSort.setCustomFont(new Font("Arial", Font.PLAIN, 14));
-        // Tự động sắp xếp khi chọn option
-        // Sử dụng ItemListener để đảm bảo được trigger khi item thay đổi
         comboBoxSort.addItemListener(e -> {
             if (e.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
                 String selected = (String) comboBoxSort.getSelectedItem();
                 if (selected != null && !selected.isEmpty()) {
-                    // Tự động apply sort ngay khi chọn
                     SwingUtilities.invokeLater(() -> {
                         applySort();
                     });
                 }
             }
         });
-        searchPanel.add(comboBoxSort);
+        sortContainer.add(comboBoxSort);
+        mainContainer.add(sortContainer);
+
+        // Action listener cho comboBoxSearch
+        comboBoxSearch.addActionListener(e -> {
+            selectedComboBoxItem = (String) comboBoxSearch.getSelectedItem();
+            boolean isPriceSearch = selectedComboBoxItem.contains("Price");
+            
+            inputText.setVisible(!isPriceSearch);
+            priceRangeContainer.setVisible(isPriceSearch);
+            
+            searchPanel.revalidate();
+            searchPanel.repaint();
+        });
     }
 
     private void initProductDisplayArea() {

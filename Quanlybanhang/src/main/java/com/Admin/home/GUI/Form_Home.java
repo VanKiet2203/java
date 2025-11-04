@@ -1,11 +1,12 @@
 package com.Admin.home.GUI;
 
 import com.Admin.home.BUS.BUS_Total;
-import com.Admin.home.BUS.BUS_Chart;
 import com.Admin.home.DTO.*;
 import com.ComponentandDatabase.Components.MyPanel;
 import com.ComponentandDatabase.Components.MyButton;
-// import org.jfree.chart.ChartPanel;
+import com.Admin.statistics.BUS.BUS_Chart;
+import com.Admin.statistics.DTO.ChartFilterData;
+import org.jfree.chart.ChartPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -76,6 +77,10 @@ public class Form_Home extends JPanel {
         bntRefresh.setForeground(Color.BLACK);
         bntRefresh.setButtonIcon("src\\main\\resources\\Icons\\Admin_icon\\refresh.png", 
                                    25, 25, 10, SwingConstants.RIGHT, SwingConstants.CENTER);
+        bntRefresh.addActionListener(e -> {
+            updatePanelData(); // Refresh dữ liệu
+            loadChart(); // Refresh chart
+        });
         JPanel topContainer = new JPanel(new BorderLayout());
         topContainer.setBackground(Color.WHITE);
         topContainer.setBorder(null);
@@ -83,10 +88,10 @@ public class Form_Home extends JPanel {
         topContainer.add(bntRefresh, BorderLayout.WEST); // Thêm nút vào góc trên bên phải
         add(topContainer, BorderLayout.NORTH);
 
-        chartContainer = new JPanel();
+        chartContainer = new JPanel(new BorderLayout());
         chartContainer.setBackground(Color.WHITE);
-        chartContainer.setBorder(null);
-        chartContainer.setPreferredSize(new Dimension(900, 480)); 
+        chartContainer.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        chartContainer.setPreferredSize(new Dimension(900, 450)); // Kích thước phù hợp cho chart
     
         add(chartContainer, BorderLayout.CENTER);
     }
@@ -126,22 +131,38 @@ public class Form_Home extends JPanel {
         lblTotalBillImport.setText(String.valueOf(busTotal.getTotalBillImports().getTotalProduct()));
     }
     
+    /**
+     * Load chart từ statistics vào Form_Home
+     * Sử dụng Bar chart làm mặc định với filter mặc định
+     */
     private void loadChart() {
-        // Tạm thời comment để tránh lỗi JFreeChart
-        // ChartPanel chartPanel = busChart.getbarChart(); // Lấy biểu đồ từ BUS
-        // chartContainer.removeAll(); // Xóa dữ liệu cũ
-        // chartContainer.add(chartPanel, BorderLayout.CENTER); // Thêm biểu đồ vào giao diện
-        // chartContainer.revalidate(); // Cập nhật lại giao diện
-        // chartContainer.repaint(); // Vẽ lại giao diện
-        
-        // Tạm thời hiển thị label thay thế
-        JLabel chartLabel = new JLabel("Chart will be displayed here", SwingConstants.CENTER);
-        chartLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        chartLabel.setForeground(Color.GRAY);
         chartContainer.removeAll();
-        chartContainer.add(chartLabel, BorderLayout.CENTER);
-        chartContainer.revalidate();
-        chartContainer.repaint();
+        
+        try {
+            // Tạo filter mặc định (không có filter đặc biệt)
+            ChartFilterData defaultFilter = new ChartFilterData();
+            
+            // Lấy Bar chart từ BUS_Chart
+            ChartPanel chartPanel = busChart.getBar(defaultFilter);
+            
+            // Điều chỉnh kích thước chart cho phù hợp với container
+            chartPanel.setPreferredSize(new Dimension(870, 420));
+            chartPanel.setMinimumSize(new Dimension(800, 350));
+            
+            // Thêm chart vào container
+            chartContainer.add(chartPanel, BorderLayout.CENTER);
+            
+            chartContainer.revalidate();
+            chartContainer.repaint();
+        } catch (Exception e) {
+            // Nếu có lỗi, hiển thị thông báo
+            JLabel errorLabel = new JLabel("Chart could not be loaded", SwingConstants.CENTER);
+            errorLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            errorLabel.setForeground(Color.GRAY);
+            chartContainer.add(errorLabel, BorderLayout.CENTER);
+            chartContainer.revalidate();
+            chartContainer.repaint();
+        }
     }
     
     private void addClickHandlers() {

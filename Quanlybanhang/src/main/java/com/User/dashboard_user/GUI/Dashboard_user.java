@@ -27,7 +27,7 @@ public class Dashboard_user extends JFrame {
     public Dashboard_user(String userEmail) {
         initComponents(userEmail);
         loadUserInfo(); // Load thông tin user
-        setSize(1400, 900); // Kích thước tối ưu cho giao diện hiện đại
+        setSize(1600, 900); // Kích thước tối ưu cho giao diện hiện đại
         setLocationRelativeTo(null); // Hiển thị giữa màn hình
         setResizable(true);
         setVisible(true);

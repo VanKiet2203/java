@@ -22,6 +22,7 @@ import java.awt.Font;
 import java.math.BigDecimal;
 import javax.swing.BorderFactory;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.Dimension;
 import javax.swing.*;
 import javax.swing.Box;
@@ -333,11 +334,12 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
      
    private JPanel createProductPanel(productDTO product) {
     JPanel panelcreate = new JPanel(new BorderLayout(8, 8));
-        panelcreate.setPreferredSize(new Dimension(300, 380));
+        panelcreate.setPreferredSize(new Dimension(300, 420)); // Tăng chiều cao từ 380 lên 400 để đủ chỗ cho quantity
+        panelcreate.setMinimumSize(new Dimension(250, 380)); // Thêm minimum size để responsive
         panelcreate.setBackground(Color.WHITE);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createEmptyBorder(12, 12, 12, 12) // Giảm padding một chút
         ));
 
         // Top panel: Checkbox bên phải, Image ở giữa
@@ -379,7 +381,7 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         JPanel detailsPanel = new JPanel();
         detailsPanel.setLayout(new BoxLayout(detailsPanel, BoxLayout.Y_AXIS));
         detailsPanel.setBackground(Color.WHITE);
-        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0)); // Giảm padding
         detailsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Product Name - màu đặc biệt (xanh đậm)
@@ -412,15 +414,19 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         detailsPanel.add(priceLabel);
         detailsPanel.add(Box.createVerticalStrut(5)); // Thêm khoảng cách
 
-        // Quantity - với JSpinner để có thể chỉnh sửa
-        JPanel quantityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        // Quantity - với JSpinner để có thể chỉnh sửa - sử dụng BoxLayout để responsive
+        JPanel quantityPanel = new JPanel();
+        quantityPanel.setLayout(new BoxLayout(quantityPanel, BoxLayout.X_AXIS));
         quantityPanel.setBackground(Color.WHITE);
         quantityPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        quantityPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         
         JLabel quantityLabel = new JLabel("Quantity:");
         quantityLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         quantityLabel.setForeground(Color.decode("#7F8C8D"));
+        quantityLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         quantityPanel.add(quantityLabel);
+        quantityPanel.add(Box.createHorizontalStrut(5)); // Spacing giữa label và spinner
         
         // Lấy số lượng hiện tại trong cart (đã được set trong updateProductList)
         int currentCartQuantity = product.getQuantity(); // Số lượng trong cart
@@ -428,16 +434,24 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         // Lấy stock thực tế từ database (không phải từ product vì đã bị thay đổi)
         int currentStock = cartBUS != null ? cartBUS.getCurrentStock(product.getProductID()) : 0;
         
-        // Tạo JSpinner với giá trị hiện tại, min=1, max=stock hiện tại
-        SpinnerNumberModel quantityModel = new SpinnerNumberModel(
+        // Đảm bảo currentCartQuantity không vượt quá stock
+        if (currentCartQuantity > currentStock) {
+            currentCartQuantity = currentStock;
+        }
+        
+        // Tạo JSpinner với giá trị hiện tại, min=1 (không được âm), max=stock hiện tại
+        final SpinnerNumberModel quantityModel = new SpinnerNumberModel(
             currentCartQuantity,  // Giá trị hiện tại
-            1,                    // Min
-            Math.max(currentStock, currentCartQuantity),  // Max (ít nhất bằng số lượng hiện tại)
+            1,                    // Min (không được âm)
+            currentStock,         // Max = stock hiện tại (không quá stock)
             1                    // Step
         );
         JSpinner quantitySpinner = new JSpinner(quantityModel);
         quantitySpinner.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        quantitySpinner.setPreferredSize(new Dimension(60, 25));
+        quantitySpinner.setPreferredSize(new Dimension(55, 25));
+        quantitySpinner.setMinimumSize(new Dimension(50, 25));
+        quantitySpinner.setMaximumSize(new Dimension(60, 25));
+        quantitySpinner.setAlignmentY(Component.CENTER_ALIGNMENT);
         
         // Customize spinner editor
         JComponent editor = quantitySpinner.getEditor();
@@ -448,35 +462,140 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
                 BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
                 BorderFactory.createEmptyBorder(2, 5, 2, 5)
             ));
+            textField.setEditable(true);
+            
+            // Thêm ChangeListener để validate khi user thay đổi giá trị
+            quantitySpinner.addChangeListener(e -> {
+                try {
+                    int value = (int) quantitySpinner.getValue();
+                    // Lấy stock mới nhất mỗi lần thay đổi để đảm bảo chính xác
+                    int maxStock = cartBUS.getCurrentStock(product.getProductID());
+                    
+                    // Cập nhật max của spinner model nếu stock thay đổi
+                    Number maxValue = (Number) quantityModel.getMaximum();
+                    if (maxStock != maxValue.intValue()) {
+                        quantityModel.setMaximum(maxStock);
+                    }
+                    
+                    // Tự động điều chỉnh nếu vượt quá max
+                    if (value > maxStock) {
+                        quantitySpinner.setValue(maxStock);
+                        CustomDialog.showError(
+                            "Quantity cannot exceed available stock!\n" +
+                            "Maximum: " + maxStock
+                        );
+                    } else if (value <= 0) {
+                        quantitySpinner.setValue(1);
+                        CustomDialog.showError("Quantity must be greater than 0!");
+                    }
+                } catch (Exception ex) {
+                    // Nếu giá trị không hợp lệ, reset về 1
+                    quantitySpinner.setValue(1);
+                }
+            });
+            
+            // Thêm DocumentListener để validate khi user nhập trực tiếp vào text field
+            textField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                @Override
+                public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                    validateSpinnerInput();
+                }
+                @Override
+                public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                    validateSpinnerInput();
+                }
+                @Override
+                public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                    validateSpinnerInput();
+                }
+                
+                private void validateSpinnerInput() {
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            String text = textField.getText();
+                            if (text != null && !text.isEmpty()) {
+                                int value = Integer.parseInt(text);
+                                int maxStock = cartBUS.getCurrentStock(product.getProductID());
+                                
+                                if (value > maxStock) {
+                                    textField.setText(String.valueOf(maxStock));
+                                    quantitySpinner.setValue(maxStock);
+                                } else if (value <= 0) {
+                                    textField.setText("1");
+                                    quantitySpinner.setValue(1);
+                                }
+                            }
+                        } catch (NumberFormatException ex) {
+                            // Nếu không phải số, giữ nguyên để user tiếp tục nhập
+                        }
+                    });
+                }
+            });
         }
         quantityPanel.add(quantitySpinner);
+        quantityPanel.add(Box.createHorizontalStrut(5)); // Spacing giữa spinner và button
         
-        // Nút Update Quantity
+        // Nút Update Quantity - giảm kích thước để tiết kiệm không gian
         MyButton btnUpdateQty = new MyButton("Update", 8);
-        btnUpdateQty.setPreferredSize(new Dimension(70, 25));
+        btnUpdateQty.setPreferredSize(new Dimension(65, 25)); // Giảm từ 70 xuống 65
+        btnUpdateQty.setMinimumSize(new Dimension(60, 25));
+        btnUpdateQty.setMaximumSize(new Dimension(70, 25));
+        btnUpdateQty.setAlignmentY(Component.CENTER_ALIGNMENT);
         btnUpdateQty.setBackgroundColor(Color.decode("#3498DB"));
         btnUpdateQty.setHoverColor(Color.decode("#2980B9"));
         btnUpdateQty.setPressedColor(Color.decode("#21618C"));
         btnUpdateQty.setForeground(Color.WHITE);
         btnUpdateQty.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        btnUpdateQty.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        btnUpdateQty.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6)); // Giảm padding
         btnUpdateQty.addActionListener(e -> {
-            int newQuantity = (int) quantitySpinner.getValue();
+            int newQuantity;
+            try {
+                newQuantity = (int) quantitySpinner.getValue();
+            } catch (Exception ex) {
+                CustomDialog.showError("Invalid quantity value!");
+                quantitySpinner.setValue(1);
+                return;
+            }
+            
+            // Validate trước khi update
+            if (newQuantity <= 0) {
+                CustomDialog.showError("Quantity must be greater than 0!");
+                quantitySpinner.setValue(1);
+                return;
+            }
+            
+            // Lấy stock mới nhất từ database
+            int maxStock = cartBUS.getCurrentStock(product.getProductID());
+            if (newQuantity > maxStock) {
+                CustomDialog.showError(
+                    "Quantity exceeds available stock!\n\n" +
+                    "Requested: " + newQuantity + "\n" +
+                    "Available: " + maxStock + "\n\n" +
+                    "Please reduce the quantity."
+                );
+                quantityModel.setMaximum(maxStock);
+                quantitySpinner.setValue(Math.min(newQuantity, maxStock));
+                return;
+            }
+            
             updateCartQuantity(product.getProductID(), newQuantity);
         });
         quantityPanel.add(btnUpdateQty);
         
-        quantityPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        // Thêm glue để đẩy quantity panel về bên trái
+        quantityPanel.add(Box.createHorizontalGlue());
+        
         detailsPanel.add(quantityPanel);
 
         panelcreate.add(detailsPanel, BorderLayout.CENTER);
 
-        // Action Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
+        // Action Buttons - giảm kích thước để tiết kiệm không gian
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5)); // Giảm spacing
         buttonPanel.setBackground(Color.WHITE);
 
         MyButton detailBtn = new MyButton("Details", 8);
-        detailBtn.setPreferredSize(new Dimension(100, 35));
+        detailBtn.setPreferredSize(new Dimension(90, 32)); // Giảm kích thước
+        detailBtn.setMinimumSize(new Dimension(85, 30));
         detailBtn.setBackgroundColor(Color.decode("#27AE60")); // Màu xanh lá
         detailBtn.setHoverColor(Color.decode("#2ECC71"));
         detailBtn.setPressedColor(Color.decode("#229954"));
@@ -493,7 +612,8 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         buttonPanel.add(detailBtn);
         
         MyButton bntDelete = new MyButton("Delete", 8);
-        bntDelete.setPreferredSize(new Dimension(100, 35));
+        bntDelete.setPreferredSize(new Dimension(90, 32)); // Giảm kích thước
+        bntDelete.setMinimumSize(new Dimension(85, 30));
         bntDelete.setBackgroundColor(Color.decode("#E74C3C")); 
         bntDelete.setHoverColor(Color.decode("#C0392B"));      
         bntDelete.setPressedColor(Color.decode("#A93226")); 

@@ -19,12 +19,13 @@ import java.awt.*;
 
 public class Order_Form extends JPanel implements OrderUpdateListener {
     private String customerID;
-    private JPanel panel;
     private JPanel panelShow;
     private JScrollPane scrollShow;
     private BUS_Order busOrder;
     private JLabel lblTitle;
     public static String orderNo;
+    private ArrayList<DTO_Order> currentOrderList; // Lưu danh sách đơn hàng hiện tại để recalculate
+    
     public Order_Form(String customerID) {
         this.customerID = customerID;
         this.busOrder = new BUS_Order();
@@ -32,40 +33,114 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         initOrderDisplayArea();
         updateOrderList();
         OrderUpdateNotifier.addListener(this);
+        
+        // Add component listener to recalculate layout on resize
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                recalculateLayout();
+            }
+        });
     }
 
     private void initComponents() {
-        setLayout(null);
-        setPreferredSize(new Dimension(1530, 860));
+        setLayout(new BorderLayout()); // Use BorderLayout for responsiveness
+        setPreferredSize(new Dimension(1300, 860));
         setBackground(Color.WHITE);
     }
 
     private void initOrderDisplayArea() {
-        panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860);
-        panel.setBackground(Color.WHITE);
-        add(panel);
-
-        // Sử dụng GridLayout thay vì FlowLayout
-        panelShow = new JPanel(new GridLayout(0, 4, 5, 8));
+        panelShow = new JPanel();
         panelShow.setBackground(Color.WHITE);
         panelShow.setBorder(null);
 
         scrollShow = new JScrollPane(panelShow);
-        scrollShow.setBounds(0, 50, 1250, 500);
         scrollShow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollShow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollShow.setBorder(null);
-        panel.add(scrollShow); 
+        add(scrollShow, BorderLayout.CENTER); // Use BorderLayout.CENTER for responsiveness
     }
 
+    /**
+     * Tính toán số cột dựa trên chiều rộng panel hiện tại
+     */
+    private int calculateColumnCount() {
+        int panelWidth = panelShow.getWidth();
+        if (panelWidth <= 0) {
+            // Try to get width from scroll pane viewport
+            if (scrollShow != null && scrollShow.getViewport() != null) {
+                panelWidth = scrollShow.getViewport().getWidth();
+            }
+            if (panelWidth <= 0) {
+                panelWidth = 1250; // Default width if not yet initialized
+            }
+        }
+        // Mỗi order card có width ~310px + gap 5px = ~315px
+        // Tính số cột có thể chứa, trừ đi margin
+        int cardWidth = 315;
+        int columns = Math.max(1, (panelWidth - 40) / cardWidth); // 40px for margins/padding
+        return columns;
+    }
+    
+    /**
+     * Recalculate layout when component is resized
+     */
+    public void recalculateLayout() {
+        if (panelShow != null && panelShow.getComponentCount() > 0) {
+            // Only recalculate if there are orders displayed
+            int newColumns = calculateColumnCount();
+            int currentColumns = 4; // Default
+            
+            // Try to determine current column count from layout
+            if (panelShow.getLayout() instanceof GridLayout) {
+                GridLayout gl = (GridLayout) panelShow.getLayout();
+                currentColumns = gl.getColumns();
+            }
+            
+            // Only recalculate if column count changed
+            if (newColumns != currentColumns) {
+                panelShow.removeAll();
+                panelShow.setLayout(new GridLayout(0, newColumns, 5, 8));
+                // Sử dụng currentOrderList nếu có, nếu không thì load lại
+                if (currentOrderList != null && !currentOrderList.isEmpty()) {
+                    displayOrders(currentOrderList);
+                } else {
+                    ArrayList<DTO_Order> orders = busOrder.getSortedOrdersByCustomer(customerID);
+                    currentOrderList = new ArrayList<>(orders);
+                    if (orders == null || orders.isEmpty()) {
+                        showEmptyOrderMessage();
+                    } else {
+                        displayOrders(orders);
+                    }
+                }
+            }
+        }
+    }
+    
     public void updateOrderList() {
         panelShow.removeAll();
         
-        // Lấy danh sách đơn hàng từ BUS (cần implement hàm này trong BUS_Order)
-        ArrayList<DTO_Order> orders = busOrder.getSortedOrdersByCustomer(customerID);
+        // Calculate dynamic column count based on available width
+        int columns = calculateColumnCount();
+        panelShow.setLayout(new GridLayout(0, columns, 5, 8));
         
+        // Lấy danh sách đơn hàng từ BUS
+        ArrayList<DTO_Order> orders = busOrder.getSortedOrdersByCustomer(customerID);
+        currentOrderList = new ArrayList<>(orders != null ? orders : new ArrayList<>()); // Lưu danh sách để recalculate
+        
+        if (orders == null || orders.isEmpty()) {
+            showEmptyOrderMessage();
+        } else {
+            displayOrders(orders);
+        }
+    }
+    
+    /**
+     * Display orders in the panel
+     */
+    private void displayOrders(ArrayList<DTO_Order> orders) {
+        // Layout is already set in updateOrderList
+        // Just add orders directly to panelShow
         if (orders == null || orders.isEmpty()) {
             showEmptyOrderMessage();
         } else {
@@ -88,11 +163,15 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         noOrders.setForeground(Color.GRAY);
         
         panelShow.add(noOrders, BorderLayout.CENTER);
+        
+        panelShow.revalidate();
+        panelShow.repaint();
     }
 
    private JPanel createOrderPanel(DTO_Order order) {
         JPanel panelcreate = new JPanel(new BorderLayout(5, 5));
         panelcreate.setPreferredSize(new Dimension(300, 280)); // Tăng chiều cao để chứa đủ các dòng
+        panelcreate.setMinimumSize(new Dimension(250, 260)); // Thêm minimum size để responsive
         panelcreate.setBackground(Color.WHITE);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
@@ -215,11 +294,14 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
     public void onOrderPlaced(String customerID, String orderNo) {
          if (this.customerID.equals(customerID)) {
          SwingUtilities.invokeLater(() -> {
+            // Calculate dynamic column count
+            int columns = calculateColumnCount();
             panelShow.removeAll();
-            panelShow.setLayout(new GridLayout(0, 4, 5, 8));
+            panelShow.setLayout(new GridLayout(0, columns, 5, 8));
             
             // Sử dụng hàm mới đã sắp xếp từ DAO
             ArrayList<DTO_Order> orders = busOrder.getSortedOrdersByCustomer(customerID);
+            currentOrderList = new ArrayList<>(orders != null ? orders : new ArrayList<>()); // Lưu danh sách để recalculate
             
             if (orders != null && !orders.isEmpty()) {
                 for (DTO_Order order : orders) {
@@ -229,8 +311,8 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
                         orderPanel.setBorder(BorderFactory.createLineBorder(Color.GREEN, 2));
                         new Timer(3000, e -> {
                             orderPanel.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                                BorderFactory.createEmptyBorder(3, 5, 3, 5)
+                                BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
+                                BorderFactory.createEmptyBorder(10, 10, 10, 10)
                             ));
                             ((Timer)e.getSource()).stop();
                         }).start();

@@ -211,7 +211,7 @@ public class MyProfile_cus extends javax.swing.JFrame {
         
         panelAvatar.add(panelUpload, "growx, h 120!, w 120!, wrap");
         
-        bntUpload = new MyButton("Upload Photo", 14);
+        bntUpload = new MyButton("Upload", 14);
         bntUpload.setBackgroundColor(Color.decode("#1CB5E0"));
         bntUpload.setPressedColor(Color.decode("#4682B4"));
         bntUpload.setHoverColor(Color.decode("#1CB5E0"));

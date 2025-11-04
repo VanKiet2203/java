@@ -40,6 +40,8 @@ import javax.swing.JComponent;
 import java.nio.file.Files;
 import javax.swing.BorderFactory;
 import javax.swing.JFormattedTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -459,11 +461,18 @@ public class productDeteails extends javax.swing.JFrame {
     }
 
     private void setupUIForAvailableProduct(productDTO product) {
-        // Thiết lập spinner bình thường
-        SpinnerNumberModel quantityModel = new SpinnerNumberModel(
+        // Lấy stock mới nhất từ database để đảm bảo chính xác
+        busCart = new BUSCart();
+        int currentStock = busCart.getCurrentStock(product.getProductID());
+        
+        // Cập nhật product quantity với stock mới nhất
+        product.setQuantity(currentStock);
+        
+        // Thiết lập spinner bình thường với stock mới nhất
+        final SpinnerNumberModel quantityModel = new SpinnerNumberModel(
             1,                      // Giá trị ban đầu
-            1,                      // Min
-            product.getQuantity(),   // Max = tồn kho
+            1,                      // Min (không được âm)
+            currentStock,           // Max = tồn kho hiện tại từ database
             1                       // Step
         );
         spinnerQuantity.setModel(quantityModel);
@@ -477,21 +486,73 @@ public class productDeteails extends javax.swing.JFrame {
             
             // Thêm ChangeListener để validate khi user thay đổi giá trị
             spinnerQuantity.addChangeListener(e -> {
-                int value = (int) spinnerQuantity.getValue();
-                int maxStock = product.getQuantity();
-                
-                // Tự động điều chỉnh nếu vượt quá max
-                if (value > maxStock) {
-                    spinnerQuantity.setValue(maxStock);
-                    CustomDialog.showError(
-                        "Quantity cannot exceed available stock!\n" +
-                        "Maximum: " + maxStock
-                    );
-                } else if (value <= 0) {
+                try {
+                    int value = (int) spinnerQuantity.getValue();
+                    // Lấy stock mới nhất mỗi lần thay đổi để đảm bảo chính xác
+                    int maxStock = busCart.getCurrentStock(product.getProductID());
+                    
+                    // Cập nhật max của spinner model nếu stock thay đổi
+                    Number maxValue = (Number) quantityModel.getMaximum();
+                    if (maxStock != maxValue.intValue()) {
+                        quantityModel.setMaximum(maxStock);
+                    }
+                    
+                    // Tự động điều chỉnh nếu vượt quá max
+                    if (value > maxStock) {
+                        spinnerQuantity.setValue(maxStock);
+                        CustomDialog.showError(
+                            "Quantity cannot exceed available stock!\n" +
+                            "Maximum: " + maxStock
+                        );
+                    } else if (value <= 0) {
+                        spinnerQuantity.setValue(1);
+                        CustomDialog.showError("Quantity must be greater than 0!");
+                    }
+                } catch (Exception ex) {
+                    // Nếu giá trị không hợp lệ, reset về 1
                     spinnerQuantity.setValue(1);
-                    CustomDialog.showError("Quantity must be greater than 0!");
                 }
             });
+            
+            // Thêm DocumentListener để validate khi user nhập trực tiếp vào text field
+            defaultEditor.getTextField().getDocument().addDocumentListener(
+                new DocumentListener() {
+                    @Override
+                    public void insertUpdate(DocumentEvent e) {
+                        validateSpinnerInput();
+                    }
+                    @Override
+                    public void removeUpdate(DocumentEvent e) {
+                        validateSpinnerInput();
+                    }
+                    @Override
+                    public void changedUpdate(DocumentEvent e) {
+                        validateSpinnerInput();
+                    }
+                    
+                    private void validateSpinnerInput() {
+                        SwingUtilities.invokeLater(() -> {
+                            try {
+                                String text = defaultEditor.getTextField().getText();
+                                if (text != null && !text.isEmpty()) {
+                                    int value = Integer.parseInt(text);
+                                    int maxStock = busCart.getCurrentStock(product.getProductID());
+                                    
+                                    if (value > maxStock) {
+                                        defaultEditor.getTextField().setText(String.valueOf(maxStock));
+                                        spinnerQuantity.setValue(maxStock);
+                                    } else if (value <= 0) {
+                                        defaultEditor.getTextField().setText("1");
+                                        spinnerQuantity.setValue(1);
+                                    }
+                                }
+                            } catch (NumberFormatException ex) {
+                                // Nếu không phải số, giữ nguyên để user tiếp tục nhập
+                            }
+                        });
+                    }
+                }
+            );
         }
 
         // Thiết lập lại nút Add/Update Cart
@@ -508,37 +569,6 @@ public class productDeteails extends javax.swing.JFrame {
         }
         
         bntAddcart.addActionListener(e -> {
-            // Validate quantity trước khi submit
-            int quantity = (int) spinnerQuantity.getValue();
-            
-            // Kiểm tra số lượng hợp lệ
-            if (quantity <= 0) {
-                CustomDialog.showError("Quantity must be greater than 0!");
-                spinnerQuantity.setValue(1);
-                spinnerQuantity.requestFocus();
-                return;
-            }
-            
-            // Kiểm tra lại trạng thái tồn kho
-            if (product != null && product.getQuantity() == 0) {
-                CustomDialog.showError("This product is out of stock and cannot be added to cart!");
-                return;
-            }
-            
-            // Kiểm tra số lượng không vượt quá tồn kho
-            if (product != null && quantity > product.getQuantity()) {
-                CustomDialog.showError(
-                    "Quantity exceeds available stock!\n\n" +
-                    "Requested: " + quantity + "\n" +
-                    "Available: " + product.getQuantity() + "\n\n" +
-                    "Please reduce the quantity."
-                );
-                // Tự động điều chỉnh về giá trị max
-                spinnerQuantity.setValue(product.getQuantity());
-                spinnerQuantity.requestFocus();
-                return;
-            }
-
             // Lấy thông tin từ giao diện
             String productID = txtID.getText();
             String customerID = Dashboard_user.customerID;
@@ -548,10 +578,51 @@ public class productDeteails extends javax.swing.JFrame {
                 return;
             }
 
-            // Tạo DTO và xử lý
-            DTOCart cartItem = new DTOCart(customerID, productID, quantity);
+            // Lấy stock mới nhất từ database trước khi validate
             busCart = new BUSCart();
+            int latestStock = busCart.getCurrentStock(productID);
             
+            // Kiểm tra lại trạng thái tồn kho
+            if (latestStock == 0) {
+                CustomDialog.showError("This product is out of stock and cannot be added to cart!");
+                setupUIForOutOfStock();
+                return;
+            }
+            
+            // Validate quantity trước khi submit
+            int quantity;
+            try {
+                quantity = (int) spinnerQuantity.getValue();
+            } catch (Exception ex) {
+                CustomDialog.showError("Invalid quantity value!");
+                spinnerQuantity.setValue(1);
+                spinnerQuantity.requestFocus();
+                return;
+            }
+            
+            // Kiểm tra số lượng hợp lệ (không được âm)
+            if (quantity <= 0) {
+                CustomDialog.showError("Quantity must be greater than 0!");
+                spinnerQuantity.setValue(1);
+                spinnerQuantity.requestFocus();
+                return;
+            }
+            
+            // Kiểm tra số lượng không vượt quá tồn kho hiện tại
+            if (quantity > latestStock) {
+                CustomDialog.showError(
+                    "Quantity exceeds available stock!\n\n" +
+                    "Requested: " + quantity + "\n" +
+                    "Available: " + latestStock + "\n\n" +
+                    "Please reduce the quantity."
+                );
+                // Cập nhật spinner model với stock mới nhất
+                quantityModel.setMaximum(latestStock);
+                spinnerQuantity.setValue(Math.min(quantity, latestStock));
+                spinnerQuantity.requestFocus();
+                return;
+            }
+
             // Kiểm tra xem là ADD mới hay ADD THÊM (trước khi gọi addToCart)
             boolean isAddingMore = busCart.getCartItemsByCustomer(customerID).stream()
                 .anyMatch(item -> item.getProductID().equals(productID));
@@ -564,7 +635,33 @@ public class productDeteails extends javax.swing.JFrame {
                     .findFirst()
                     .map(item -> item.getQuantity())
                     .orElse(0);
+                
+                // Kiểm tra tổng số lượng (số lượng hiện tại + số lượng mới) không vượt quá stock
+                int totalQuantity = existingQuantity + quantity;
+                if (totalQuantity > latestStock) {
+                    int maxCanAdd = latestStock - existingQuantity;
+                    CustomDialog.showError(
+                        "Total quantity exceeds available stock!\n\n" +
+                        "Already in cart: " + existingQuantity + "\n" +
+                        "Adding: " + quantity + "\n" +
+                        "Total: " + totalQuantity + "\n" +
+                        "Available stock: " + latestStock + "\n\n" +
+                        "Maximum you can add: " + maxCanAdd
+                    );
+                    // Điều chỉnh spinner về giá trị tối đa có thể thêm
+                    if (maxCanAdd > 0) {
+                        quantityModel.setMaximum(maxCanAdd);
+                        spinnerQuantity.setValue(maxCanAdd);
+                    } else {
+                        spinnerQuantity.setValue(1);
+                    }
+                    spinnerQuantity.requestFocus();
+                    return;
+                }
             }
+            
+            // Tạo DTO và xử lý
+            DTOCart cartItem = new DTOCart(customerID, productID, quantity);
             
             boolean result = busCart.addToCart(cartItem);
 
