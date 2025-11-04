@@ -159,6 +159,14 @@ public class Dashboard_user extends JFrame {
         busProfile = new BUSProfile_cus();
         customerID = busProfile.getCustomerID(email);
         System.out.println("🔍 DEBUG - Customer ID: " + customerID);
+        
+        // Refresh profile label sau khi email và customerID đã được set
+        if (menu != null) {
+            SwingUtilities.invokeLater(() -> {
+                menu.refreshProfileLabel();
+            });
+        }
+        
         // THÊM FORM
         
         Form_Cart cartForm = new Form_Cart(customerID);

@@ -79,6 +79,7 @@ CREATE TABLE dbo.Customer(
     Contact varchar(15) NOT NULL,
     Address nvarchar(255) NOT NULL,
     Password varchar(255) NOT NULL,
+    Image varchar(255) NULL,
     Status varchar(20) NOT NULL CONSTRAINT DF_Customer_Status DEFAULT('Inactive'),
     Record_Status varchar(20) NOT NULL CONSTRAINT DF_Customer_RecordStatus DEFAULT('Available'),
     CONSTRAINT PK_Customer PRIMARY KEY CLUSTERED (Customer_ID ASC),

@@ -64,7 +64,7 @@ public class Menu_user extends JPanel {
         lblProfile = createProfileLabel();
         
         // Menu toggle button với design hiện đại
-        lblMenu = createLabelWithIcon("Navigation Menu", "menu.png", 20, 100, 260, 55, false);
+        lblMenu = createLabelWithIcon("Dashboard Menu", "menu.png", 20, 100, 260, 55, false);
         lblMenu.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblMenu.setForeground(Color.WHITE);
         lblMenu.setHorizontalAlignment(SwingConstants.CENTER);
@@ -85,7 +85,7 @@ public class Menu_user extends JPanel {
 //                "Title_icon.png", 20, 20, 260, 55, true);
 
         // Menu items với design hiện đại và typography cải tiến
-        lblHome = createLabelWithIcon("Home Dashboard", "home.png", 20, 170, 260, 50, false);
+        lblHome = createLabelWithIcon("Home", "home.png", 20, 170, 260, 50, false);
         lblHome.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblHome.setForeground(Color.WHITE);
         lblHome.setHorizontalAlignment(SwingConstants.LEFT);

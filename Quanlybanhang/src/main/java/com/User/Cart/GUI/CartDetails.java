@@ -16,10 +16,12 @@ import com.toedter.calendar.JDateChooser;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
@@ -50,7 +52,7 @@ public class CartDetails extends javax.swing.JFrame {
     
     public CartDetails() {
         initComponents();
-        setSize(630, 800); 
+        setSize(800, 750); // Tăng kích thước để hiển thị đầy đủ các trường mới
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
 
         // Tính toán vị trí để căn giữa và trên cùng
@@ -65,161 +67,206 @@ public class CartDetails extends javax.swing.JFrame {
      // Thiết lập layout chính
      bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][][grow]"));
 
-     // 1. Panel tiêu đề
-     panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
-     panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
+     // 1. Panel tiêu đề với design đẹp
+     panelTitle = new MyPanel(new MigLayout("fill, insets 10"));
+     panelTitle.setGradientColors(Color.decode("#2196F3"), Color.decode("#1976D2"), MyPanel.VERTICAL_GRADIENT);
+     panelTitle.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#1976D2"), 2),
+         BorderFactory.createEmptyBorder(10, 15, 10, 15)
+     ));
 
      lblTitle = new JLabel("Product Details", JLabel.CENTER);
-     lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+     lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
      lblTitle.setForeground(Color.WHITE);
 
      panelTitle.add(lblTitle, "grow, push, align center");
-     bg.add(panelTitle, "growx, h 40!, wrap"); // wrap để component sau xuống dòng
+     bg.add(panelTitle, "growx, h 60!, wrap"); // Tăng chiều cao
 
-        // Panel upload ảnh
+        // Panel upload ảnh với design đẹp
     panelUpload = new JPanel();
-    panelUpload.setLayout(new MigLayout("fill, insets 5")); // Layout fill với padding 5px
+    panelUpload.setLayout(new MigLayout("fill, insets 10"));
     panelUpload.setBackground(Color.WHITE);
-    panelUpload.setPreferredSize(new Dimension(200, 200));
-    panelUpload.setBorder(null);
+    panelUpload.setPreferredSize(new Dimension(250, 250));
+    panelUpload.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
+        BorderFactory.createEmptyBorder(10, 10, 10, 10)
+    ));
 
     // Thêm vào bg
-    bg.add(panelUpload, "w 200!, h 200!, gap 0, align center, wrap");
+    bg.add(panelUpload, "w 250!, h 250!, gap 10, align center, wrap");
 
-     lblID= new JLabel("Product.ID");
-     lblID.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblID.setForeground(Color.BLACK);
-     bg.add(lblID, "pos 30 220, w 150!, h 50!");
+     // Labels với style đẹp - sắp xếp theo 2 cột, di chuyển xuống dưới hình
+     // Cột trái
+     lblID= new JLabel("Product ID:");
+     lblID.setFont(new Font("Arial", Font.BOLD, 14));
+     lblID.setForeground(Color.decode("#1976D2"));
+     bg.add(lblID, "pos 30 350, w 140!, h 30!");
   
-    lblProductName= new JLabel("Product name");
-    lblProductName.setFont(new Font("sansserif", Font.BOLD, 18));
-    lblProductName.setForeground(Color.BLACK);
-    bg.add(lblProductName, "pos 30 280, w 150!, h 50!");
+    lblProductName= new JLabel("Product Name:");
+    lblProductName.setFont(new Font("Arial", Font.BOLD, 14));
+    lblProductName.setForeground(Color.decode("#1976D2"));
+    bg.add(lblProductName, "pos 30 390, w 140!, h 30!");
      
-    lblColor= new JLabel("Màu sắc");
-     lblColor.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblColor.setForeground(Color.BLACK);
-     bg.add(lblColor, "pos 30 340, w 400!, h 50!");
+     lblColor= new JLabel("Color:");
+     lblColor.setFont(new Font("Arial", Font.BOLD, 14));
+     lblColor.setForeground(Color.decode("#1976D2"));
+     bg.add(lblColor, "pos 30 430, w 140!, h 30!");
      
-       
-    lblBatteryCapacity= new JLabel("Dung lượng pin");
-     lblBatteryCapacity.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblBatteryCapacity.setForeground(Color.BLACK);
-     bg.add(lblBatteryCapacity, "pos 30 400, w 150!, h 50!");
+     lblBatteryCapacity= new JLabel("Battery Capacity:");
+     lblBatteryCapacity.setFont(new Font("Arial", Font.BOLD, 14));
+     lblBatteryCapacity.setForeground(Color.decode("#1976D2"));
+     bg.add(lblBatteryCapacity, "pos 30 470, w 140!, h 30!");
      
-       
-    lblSpeed= new JLabel("Tốc độ tối đa");
-     lblSpeed.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblSpeed.setForeground(Color.BLACK);
-     bg.add(lblSpeed, "pos 30 460, w 150!, h 50!");
+     lblSpeed= new JLabel("Max Speed:");
+     lblSpeed.setFont(new Font("Arial", Font.BOLD, 14));
+     lblSpeed.setForeground(Color.decode("#1976D2"));
+     bg.add(lblSpeed, "pos 30 510, w 140!, h 30!");
      
-     lblWarranty= new JLabel("Warranty (Months)");
-     lblWarranty.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblWarranty.setForeground(Color.BLACK);
-     bg.add(lblWarranty, "pos 30 520, w 150!, h 50!");
+     lblWarranty= new JLabel("Warranty (Months):");
+     lblWarranty.setFont(new Font("Arial", Font.BOLD, 14));
+     lblWarranty.setForeground(Color.decode("#1976D2"));
+     bg.add(lblWarranty, "pos 30 550, w 140!, h 30!");
      
-          
-     lblCateID= new JLabel("Category.ID");
-     lblCateID.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblCateID.setForeground(Color.BLACK);
-     bg.add(lblCateID, "pos 30 580, w 150!, h 50!");
+     // Cột phải
+     lblCateID= new JLabel("Category ID:");
+     lblCateID.setFont(new Font("Arial", Font.BOLD, 14));
+     lblCateID.setForeground(Color.decode("#1976D2"));
+     bg.add(lblCateID, "pos 400 350, w 140!, h 30!");
      
+     lblBrand= new JLabel("Supplier:");
+     lblBrand.setFont(new Font("Arial", Font.BOLD, 14));
+     lblBrand.setForeground(Color.decode("#1976D2"));
+     bg.add(lblBrand, "pos 400 390, w 140!, h 30!");
      
-     lblBrand= new JLabel("Supplier");
-     lblBrand.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblBrand.setForeground(Color.BLACK);
-     bg.add(lblBrand, "pos 380 520, w 150!, h 50!");
-     
-     lblQuantity= new JLabel("Quantity");
-     lblQuantity.setFont(new Font("sansserif", Font.BOLD, 18));
-     lblQuantity.setForeground(Color.BLACK);
-     bg.add(lblQuantity, "pos 380 580, w 150!, h 50!");
-     
+     lblQuantity= new JLabel("Quantity:");
+     lblQuantity.setFont(new Font("Arial", Font.BOLD, 14));
+     lblQuantity.setForeground(Color.decode("#1976D2"));
+     bg.add(lblQuantity, "pos 400 430, w 140!, h 30!");
      
      txtID = new MyTextField();
-     txtID.setBorder(null);
-     txtID.setTextColor(Color.BLACK); // Đặt màu mong muốn
-     txtID.setLocked(true); // Gọi sau cũng không sao
-     txtID.setTextFont(new Font("Times New Roman", Font.BOLD | Font.ITALIC, 16));
+     txtID.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtID.setTextColor(Color.decode("#333333"));
+     txtID.setLocked(true);
+     txtID.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtID.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtID, "pos 130 230, w 230!, h 32!");
+     bg.add(txtID, "pos 180 350, w 150!, h 35!");
      
      txtProductName = new MyTextField();
-     txtProductName.setBorder(null);
-     txtProductName.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtProductName.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtProductName.setTextColor(Color.decode("#333333"));
      txtProductName.setLocked(true);
-     txtProductName.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtProductName.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtProductName.setBackgroundColor(Color.WHITE);
 
-     bg.add(txtProductName, "pos 150 290, w 480!, h 32!");
+     bg.add(txtProductName, "pos 180 390, w 150!, h 35!");
      
      
+     // Cột trái - Text fields
      txtColor = new MyTextField();
-     txtColor.setBorder(null);
-     txtColor.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtColor.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtColor.setTextColor(Color.decode("#333333"));
      txtColor.setLocked(true);
-     txtColor.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtColor.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtColor.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtColor, "pos 100 350, w 480!, h 32!");
+     bg.add(txtColor, "pos 180 430, w 150!, h 35!");
      
      txtBatteryCapacity = new MyTextField();
-     txtBatteryCapacity.setBorder(null);
-     txtBatteryCapacity.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtBatteryCapacity.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtBatteryCapacity.setTextColor(Color.decode("#333333"));
      txtBatteryCapacity.setLocked(true);
-     txtBatteryCapacity.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtBatteryCapacity.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtBatteryCapacity.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtBatteryCapacity, "pos 100 410, w 130!, h 32!");
-     
+     bg.add(txtBatteryCapacity, "pos 180 470, w 150!, h 35!");
      
      txtSpeed = new MyTextField();
-     txtSpeed.setBorder(null);
-     txtSpeed.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtSpeed.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtSpeed.setTextColor(Color.decode("#333333"));
      txtSpeed.setLocked(true);
-     txtSpeed.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtSpeed.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtSpeed.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtSpeed, "pos 180 470, w 450!, h 32!");
+     bg.add(txtSpeed, "pos 180 510, w 150!, h 35!");
      
      txtWarranty = new MyTextField();
-     txtWarranty.setBorder(null);
-     txtWarranty.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtWarranty.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtWarranty.setTextColor(Color.decode("#333333"));
      txtWarranty.setLocked(true);
-     txtWarranty.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtWarranty.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtWarranty.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtWarranty, "pos 170 530, w 200!, h 32!");
+     bg.add(txtWarranty, "pos 180 550, w 150!, h 35!");
      
+     // Cột phải - Text fields
      txtCateID = new MyTextField();
-     txtCateID.setBorder(null);
-     txtCateID.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtCateID.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtCateID.setTextColor(Color.decode("#333333"));
      txtCateID.setLocked(true);
-     txtCateID.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtCateID.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtCateID.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtCateID, "pos 150 590, w 150!, h 32!");
+     bg.add(txtCateID, "pos 550 350, w 150!, h 35!");
      
      txtBrand = new MyTextField();
-     txtBrand.setBorder(null);
-     txtBrand.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtBrand.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtBrand.setTextColor(Color.decode("#333333"));
      txtBrand.setLocked(true);
-     txtBrand.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtBrand.setTextFont(new Font("Arial", Font.PLAIN, 14));
      txtBrand.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtBrand, "pos 430 530, w 150!, h 32!");
+     bg.add(txtBrand, "pos 550 390, w 150!, h 35!");
      
      txtQuantity = new MyTextField();
-     txtQuantity.setBorder(null);
-     txtQuantity.setTextColor(Color.BLACK); // Đặt màu mong muốn
+     txtQuantity.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+     ));
+     txtQuantity.setTextColor(Color.decode("#D32F2F"));
      txtQuantity.setLocked(true);
-     txtQuantity.setTextFont(new Font("Times New Roman", Font.PLAIN, 16));
+     txtQuantity.setTextFont(new Font("Arial", Font.BOLD, 14));
      txtQuantity.setBackgroundColor(Color.WHITE);
-    
-     bg.add(txtQuantity, "pos 460 590, w 60!, h 30!");
-     
+     bg.add(txtQuantity, "pos 550 430, w 150!, h 35!");
     }
+    
+    // Hàm load ảnh và resize từ resources
+    private ImageIcon loadScaledIcon(String resourcePath, int width, int height) {
+         try {
+             // Load icon từ resources
+             java.net.URL iconURL = getClass().getResource(resourcePath);
+             if (iconURL != null) {
+                 ImageIcon originalIcon = new ImageIcon(iconURL);
+                 Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                 return new ImageIcon(scaledImage);
+             } else {
+                 System.err.println("Icon not found: " + resourcePath);
+                 // Trả về icon mặc định nếu không tìm thấy
+                 return new ImageIcon();
+             }
+         } catch (Exception e) {
+             System.err.println("Error loading icon: " + resourcePath + " - " + e.getMessage());
+             return new ImageIcon();
+         }
+     }
     
     public void displayProductDetails(productDTO product) {
         busProduct = new productBUS();

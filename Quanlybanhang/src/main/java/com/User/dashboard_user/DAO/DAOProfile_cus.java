@@ -4,7 +4,6 @@ import com.ComponentandDatabase.Components.CustomDialog;
 import com.User.dashboard_user.DTO.DTOProfile_cus;
 import com.ComponentandDatabase.Components.MyTextField;
 import com.ComponentandDatabase.Components.MyCombobox;
-import java.text.SimpleDateFormat;
 import com.toedter.calendar.JDateChooser;
 import javax.swing.JTextArea;
 import java.sql.Connection;
@@ -24,7 +23,8 @@ public class DAOProfile_cus {
                              JDateChooser dateOfBirth, 
                              MyTextField txtEmail, 
                              MyTextField txtContact, 
-                             JTextArea txtAddress) 
+                             JTextArea txtAddress,
+                             javax.swing.JPanel panelUpload) 
     {
         Connection conn = null;
         PreparedStatement ps = null;
@@ -66,6 +66,29 @@ public class DAOProfile_cus {
                 txtEmail.setText(profile.getEmail());
                 txtContact.setText(profile.getContact());
                 txtAddress.setText(profile.getAddress());
+                
+                // Load và hiển thị avatar
+                String imagePath = rs.getString("Image");
+                if (imagePath != null && !imagePath.trim().isEmpty()) {
+                    try {
+                        java.io.File imageFile = new java.io.File(imagePath);
+                        if (imageFile.exists()) {
+                            java.awt.Image img = new javax.swing.ImageIcon(imageFile.getAbsolutePath()).getImage()
+                                    .getScaledInstance(100, 100, java.awt.Image.SCALE_SMOOTH);
+                            javax.swing.JLabel lblImage = new javax.swing.JLabel(new javax.swing.ImageIcon(img));
+                            lblImage.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                            lblImage.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+                            
+                            panelUpload.removeAll();
+                            panelUpload.add(lblImage, "pos 0.5al 0.5al");
+                            panelUpload.setVisible(true);
+                            panelUpload.revalidate();
+                            panelUpload.repaint();
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Error loading avatar: " + e.getMessage());
+                    }
+                }
             } else {
                 System.out.println("Không tìm thấy khách hàng với email: " + emailInput);
             }
@@ -87,30 +110,44 @@ public class DAOProfile_cus {
                                JDateChooser dateOfBirth, 
                                MyTextField txtEmail, 
                                MyTextField txtContact, 
-                               JTextArea txtAddress) 
+                               JTextArea txtAddress,
+                               String imagePath) 
     {
         Connection conn = null;
         PreparedStatement ps = null;
 
         try {
             conn = DatabaseConnection.connect();
-            String sql = "UPDATE Customer SET Full_Name = ?, Gender = ?, Date_Of_Birth = ?, Contact = ?, Address = ? WHERE Email = ?";
+            // Chỉ cập nhật Contact và Address (không cập nhật Full_Name, Gender, Date_Of_Birth, Email vì đã khóa)
+            // Kiểm tra xem cột Image có tồn tại không
+            boolean hasImageColumn = false;
+            if (imagePath != null && !imagePath.trim().isEmpty()) {
+                try {
+                    java.sql.DatabaseMetaData meta = conn.getMetaData();
+                    java.sql.ResultSet columns = meta.getColumns(null, null, "Customer", "Image");
+                    hasImageColumn = columns.next();
+                    columns.close();
+                } catch (SQLException e) {
+                    // Nếu không kiểm tra được, giả định không có cột Image
+                    hasImageColumn = false;
+                }
+            }
+            
+            String sql = "UPDATE Customer SET Contact = ?, Address = ?";
+            if (hasImageColumn && imagePath != null && !imagePath.trim().isEmpty()) {
+                sql += ", Image = ?";
+            }
+            sql += " WHERE Email = ?";
             ps = conn.prepareStatement(sql);
 
-            ps.setString(1, txtFullName.getText());
-            ps.setString(2, cmbGender.getSelectedItem().toString());
-
-            if (dateOfBirth.getDate() != null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                String formattedDate = sdf.format(dateOfBirth.getDate());
-                ps.setString(3, formattedDate);
-            } else {
-                ps.setNull(3, java.sql.Types.DATE);
+            ps.setString(1, txtContact.getText());
+            ps.setString(2, txtAddress.getText());
+            int paramIndex = 3;
+            if (hasImageColumn && imagePath != null && !imagePath.trim().isEmpty()) {
+                ps.setString(paramIndex, imagePath);
+                paramIndex++;
             }
-
-            ps.setString(4, txtContact.getText());
-            ps.setString(5, txtAddress.getText());
-            ps.setString(6, txtEmail.getText()); // WHERE Email = ?
+            ps.setString(paramIndex, txtEmail.getText()); // WHERE Email = ?
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected > 0) {
@@ -228,6 +265,88 @@ public class DAOProfile_cus {
         }
 
         return imagePath;
+    }
+    
+    public boolean changePassword(String email, String oldPassword, String newPassword, String confirmPassword) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            // Kiểm tra trống
+            if (newPassword == null || newPassword.isEmpty() || confirmPassword == null || confirmPassword.isEmpty() || 
+                oldPassword == null || oldPassword.isEmpty()) {
+                CustomDialog.showError("Password fields cannot be empty.");
+                return false;
+            }
+
+            // Kiểm tra khớp mật khẩu mới
+            if (!newPassword.equals(confirmPassword)) {
+                CustomDialog.showError("New passwords do not match.");
+                return false;
+            }
+
+            conn = DatabaseConnection.connect();
+            
+            // Kiểm tra mật khẩu cũ
+            String sqlCheck = "SELECT Password FROM Customer WHERE Email = ?";
+            ps = conn.prepareStatement(sqlCheck);
+            ps.setString(1, email);
+            rs = ps.executeQuery();
+            
+            if (!rs.next()) {
+                CustomDialog.showError("Customer not found.");
+                return false;
+            }
+            
+            String storedPassword = rs.getString("Password");
+            boolean isValidOldPassword;
+            
+            // Kiểm tra mật khẩu cũ (hỗ trợ cả bcrypt và plaintext)
+            if (storedPassword != null && storedPassword.matches("^\\$2[aby]\\$.*")) {
+                isValidOldPassword = org.mindrot.jbcrypt.BCrypt.checkpw(oldPassword, storedPassword);
+            } else {
+                isValidOldPassword = oldPassword != null && oldPassword.equals(storedPassword);
+            }
+            
+            if (!isValidOldPassword) {
+                CustomDialog.showError("Old password is incorrect.");
+                return false;
+            }
+            
+            // Đóng ResultSet và PreparedStatement trước khi tạo mới
+            rs.close();
+            ps.close();
+            
+            // Cập nhật mật khẩu mới
+            String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(newPassword, org.mindrot.jbcrypt.BCrypt.gensalt());
+            
+            String sqlUpdate = "UPDATE Customer SET Password = ? WHERE Email = ?";
+            ps = conn.prepareStatement(sqlUpdate);
+            ps.setString(1, hashedPassword);
+            ps.setString(2, email);
+
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                CustomDialog.showSuccess("Password changed successfully!");
+                return true;
+            } else {
+                CustomDialog.showError("Failed to update password.");
+            }
+        } catch (SQLException ex) {
+            CustomDialog.showError("Error changing password: " + ex.getMessage());
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return false;
     }
     
 }

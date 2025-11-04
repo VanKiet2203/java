@@ -348,75 +348,7 @@ public class productDeteails extends javax.swing.JFrame {
      bntAddcart.setFont(new Font("Arial", Font.BOLD, 14));
      bntAddcart.setForeground(Color.WHITE);
      bntAddcart.setButtonIcon("/Icons/User_icon/cart.png", 20, 20, 5, SwingConstants.RIGHT, SwingConstants.CENTER);   
-      bntAddcart.addActionListener(e -> {
-            // Validate quantity trước khi submit
-            int quantity = (int) spinnerQuantity.getValue();
-            
-            // Kiểm tra số lượng hợp lệ
-            if (quantity <= 0) {
-                CustomDialog.showError("Quantity must be greater than 0!");
-                spinnerQuantity.setValue(1);
-                spinnerQuantity.requestFocus();
-                return;
-            }
-            
-            // Lấy thông tin sản phẩm để kiểm tra tồn kho
-            if (busProduct == null) {
-                busProduct = new productBUS();
-            }
-            String productID = txtID.getText();
-            productDTO product = busProduct.getProductById(productID);
-            
-            if (product != null) {
-                int currentStock = product.getQuantity();
-                
-                // Kiểm tra số lượng không vượt quá tồn kho
-                if (quantity > currentStock) {
-                    CustomDialog.showError(
-                        "Quantity exceeds available stock!\n\n" +
-                        "Requested: " + quantity + "\n" +
-                        "Available: " + currentStock + "\n\n" +
-                        "Please reduce the quantity."
-                    );
-                    // Tự động điều chỉnh về giá trị max
-                    spinnerQuantity.setValue(Math.min(quantity, currentStock));
-                    spinnerQuantity.requestFocus();
-                    return;
-                }
-            }
-
-            String customerID = Dashboard_user.customerID;
-            System.out.println("🔍 DEBUG - Customer ID from Dashboard: " + customerID);
-
-            if (customerID == null || customerID.isEmpty()) {
-                System.out.println("❌ Customer ID is null or empty!");
-                CustomDialog.showError("Customer is not logged in!");
-                return;
-            }
-
-            // Tạo DTO và xử lý
-            DTOCart cartItem = new DTOCart(customerID, productID, quantity);
-            busCart = new BUSCart();
-            boolean result = busCart.addToCart(cartItem);
-
-            if (result) {
-                CustomDialog.showSuccess("Product added to cart!");
-
-                // Gửi sự kiện cập nhật giỏ hàng
-                fireCartUpdatedEvent(customerID);
-
-                this.dispose();
-            } else {
-                // Thông báo lỗi chi tiết hơn
-                CustomDialog.showError(
-                    "Failed to add product to cart!\n\n" +
-                    "Possible reasons:\n" +
-                    "• Quantity exceeds available stock\n" +
-                    "• Invalid product or customer\n" +
-                    "• Database connection error"
-                );
-            }
-        });
+     // Không thêm ActionListener ở đây - sẽ được thêm trong displayProductDetails()
      bg.add(bntAddcart, "w 160!, h 35!, pos 200 640, align center, gapbottom 15, gaptop 20");
  }
     
@@ -568,6 +500,13 @@ public class productDeteails extends javax.swing.JFrame {
         bntAddcart.setBackgroundColor(Color.decode("#FFA500"));
         bntAddcart.setHoverColor(Color.decode("#FFCC66"));
         bntAddcart.setPressedColor(Color.decode("#FF7F50"));
+        
+        // XÓA TẤT CẢ ActionListener cũ trước khi thêm mới để tránh double execution
+        java.awt.event.ActionListener[] listeners = bntAddcart.getActionListeners();
+        for (java.awt.event.ActionListener listener : listeners) {
+            bntAddcart.removeActionListener(listener);
+        }
+        
         bntAddcart.addActionListener(e -> {
             // Validate quantity trước khi submit
             int quantity = (int) spinnerQuantity.getValue();
@@ -612,9 +551,37 @@ public class productDeteails extends javax.swing.JFrame {
             // Tạo DTO và xử lý
             DTOCart cartItem = new DTOCart(customerID, productID, quantity);
             busCart = new BUSCart();
+            
+            // Kiểm tra xem là ADD mới hay ADD THÊM (trước khi gọi addToCart)
+            boolean isAddingMore = busCart.getCartItemsByCustomer(customerID).stream()
+                .anyMatch(item -> item.getProductID().equals(productID));
+            
+            // Lấy số lượng hiện tại trong cart nếu đã có
+            int existingQuantity = 0;
+            if (isAddingMore) {
+                existingQuantity = busCart.getCartItemsByCustomer(customerID).stream()
+                    .filter(item -> item.getProductID().equals(productID))
+                    .findFirst()
+                    .map(item -> item.getQuantity())
+                    .orElse(0);
+            }
+            
             boolean result = busCart.addToCart(cartItem);
 
             if (result) {
+                // Hiển thị thông báo phù hợp
+                if (isAddingMore) {
+                    int newTotal = existingQuantity + quantity;
+                    CustomDialog.showSuccess(
+                        "Added " + quantity + " more item(s) to cart!\n\n" +
+                        "Previous: " + existingQuantity + "\n" +
+                        "Added: " + quantity + "\n" +
+                        "Total in cart: " + newTotal
+                    );
+                } else {
+                    CustomDialog.showSuccess("Product added to cart successfully!");
+                }
+                
                 fireCartUpdatedEvent(customerID);
                 this.dispose();
             } else {

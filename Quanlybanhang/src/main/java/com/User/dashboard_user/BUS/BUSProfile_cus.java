@@ -23,8 +23,9 @@ public class BUSProfile_cus {
                              JDateChooser dateOfBirth, 
                              MyTextField txtEmail, 
                              MyTextField txtContact, 
-                             JTextArea txtAddress) {
-        daoProfile.showProfile(emailInput, txtID, txtFullName, cmbGender, dateOfBirth, txtEmail, txtContact, txtAddress);
+                             JTextArea txtAddress,
+                             javax.swing.JPanel panelUpload) {
+        daoProfile.showProfile(emailInput, txtID, txtFullName, cmbGender, dateOfBirth, txtEmail, txtContact, txtAddress, panelUpload);
     }
     
     public void updateProfile(MyTextField txtID, 
@@ -33,8 +34,9 @@ public class BUSProfile_cus {
                                JDateChooser dateOfBirth, 
                                MyTextField txtEmail, 
                                MyTextField txtContact, 
-                               JTextArea txtAddress){
-        daoProfile.updateProfile(txtID, txtFullName, cmbGender, dateOfBirth, txtEmail, txtContact, txtAddress);
+                               JTextArea txtAddress,
+                               String imagePath){
+        daoProfile.updateProfile(txtID, txtFullName, cmbGender, dateOfBirth, txtEmail, txtContact, txtAddress, imagePath);
     }
     
     public String getCustomerID(String email) {
@@ -43,6 +45,10 @@ public class BUSProfile_cus {
     
     public String getCustomerName(String customerID) {
         return daoProfile.getCustomerName(customerID);
+    }
+    
+    public boolean changePassword(String email, String oldPassword, String newPassword, String confirmPassword) {
+        return daoProfile.changePassword(email, oldPassword, newPassword, confirmPassword);
     }
     
 }

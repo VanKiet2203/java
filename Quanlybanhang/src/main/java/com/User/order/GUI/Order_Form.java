@@ -92,7 +92,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
 
    private JPanel createOrderPanel(DTO_Order order) {
         JPanel panelcreate = new JPanel(new BorderLayout(5, 5));
-        panelcreate.setPreferredSize(new Dimension(300, 250));
+        panelcreate.setPreferredSize(new Dimension(300, 280)); // Tăng chiều cao để chứa đủ các dòng
         panelcreate.setBackground(Color.WHITE);
         panelcreate.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
@@ -122,45 +122,59 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         headerPanel.add(orderNoLabel, BorderLayout.WEST);
         headerPanel.add(dateLabel, BorderLayout.EAST);
 
-        // Details panel với layout đẹp
-        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 8, 8));
+        // Details panel với BoxLayout để kiểm soát spacing tốt hơn
+        JPanel detailsPanel = new JPanel();
+        detailsPanel.setLayout(new BoxLayout(detailsPanel, BoxLayout.Y_AXIS));
         detailsPanel.setBackground(Color.WHITE);
         detailsPanel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
+        detailsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Customer ID
         JLabel customerLabel = new JLabel("Customer: " + order.getCustomerID());
         customerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         customerLabel.setForeground(Color.decode("#666666"));
+        customerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        customerLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(customerLabel);
 
         // Total Items
         JLabel itemsLabel = new JLabel("Items: " + order.getTotalQuantityProduct());
         itemsLabel.setFont(new Font("Arial", Font.BOLD, 12));
         itemsLabel.setForeground(Color.decode("#2E7D32"));
+        itemsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        itemsLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(itemsLabel);
 
         // Total Price (highlighted)
         JLabel priceLabel = new JLabel("Total: " + order.getTotalPrice() + " VNĐ");
         priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
         priceLabel.setForeground(Color.decode("#D32F2F"));
+        priceLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        priceLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(priceLabel);
 
         // Payment Method
         JLabel paymentLabel = new JLabel("Payment: " + order.getPayment());
         paymentLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         paymentLabel.setForeground(Color.decode("#666666"));
+        paymentLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        paymentLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(paymentLabel);
 
         // Date Order
         JLabel dateOrderLabel = new JLabel("Date: " + order.getDateOrder().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         dateOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         dateOrderLabel.setForeground(Color.decode("#666666"));
+        dateOrderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateOrderLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(dateOrderLabel);
 
         // Time Order
         JLabel timeOrderLabel = new JLabel("Time: " + order.getTimeOrder());
         timeOrderLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         timeOrderLabel.setForeground(Color.decode("#666666"));
+        timeOrderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        timeOrderLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         detailsPanel.add(timeOrderLabel);
 
         // Button panel với style đẹp
