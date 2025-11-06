@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Component;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
@@ -20,6 +21,7 @@ import javax.swing.JSeparator;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import net.miginfocom.swing.MigLayout;
 import static com.ComponentandDatabase.Components.UIConstants.*;
@@ -41,7 +43,14 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         initComponents();
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
         setAlwaysOnTop(true); // Luôn hiển thị trên cùng
-        setSize(1400, 1000); // Tăng kích thước cửa sổ mặc định
+        
+        // Set size responsive - 80% của màn hình, tối thiểu 800x600
+        Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+        int width = Math.max(800, (int)(screenSize.width * 0.8));
+        int height = Math.max(600, (int)(screenSize.height * 0.8));
+        setSize(width, height);
+        setMinimumSize(new Dimension(800, 600));
+        
         setLocationRelativeTo(null); // Căn giữa màn hình
         init();
     }
@@ -67,9 +76,13 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             JPanel page = new JPanel();
             page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
             page.setBackground(Color.WHITE);
+            
+            // Responsive padding - sử dụng percentage hoặc minimum
+            int scrollWidth = contentScroll.getWidth() > 0 ? contentScroll.getWidth() : 800;
+            int padding = Math.max(16, Math.min(32, scrollWidth / 40)); // 16-32px tùy width
             page.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-                BorderFactory.createEmptyBorder(24, 32, 24, 32)
+                BorderFactory.createEmptyBorder(padding, padding, padding, padding)
             ));
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
@@ -102,24 +115,36 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
             for (DTO_BillExportedDetail d : details) {
                 String warrantyText = busExportBill.getWarranty(d.getProductId());
 
-                JPanel card = new JPanel(new GridLayout(2, 4, 12, 8));
+                // Sử dụng responsive layout - tự động điều chỉnh số cột dựa trên width
+                JPanel card = new JPanel();
+                card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS)); // Vertical layout để responsive
                 card.setBackground(Color.decode("#F8F9FA"));
                 card.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Color.decode("#DEE2E6"), 1),
                     BorderFactory.createEmptyBorder(16, 16, 16, 16)
                 ));
+                card.setAlignmentX(Component.LEFT_ALIGNMENT);
+                card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-                card.add(field("Product ID", d.getProductId()));
-                card.add(field("Unit Price", String.valueOf(d.getUnitPrice())));
-                card.add(field("Quantity", String.valueOf(d.getQuantity())));
-                card.add(field("Warranty", warrantyText));
+                // Tạo inner panel với GridLayout responsive - sử dụng FlowLayout để tự động wrap
+                JPanel fieldsPanel = new JPanel();
+                // Sử dụng FlowLayout với wrap để tự động xuống dòng khi không đủ chỗ
+                fieldsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 12, 8));
+                fieldsPanel.setBackground(Color.decode("#F8F9FA"));
+                fieldsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                fieldsPanel.add(field("Product ID", d.getProductId()));
+                fieldsPanel.add(field("Unit Price", String.valueOf(d.getUnitPrice())));
+                fieldsPanel.add(field("Quantity", String.valueOf(d.getQuantity())));
+                fieldsPanel.add(field("Warranty", warrantyText));
 
                 String promoCode = (d.getPromotionCode() != null && !d.getPromotionCode().isEmpty()) ? d.getPromotionCode() : "N/A";
-                card.add(field("Promotion Code", promoCode));
-                card.add(field("Discount %", d.getDiscountPercent() + "%"));
-                card.add(field("Total Before", String.valueOf(d.getTotalPriceBefore())));
-                card.add(field("Total After", String.valueOf(d.getTotalPriceAfter())));
+                fieldsPanel.add(field("Promotion Code", promoCode));
+                fieldsPanel.add(field("Discount %", d.getDiscountPercent() + "%"));
+                fieldsPanel.add(field("Total Before", String.valueOf(d.getTotalPriceBefore())));
+                fieldsPanel.add(field("Total After", String.valueOf(d.getTotalPriceAfter())));
 
+                card.add(fieldsPanel);
                 page.add(card);
                 page.add(Box.createVerticalStrut(12));
 
@@ -138,55 +163,107 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
                 // If cannot get header, continue without VAT info
             }
             
-            // Tạo panel tổng tiền với style đặc biệt
-            JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            // Tính toán breakdown từ billHeader hoặc từ details
+            java.math.BigDecimal subtotalBefore = grandBefore; // Tổng trước discount
+            java.math.BigDecimal discountAmount = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal subtotalAfter = grandAfter; // Tổng sau discount (từ details)
+            java.math.BigDecimal vatAmount = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal finalTotal = grandAfter;
+            
+            // Lấy promotion code từ bill header (ưu tiên)
+            String promoCode = billHeader != null ? billHeader.getPromotionCode() : null;
+            
+            // Nếu không có trong bill header, thử lấy từ details
+            if ((promoCode == null || promoCode.trim().isEmpty()) && !details.isEmpty()) {
+                promoCode = details.get(0).getPromotionCode();
+            }
+            
+            // Nếu vẫn không có, thử lấy từ Order thông qua Order_No
+            if ((promoCode == null || promoCode.trim().isEmpty()) && billHeader != null && billHeader.getOrderNo() != null) {
+                try {
+                    com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+                    promoCode = busOrder.getPromotionCodeByOrderNo(billHeader.getOrderNo());
+                } catch (Exception e) {
+                    System.err.println("Error getting promotion code from order: " + e.getMessage());
+                }
+            }
+            
+            // Tính discount dựa trên promotion code nếu có
+            if (promoCode != null && !promoCode.trim().isEmpty()) {
+                try {
+                    com.Admin.promotion.BUS.BUSPromotion pBus = new com.Admin.promotion.BUS.BUSPromotion();
+                    com.Admin.promotion.DTO.DTOPromotion p = pBus.findActivePromotion(promoCode);
+                    if (p != null && p.getDiscountPercent() != null) {
+                        discountAmount = subtotalBefore.multiply(p.getDiscountPercent())
+                            .divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+                        subtotalAfter = subtotalBefore.subtract(discountAmount);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error calculating discount from promotion: " + e.getMessage());
+                }
+            }
+            
+            // Lấy VAT từ bill header (đã tính đúng: 8% sau discount)
+            if (billHeader != null && billHeader.getVatAmount() != null) {
+                vatAmount = billHeader.getVatAmount();
+                if (billHeader.getTotalAmount() != null) {
+                    finalTotal = billHeader.getTotalAmount();
+                } else {
+                    finalTotal = subtotalAfter.add(vatAmount);
+                }
+            } else {
+                // Fallback: tính VAT nếu không có trong header
+                vatAmount = subtotalAfter.multiply(new java.math.BigDecimal("8.00"))
+                    .divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+                finalTotal = subtotalAfter.add(vatAmount);
+            }
+            
+            // Tạo panel tổng tiền với style đặc biệt - hiển thị đúng thứ tự
+            JPanel totalPanel = new JPanel();
+            totalPanel.setLayout(new BoxLayout(totalPanel, BoxLayout.Y_AXIS));
             totalPanel.setBackground(Color.WHITE);
             totalPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
             
-            JLabel subtotalLabel = new JLabel("Subtotal: ");
+            // Promotion info
+            if (promoCode != null && !promoCode.trim().isEmpty()) {
+                JLabel promoLabel = new JLabel("Promotion: " + promoCode);
+                promoLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+                promoLabel.setForeground(Color.decode("#7F8C8D"));
+                totalPanel.add(promoLabel);
+            }
+            
+            // Subtotal (before discount)
+            JLabel subtotalLabel = new JLabel("Subtotal: " + String.format("%,d VND", subtotalBefore.intValue()));
             subtotalLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            subtotalLabel.setForeground(Color.decode("#7F8C8D"));
-            JLabel subtotalValue = new JLabel(String.valueOf(grandAfter));
-            subtotalValue.setFont(new Font("Arial", Font.PLAIN, 14));
-            subtotalValue.setForeground(Color.decode("#2C3E50"));
-            
+            subtotalLabel.setForeground(Color.decode("#2C3E50"));
             totalPanel.add(subtotalLabel);
-            totalPanel.add(subtotalValue);
             
-            // Add VAT information if available
-            if (billHeader != null && billHeader.getVatPercent() != null && billHeader.getVatAmount() != null) {
-                totalPanel.add(Box.createHorizontalStrut(20));
-                
-                JLabel vatLabel = new JLabel("VAT (" + billHeader.getVatPercent() + "%): ");
-                vatLabel.setFont(new Font("Arial", Font.BOLD, 14));
-                vatLabel.setForeground(Color.decode("#7F8C8D"));
-                JLabel vatValue = new JLabel(String.valueOf(billHeader.getVatAmount()));
-                vatValue.setFont(new Font("Arial", Font.PLAIN, 14));
-                vatValue.setForeground(Color.decode("#2C3E50"));
-                
-                totalPanel.add(vatLabel);
-                totalPanel.add(vatValue);
+            // Discount
+            if (discountAmount.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                JLabel discountLabel = new JLabel("Discount: -" + String.format("%,d VND", discountAmount.intValue()));
+                discountLabel.setFont(new Font("Arial", Font.BOLD, 14));
+                discountLabel.setForeground(Color.decode("#2E7D32"));
+                totalPanel.add(discountLabel);
             }
             
-            totalPanel.add(Box.createHorizontalStrut(20));
+            // Subtotal (after discount)
+            JLabel afterLabel = new JLabel("Subtotal (after discount): " + String.format("%,d VND", subtotalAfter.intValue()));
+            afterLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            afterLabel.setForeground(Color.decode("#2C3E50"));
+            totalPanel.add(afterLabel);
             
-            // Total after VAT
-            java.math.BigDecimal finalTotal = grandAfter;
-            if (billHeader != null && billHeader.getTotalAmount() != null) {
-                finalTotal = billHeader.getTotalAmount();
-            } else if (billHeader != null && billHeader.getVatAmount() != null) {
-                finalTotal = grandAfter.add(billHeader.getVatAmount());
-            }
+            // VAT
+            JLabel vatLabel = new JLabel("VAT (8% after discount): " + String.format("%,d VND", vatAmount.intValue()));
+            vatLabel.setFont(new Font("Arial", Font.BOLD, 14));
+            vatLabel.setForeground(Color.decode("#2C3E50"));
+            totalPanel.add(vatLabel);
             
-            JLabel totalLabel = new JLabel("Total Amount (incl. VAT): ");
+            // Total
+            JLabel totalLabel = new JLabel("Total Amount (incl. VAT): " + String.format("%,d VND", finalTotal.intValue()));
             totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
             totalLabel.setForeground(Color.decode("#E74C3C"));
-            JLabel totalValue = new JLabel(String.valueOf(finalTotal));
-            totalValue.setFont(new Font("Arial", Font.BOLD, 16));
-            totalValue.setForeground(Color.decode("#E74C3C"));
-            
             totalPanel.add(totalLabel);
-            totalPanel.add(totalValue);
+            
             page.add(totalPanel);
 
             contentScroll.setViewportView(page);
@@ -217,53 +294,72 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
     }
 
     private JPanel field(String label, String value) {
-        JPanel p = new JPanel(new BorderLayout());
+        JPanel p = new JPanel(new BorderLayout(0, 4));
         p.setBackground(Color.WHITE);
-        p.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        p.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        p.setPreferredSize(new Dimension(150, 60)); // Minimum size
+        p.setMinimumSize(new Dimension(120, 50));
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        
         JLabel l = new JLabel(label);
         l.setFont(new Font("Arial", Font.PLAIN, 11));
         l.setForeground(Color.decode("#95A5A6"));
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         JLabel v = new JLabel(value);
         v.setFont(new Font("Arial", Font.BOLD, 13));
         v.setForeground(Color.decode("#2C3E50"));
+        v.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Wrap text nếu quá dài
+        v.setToolTipText(value);
+        
         p.add(l, BorderLayout.NORTH);
         p.add(v, BorderLayout.CENTER);
         return p;
     }
 
    public void init() {
-     // Thiết lập layout chính
-     bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][][grow]"));
+     // Thiết lập layout chính với BorderLayout để responsive
+     bg.setLayout(new BorderLayout());
 
      // 1. Panel tiêu đề
-     panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
+     panelTitle = new MyPanel(new BorderLayout());
      panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
+     panelTitle.setPreferredSize(new Dimension(0, 50));
 
      lblTitle = new JLabel("Bill Export Details", JLabel.CENTER);
      lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
      lblTitle.setForeground(Color.WHITE);
 
-     panelTitle.add(lblTitle, "grow, push, align center");
-     bg.add(panelTitle, "growx, h 40!, wrap"); // wrap để component sau xuống dòng
+     panelTitle.add(lblTitle, BorderLayout.CENTER);
+     bg.add(panelTitle, BorderLayout.NORTH);
      
-           // 1️⃣ Tên cột
-        String[] columnNames = {
-            "Invoice.No", "Admin.ID", "Customer.ID", "Product.ID", "Unit Price", "Quantity" , "Promotion Code", "Promotion Name", "Discount %", "Total Price Before",
-            "Total Price After", "Date Exported", "Time Exported"
-        };
-
-        // 2️⃣ Tạo model
-        model = new DefaultTableModel(columnNames, 0);
-
-
-        // 5️⃣ Thay thế bảng bằng container scroll cho nội dung dạng trang
-        contentScroll = new JScrollPane();
-        contentScroll.setBorder(null);
-        contentScroll.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
-        contentScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
-        contentScroll.setViewportBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        bg.add(contentScroll, "pos 10 140, w 1360!, h 820!");
+     // 2. Content scroll pane - chiếm toàn bộ không gian còn lại
+     contentScroll = new JScrollPane();
+     contentScroll.setBorder(null);
+     contentScroll.getVerticalScrollBar().setPreferredSize(new Dimension(15, Integer.MAX_VALUE));
+     contentScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(Integer.MAX_VALUE, 15));
+     contentScroll.setViewportBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+     bg.add(contentScroll, BorderLayout.CENTER);
      
+     // 3. Thêm component listener để resize responsive
+     addComponentListener(new java.awt.event.ComponentAdapter() {
+         @Override
+         public void componentResized(java.awt.event.ComponentEvent evt) {
+             // Khi window resize, revalidate để layout tự động điều chỉnh
+             SwingUtilities.invokeLater(() -> {
+                 bg.revalidate();
+                 bg.repaint();
+                 if (contentScroll != null && contentScroll.getViewport() != null) {
+                     Component view = contentScroll.getViewport().getView();
+                     if (view != null) {
+                         view.revalidate();
+                         view.repaint();
+                     }
+                 }
+             });
+         }
+     });
    }
 
     
@@ -310,26 +406,18 @@ public class Bill_ExportDetails extends javax.swing.JFrame {
         bg.setBackground(new java.awt.Color(255, 255, 255));
         bg.setOpaque(true);
 
-        javax.swing.GroupLayout bgLayout = new javax.swing.GroupLayout(bg);
-        bg.setLayout(bgLayout);
-        bgLayout.setHorizontalGroup(
-            bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1400, Short.MAX_VALUE)
-        );
-        bgLayout.setVerticalGroup(
-            bgLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1000, Short.MAX_VALUE)
-        );
+        // Sử dụng BorderLayout thay vì GroupLayout để responsive
+        bg.setLayout(new BorderLayout());
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(bg, javax.swing.GroupLayout.Alignment.TRAILING)
+            .addComponent(bg, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(bg)
+            .addComponent(bg, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();

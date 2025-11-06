@@ -61,8 +61,26 @@ public class DAO_ExportBill {
             pstmt.setString(3, bill.getCustomerId());
             pstmt.setString(4, bill.getOrderNo()); // Thêm Order_No
             pstmt.setInt(5, bill.getTotalProduct());
-            if (promotionCode == null || promotionCode.isBlank()) pstmt.setNull(6, Types.VARCHAR);
-            else pstmt.setString(6, promotionCode);
+            
+            // Ưu tiên promotion code từ parameter, nếu null thì lấy từ DTO
+            String promoCodeToInsert = promotionCode;
+            if (promoCodeToInsert == null || promoCodeToInsert.trim().isEmpty()) {
+                promoCodeToInsert = bill.getPromotionCode();
+            }
+            
+            // Debug log
+            System.out.println("=== DEBUG: DAO insertBillExported ===");
+            System.out.println("Promotion Code from parameter: " + promotionCode);
+            System.out.println("Promotion Code from DTO: " + bill.getPromotionCode());
+            System.out.println("Promotion Code to insert: " + promoCodeToInsert);
+            
+            if (promoCodeToInsert == null || promoCodeToInsert.trim().isEmpty()) {
+                pstmt.setNull(6, Types.VARCHAR);
+                System.out.println("Setting Promotion_Code to NULL");
+            } else {
+                pstmt.setString(6, promoCodeToInsert.trim());
+                System.out.println("Setting Promotion_Code to: " + promoCodeToInsert.trim());
+            }
             
             // VAT fields
             if (bill.getVatPercent() != null) {
@@ -73,9 +91,16 @@ public class DAO_ExportBill {
             pstmt.setBigDecimal(8, bill.getVatAmount());
             pstmt.setBigDecimal(9, bill.getTotalAmount());
             
-            return pstmt.executeUpdate() > 0;
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);
+            System.out.println("=== End DEBUG ===");
+            
+            return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Error inserting bill exported: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            e.printStackTrace();
             return false;
         }
     }
@@ -124,11 +149,16 @@ public class DAO_ExportBill {
             BigDecimal totalBefore = detail.getTotalPriceBefore();
             BigDecimal totalAfter = detail.getTotalPriceAfter();
 
-            // 4) Insert detail
+            // 4) Insert detail - Ưu tiên promotion code từ parameter, nếu null thì lấy từ detail
+            String promoCodeForDetail = promotionCode;
+            if (promoCodeForDetail == null || promoCodeForDetail.trim().isEmpty()) {
+                promoCodeForDetail = detail.getPromotionCode();
+            }
+            
             String insertDetail = "INSERT INTO Bill_Exported_Details (Invoice_No, Admin_ID, Product_ID, "
                                 + "Unit_Price_Sell_Before, Unit_Price_Sell_After, Sold_Quantity, Discount_Percent, Total_Price_Before, Total_Price_After, "
-                                + "Date_Exported, Time_Exported, Start_Date, End_Date) "
-                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                + "Date_Exported, Time_Exported, Start_Date, End_Date, Promotion_Code) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertDetail)) {
                 ps.setString(1, detail.getInvoiceNo());
                 ps.setString(2, detail.getAdminId());
@@ -143,6 +173,12 @@ public class DAO_ExportBill {
                 ps.setTime(11, detail.getTimeExported());
                 ps.setDate(12, detail.getStartDate());
                 ps.setDate(13, detail.getEndDate());
+                // Set Promotion_Code
+                if (promoCodeForDetail == null || promoCodeForDetail.trim().isEmpty()) {
+                    ps.setNull(14, Types.VARCHAR);
+                } else {
+                    ps.setString(14, promoCodeForDetail.trim());
+                }
                 ps.executeUpdate();
             }
 
@@ -163,7 +199,7 @@ public class DAO_ExportBill {
             "SELECT d.Invoice_No, d.Admin_ID, b.Customer_ID, d.Product_ID, " +
             "       d.Unit_Price_Sell_Before, d.Unit_Price_Sell_After, d.Sold_Quantity, d.Discount_Percent, " +
             "       d.Total_Price_Before, d.Total_Price_After, d.Date_Exported, d.Time_Exported, " +
-            "       d.Start_Date, d.End_Date " +
+            "       d.Start_Date, d.End_Date, d.Promotion_Code " +
             "FROM Bill_Exported_Details d " +
             "JOIN Bill_Exported b ON b.Invoice_No = d.Invoice_No AND b.Admin_ID = d.Admin_ID " +
             "WHERE d.Status = 'Available'";
@@ -184,6 +220,7 @@ public class DAO_ExportBill {
                     rs.getBigDecimal("Total_Price_After"),
                     rs.getDate("Date_Exported"),
                     rs.getTime("Time_Exported"),
+                    rs.getString("Promotion_Code"), // Promotion_Code
                     rs.getDate("Start_Date"),
                     rs.getDate("End_Date")
                 );
@@ -433,7 +470,7 @@ public class DAO_ExportBill {
         String sql = "SELECT d.Invoice_No, d.Admin_ID, b.Customer_ID, d.Product_ID, " +
                     "       d.Unit_Price_Sell_Before, d.Unit_Price_Sell_After, d.Sold_Quantity, d.Discount_Percent, " +
                     "       d.Total_Price_Before, d.Total_Price_After, d.Date_Exported, d.Time_Exported, " +
-                    "       d.Start_Date, d.End_Date " +
+                    "       d.Start_Date, d.End_Date, d.Promotion_Code " +
                     "FROM Bill_Exported_Details d " +
                     "JOIN Bill_Exported b ON b.Invoice_No = d.Invoice_No AND b.Admin_ID = d.Admin_ID " +
                     "WHERE d.Invoice_No = ? AND d.Status = 'Available'";
@@ -456,6 +493,7 @@ public class DAO_ExportBill {
                         rs.getBigDecimal("Total_Price_After"),
                         rs.getDate("Date_Exported"),
                         rs.getTime("Time_Exported"),
+                        rs.getString("Promotion_Code"), // Promotion_Code
                         rs.getDate("Start_Date"),
                         rs.getDate("End_Date")
                     );

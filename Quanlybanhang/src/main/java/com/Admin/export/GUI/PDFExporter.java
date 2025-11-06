@@ -379,11 +379,11 @@ public class PDFExporter {
         return cell;
     }
 
-    private BigDecimal calculateTotal(Object price, Object quantity) {
+    private BigDecimal calculateSubtotal(Object price, Object quantity) {
+        // Tính subtotal (không discount) - giống cách tính ở Order_Form
         BigDecimal unitPrice = new BigDecimal(price.toString());
         int qty = Integer.parseInt(quantity.toString());
-        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
-        return subtotal.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount/100)));
+        return unitPrice.multiply(BigDecimal.valueOf(qty));
     }
 
   private String formatCurrency(String amount) {
@@ -403,19 +403,29 @@ public class PDFExporter {
 }
 
     private void addOrderSummary(Document document) throws DocumentException {
-       // Calculate grand total and total quantity
-       BigDecimal grandTotal = BigDecimal.ZERO;
+       // Tính tổng subtotal TRƯỚC discount (giống Order_Form)
+       BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
        int totalQuantity = 0;
 
        for (Object[] item : orderItems) {
-           grandTotal = grandTotal.add(calculateTotal(item[3], item[4]));
+           totalBeforeDiscount = totalBeforeDiscount.add(calculateSubtotal(item[3], item[4]));
            totalQuantity += ((Number) item[4]).intValue(); // Sum up quantities
        }
        
-       // Calculate VAT 8%
+       // Tính discount trên TỔNG subtotal (không tính trên từng item)
+       BigDecimal discountPercent = BigDecimal.valueOf(discount);
+       BigDecimal discountAmount = BigDecimal.ZERO;
+       BigDecimal totalAfterDiscount = totalBeforeDiscount;
+       if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+           discountAmount = totalBeforeDiscount.multiply(discountPercent)
+               .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+           totalAfterDiscount = totalBeforeDiscount.subtract(discountAmount);
+       }
+       
+       // VAT tính trên giá sau discount (giống Order_Form)
        BigDecimal vatPercent = BigDecimal.valueOf(8.00);
-       BigDecimal vatAmount = grandTotal.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-       BigDecimal totalWithVAT = grandTotal.add(vatAmount);
+       BigDecimal vatAmount = totalAfterDiscount.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+       BigDecimal totalWithVAT = totalAfterDiscount.add(vatAmount);
 
        // Tạo bảng chứa cả Payment method và Order Summary
        PdfPTable containerTable = new PdfPTable(2);
@@ -479,10 +489,18 @@ public class PDFExporter {
        summaryParagraph.add(new Phrase("Total Quantity: ", labelFont));
        summaryParagraph.add(new Phrase(String.valueOf(totalQuantity) + "\n", valueFont));
 
-       summaryParagraph.add(new Phrase("Subtotal: ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(grandTotal.toString()) + "\n", valueFont));
+       summaryParagraph.add(new Phrase("Subtotal (before discount): ", labelFont));
+       summaryParagraph.add(new Phrase(formatCurrency(totalBeforeDiscount.toString()) + "\n", valueFont));
        
-       summaryParagraph.add(new Phrase("VAT (" + vatPercent + "%): ", labelFont));
+       if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+           summaryParagraph.add(new Phrase("Discount (" + discountPercent + "%): ", labelFont));
+           summaryParagraph.add(new Phrase("-" + formatCurrency(discountAmount.toString()) + "\n", valueFont));
+       }
+       
+       summaryParagraph.add(new Phrase("Subtotal (after discount): ", labelFont));
+       summaryParagraph.add(new Phrase(formatCurrency(totalAfterDiscount.toString()) + "\n", valueFont));
+       
+       summaryParagraph.add(new Phrase("VAT (" + vatPercent + "% after discount): ", labelFont));
        summaryParagraph.add(new Phrase(formatCurrency(vatAmount.toString()) + "\n", valueFont));
 
        summaryParagraph.add(new Phrase("Total Amount (incl. VAT): ", labelFont));

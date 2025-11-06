@@ -341,6 +341,7 @@ CREATE TABLE dbo.Bill_Exported_Details(
     Time_Exported time(7) NOT NULL,
     Start_Date date NOT NULL,                      -- Ngày bắt đầu bảo hành
     End_Date date NOT NULL,                        -- Ngày kết thúc bảo hành
+    Promotion_Code varchar(50) NULL,               -- Mã khuyến mãi (từ Order)
     Status varchar(20) NOT NULL CONSTRAINT DF_BillExportedDetails_Status DEFAULT('Available'),
     CONSTRAINT PK_Bill_Exported_Details PRIMARY KEY CLUSTERED (Invoice_No ASC, Admin_ID ASC, Product_ID ASC)
 );
@@ -411,12 +412,22 @@ CREATE TABLE dbo.Orders(
     Total_Quantity_Product int NOT NULL CONSTRAINT DF_Orders_TotalQty DEFAULT(0),
     Total_Price decimal(15,2) NOT NULL CONSTRAINT DF_Orders_TotalPrice DEFAULT(0.00),
     Payment varchar(20) NOT NULL CONSTRAINT DF_Orders_Payment DEFAULT('Cash'),
+    Promotion_Code varchar(50) NULL,  -- Mã giảm giá do user chọn khi đặt hàng
     Date_Order date NULL,
     Time_Order time(7) NULL,
     Status varchar(20) NOT NULL CONSTRAINT DF_Orders_Status DEFAULT('Waiting'),
     Record_Status varchar(20) NOT NULL CONSTRAINT DF_Orders_RecordStatus DEFAULT('Available'),
     CONSTRAINT PK_Orders PRIMARY KEY CLUSTERED (Order_No ASC, Customer_ID ASC)
 );
+END;
+GO
+
+-- Thêm foreign key cho Promotion_Code nếu chưa tồn tại
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Orders_Promotion')
+BEGIN
+    ALTER TABLE dbo.Orders WITH CHECK
+    ADD CONSTRAINT FK_Orders_Promotion FOREIGN KEY(Promotion_Code)
+        REFERENCES dbo.Promotion(Promotion_Code);
 END;
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Orders_Customer')

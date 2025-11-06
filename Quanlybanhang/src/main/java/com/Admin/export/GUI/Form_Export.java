@@ -56,7 +56,6 @@ public class Form_Export extends JPanel {
     public static String orderNo;
     private DefaultTableModel model;
     private DefaultTableModel modelExportBills;
-    private MyCombobox<String> cmbPromotionCode;
     private JLabel lblPromotionInfo;
     private BUS_OrderDetail busOrderDetail;
     private BUS_ExportBill busExportBill;
@@ -88,25 +87,22 @@ public class Form_Export extends JPanel {
     
     /**
      * Static method để refresh promotion list từ Form_Promotion
+     * (Không cần thiết nữa vì promotion được lấy từ order)
      */
     public static void refreshPromotionsIfExists() {
-        if (currentInstance != null) {
-            SwingUtilities.invokeLater(() -> {
-                currentInstance.loadActivePromotions();
-            });
-        }
+        // Promotion code được lấy từ order, không cần refresh
     }
 
     private void initComponents() {
         setLayout(null);
-        setPreferredSize(new Dimension(1530, 860)); // Giữ kích thước nhưng không ép buộc vị trí
+        setPreferredSize(new Dimension(1400, 750)); // Reduced size for smaller screens
         setBackground(BG_WHITE); // Kiểm tra hiển thị
     }
 
     private void init() {
         panel = new JPanel();
         panel.setLayout(null);
-        panel.setBounds(0, 0, 1530, 860); // Giữ nguyên layout của các thành phần
+        panel.setBounds(0, 0, 1400, 750); // Reduced bounds for smaller screens
         panel.setBackground(Color.WHITE);
         add(panel);
         
@@ -127,7 +123,7 @@ public class Form_Export extends JPanel {
             FONT_TITLE_SMALL,
             PRIMARY_COLOR
         ));
-        panelSearch.setBounds(20, 60, 1490, 100);
+        panelSearch.setBounds(20, 60, 1360, 90);
           
           bntRefresh = new MyButton("Refresh", 20);
           styleInfoButton(bntRefresh);
@@ -279,40 +275,18 @@ public class Form_Export extends JPanel {
           txtAdminName.setText(Dashboard_ad.getAdminName(txtAdminID.getText().strip()));
           panel.add(txtAdminName);
           
-          // Promotion Code selection - Outside Export Management panel, moved to left
-          JLabel lblPromo = new JLabel("Promotion Code");
+          // Promotion Code info - Hiển thị promotion code từ order (do user chọn)
+          JLabel lblPromo = new JLabel("Promotion Code (from Order):");
           lblPromo.setFont(FONT_CONTENT_MEDIUM);
           lblPromo.setForeground(TEXT_PRIMARY);
-          lblPromo.setBounds(660, 160, 140, 25);
+          lblPromo.setBounds(660, 160, 250, 25);
           panel.add(lblPromo);
 
-          // ComboBox for promotion selection
-          cmbPromotionCode = new MyCombobox<>();
-          cmbPromotionCode.setBounds(660, 185, 200, 35);
-          cmbPromotionCode.setCustomFont(FONT_CONTENT_MEDIUM);
-          cmbPromotionCode.setCustomColors(Color.WHITE, Color.GRAY, Color.BLACK);
-          cmbPromotionCode.addItem("-- Select Promotion --");
-          panel.add(cmbPromotionCode);
-          
-          // Load active promotions
-          loadActivePromotions();
-          
-          // Add promotion validation button
-          MyButton bntValidatePromo = new MyButton("Validate", 20);
-          bntValidatePromo.setBackgroundColor(Color.decode("#28a745"));
-          bntValidatePromo.setHoverColor(Color.decode("#218838"));
-          bntValidatePromo.setPressedColor(Color.decode("#1e7e34"));
-          bntValidatePromo.setFont(FONT_BUTTON_SMALL);
-          bntValidatePromo.setForeground(Color.WHITE);
-          bntValidatePromo.setBounds(870, 185, 80, 35);
-          bntValidatePromo.addActionListener(e -> validateSelectedPromotion());
-          panel.add(bntValidatePromo);
-          
-          // Add promotion info display
-          lblPromotionInfo = new JLabel("");
-          lblPromotionInfo.setFont(new Font("Arial", Font.ITALIC, 11));
+          // Label hiển thị promotion code từ order
+          lblPromotionInfo = new JLabel("No promotion code selected");
+          lblPromotionInfo.setFont(new Font("Arial", Font.ITALIC, 12));
           lblPromotionInfo.setForeground(Color.decode("#666666"));
-          lblPromotionInfo.setBounds(660, 200, 300, 20);
+          lblPromotionInfo.setBounds(660, 185, 300, 25);
           panel.add(lblPromotionInfo);
            
 
@@ -324,7 +298,7 @@ public class Form_Export extends JPanel {
        panelBill.setLayout(new BorderLayout());
        panelBill.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1)); // Chỉ 1 viền chính
        panelBill.setBackground(Color.WHITE);
-       panelBill.setBounds(820, 240, 450, 500);
+       panelBill.setBounds(820, 200, 450, 450);
        panel.add(panelBill);
 
        // Tạo panel title "Bill For Order" (không thêm border riêng)
@@ -410,7 +384,7 @@ public class Form_Export extends JPanel {
         // ========== Tạo TabbedPane chứa 2 bảng: Orders và Export Bills ==========
         tablesTabbedPane = new JTabbedPane();
         tablesTabbedPane.setFont(FONT_TITLE_MEDIUM);
-        tablesTabbedPane.setBounds(20, 240, 790, 480);
+        tablesTabbedPane.setBounds(20, 200, 790, 450);
 
         // Tab Orders
         JPanel ordersTabPanel = new JPanel(new BorderLayout());
@@ -454,7 +428,7 @@ public class Form_Export extends JPanel {
 
         bntAddBill = new MyButton("Add Bill", 20);
         stylePrimaryButton(bntAddBill);
-        bntAddBill.setBounds(20, 740, 110, 35);
+        bntAddBill.setBounds(20, 670, 110, 35);
 
         // Hàm xử lý khi nhấn nút Add Bill
         bntAddBill.addActionListener(e -> {
@@ -469,10 +443,30 @@ public class Form_Export extends JPanel {
 
         // 2. Lấy thông tin chung
         String customerID = orderItems.get(0)[1].toString();
+        String orderNo = orderItems.get(0)[0].toString();
+        Form_Export.orderNo = orderNo; // Lưu orderNo vào biến static để sử dụng sau
+        
+        // Lấy promotion code từ order (do user chọn khi đặt hàng)
+        currentPromotion = null;
         double discount = 0.0; // Default discount
-        if (currentPromotion != null) {
-            discount = currentPromotion.getDiscountPercent().doubleValue();
+        try {
+            if (busPromotion == null) {
+                busPromotion = new BUSPromotion();
+            }
+            com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+            String promotionCode = busOrder.getPromotionCodeByOrderNo(orderNo);
+            if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                currentPromotion = busPromotion.findActivePromotion(promotionCode);
+                if (currentPromotion != null) {
+                    discount = currentPromotion.getDiscountPercent().doubleValue();
+                }
+            }
+            // Cập nhật hiển thị promotion info
+            updatePromotionInfoFromOrder(orderNo);
+        } catch (Exception ex) {
+            System.err.println("Error loading promotion from order: " + ex.getMessage());
         }
+        
         String imeiNumbers = ""; // IMEI removed
         customer = busExportBill.getCustomerInfoSafe(customerID);
 
@@ -501,7 +495,7 @@ public class Form_Export extends JPanel {
         bntExport = new MyButton("Generate/Save Bill", 20);
         stylePrimaryButton(bntExport);
         bntExport.setFont(FONT_BUTTON_LARGE);
-        bntExport.setBounds(950, 750, 200, 50);
+        bntExport.setBounds(950, 670, 200, 45);
         bntExport.addActionListener(e -> {
             boolean confirm = CustomDialog.showOptionPane(
                 "Confirm Exportation",
@@ -619,10 +613,9 @@ public class Form_Export extends JPanel {
           });     
         cmbSearchOrder.setSelectedIndex(0);
         txtSearchOrder.setText(""); // Clear search text
-        // Clear promotion selection
-        cmbPromotionCode.setSelectedIndex(0);
+        // Clear promotion info
         currentPromotion = null;
-        lblPromotionInfo.setText("");
+        lblPromotionInfo.setText("No promotion code selected");
         // IMEI cleared removed
         billBody.removeAll();
         billBody.revalidate();
@@ -633,101 +626,41 @@ public class Form_Export extends JPanel {
     }
     
     /**
-     * Load active promotions into ComboBox
-     * Public method để có thể gọi từ bên ngoài (Form_Promotion)
+     * Update promotion info display from order
      */
-    public void loadActivePromotions() {
+    private void updatePromotionInfoFromOrder(String orderNo) {
         try {
             if (busPromotion == null) {
                 busPromotion = new BUSPromotion();
             }
             
-            // Remove existing action listeners to avoid duplicates
-            for (java.awt.event.ActionListener al : cmbPromotionCode.getActionListeners()) {
-                cmbPromotionCode.removeActionListener(al);
-            }
+            com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+            String promotionCode = busOrder.getPromotionCodeByOrderNo(orderNo);
             
-            // Clear existing items
-            cmbPromotionCode.removeAllItems();
-            cmbPromotionCode.addItem("-- Select Promotion --");
-            
-            // Get all available promotions (already filtered by Status = 'Available' in DAO)
-            // Then filter only active ones (currently running)
-            List<DTOPromotion> allPromotions = busPromotion.getAllPromotions();
-            for (DTOPromotion promotion : allPromotions) {
-                String status = busPromotion.getPromotionStatus(promotion);
-                if (status.equals("Đang hoạt động")) {
-                    String displayText = String.format("%s - %s (%.1f%%)", 
-                        promotion.getPromotionCode(), 
-                        promotion.getPromotionName(),
-                        promotion.getDiscountPercent().doubleValue());
-                    cmbPromotionCode.addItem(displayText);
+            if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                currentPromotion = busPromotion.findActivePromotion(promotionCode);
+                if (currentPromotion != null) {
+                    String infoText = String.format("✅ %s (%s) - %.1f%% off", 
+                        currentPromotion.getPromotionCode(),
+                        currentPromotion.getPromotionName(),
+                        currentPromotion.getDiscountPercent().doubleValue());
+                    lblPromotionInfo.setText(infoText);
+                    lblPromotionInfo.setForeground(Color.decode("#28a745"));
+                } else {
+                    lblPromotionInfo.setText("❌ Promotion code: " + promotionCode + " (not found or expired)");
+                    lblPromotionInfo.setForeground(Color.decode("#dc3545"));
+                    currentPromotion = null;
                 }
-            }
-            
-            // Add selection listener
-            cmbPromotionCode.addActionListener(e -> onPromotionSelected());
-            
-        } catch (Exception e) {
-            CustomDialog.showError("Error loading promotions: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Handle promotion selection
-     */
-    private void onPromotionSelected() {
-        String selectedItem = (String) cmbPromotionCode.getSelectedItem();
-        
-        if (selectedItem == null || selectedItem.equals("-- Select Promotion --")) {
-            currentPromotion = null;
-            lblPromotionInfo.setText("");
-            return;
-        }
-        
-        try {
-            // Extract promotion code from display text
-            String promotionCode = selectedItem.split(" - ")[0];
-            currentPromotion = busPromotion.findActivePromotion(promotionCode);
-            
-            if (currentPromotion != null) {
-                String infoText = String.format("✅ %s - Valid until: %s", 
-                    currentPromotion.getPromotionName(),
-                    currentPromotion.getEndDate().toString());
-                lblPromotionInfo.setText(infoText);
-                lblPromotionInfo.setForeground(Color.decode("#28a745"));
             } else {
-                lblPromotionInfo.setText("❌ Promotion not found or expired");
-                lblPromotionInfo.setForeground(Color.decode("#dc3545"));
+                lblPromotionInfo.setText("No promotion code selected");
+                lblPromotionInfo.setForeground(Color.decode("#666666"));
+                currentPromotion = null;
             }
         } catch (Exception e) {
-            lblPromotionInfo.setText("❌ Error loading promotion details");
+            lblPromotionInfo.setText("Error loading promotion: " + e.getMessage());
             lblPromotionInfo.setForeground(Color.decode("#dc3545"));
             currentPromotion = null;
         }
-    }
-    
-    /**
-     * Validate selected promotion
-     */
-    private void validateSelectedPromotion() {
-        if (currentPromotion == null) {
-            CustomDialog.showError("Please select a promotion code!");
-            return;
-        }
-        
-        String message = String.format(
-            "✅ Valid Promotion Code!\n\n" +
-            "Code: %s\n" +
-            "Name: %s\n" +
-            "Discount: %.1f%%\n" +
-            "Valid until: %s",
-            currentPromotion.getPromotionCode(),
-            currentPromotion.getPromotionName(),
-            currentPromotion.getDiscountPercent().doubleValue(),
-            currentPromotion.getEndDate().toString()
-        );
-        CustomDialog.showSuccess(message);
     }
     
     // Hàm tạo separator
@@ -847,7 +780,8 @@ public class Form_Export extends JPanel {
             }
         };
 
-        BigDecimal totalNetPay = BigDecimal.ZERO;
+        // Tính tổng tiền TRƯỚC discount
+        BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
         int totalProducts = 0;
         int stt = 1;
 
@@ -856,13 +790,14 @@ public class Form_Export extends JPanel {
             BigDecimal unitPrice = (BigDecimal) item[3];
             int quantity = (int) item[4];
 
-            BigDecimal discountAmount = unitPrice.multiply(BigDecimal.valueOf(discount)).divide(BigDecimal.valueOf(100));
-            BigDecimal totalPrice = unitPrice.subtract(discountAmount).multiply(BigDecimal.valueOf(quantity));
-
-            totalNetPay = totalNetPay.add(totalPrice);
+            // Tính tổng tiền trước discount (chỉ để hiển thị trong bảng)
+            BigDecimal itemTotalBeforeDiscount = unitPrice.multiply(BigDecimal.valueOf(quantity));
+            totalBeforeDiscount = totalBeforeDiscount.add(itemTotalBeforeDiscount);
             totalProducts += quantity;
             busExportBill= new BUS_ExportBill();
             String warranty= busExportBill.getWarranty(productID);
+            
+            // Hiển thị giá gốc trong bảng (không discount ở đây)
             model.addRow(new Object[]{
                 stt++,
                 productID,
@@ -870,10 +805,19 @@ public class Form_Export extends JPanel {
                 quantity,
                 String.format("%,d VND", unitPrice.intValue()),
                 discount + "%",
-                String.format("%,d VND", totalPrice.intValue()),
+                String.format("%,d VND", itemTotalBeforeDiscount.intValue()),
                 warranty
                      
             });
+        }
+        
+        // Tính discount trên TỔNG tiền (không tính trên từng sản phẩm)
+        BigDecimal totalAfterDiscount = totalBeforeDiscount;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (currentPromotion != null && discount > 0) {
+            discountAmount = totalBeforeDiscount.multiply(BigDecimal.valueOf(discount))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            totalAfterDiscount = totalBeforeDiscount.subtract(discountAmount);
         }
 
         JTable productTable = new JTable(model);
@@ -915,20 +859,20 @@ public class Form_Export extends JPanel {
         // ===== 5. Order Summary =====
         JPanel summaryPanel = createSectionPanel("ORDER SUMMARY");
         addInfoRow(summaryPanel, "Total Products:", String.valueOf(totalProducts));
-        if (currentPromotion != null) {
-            addInfoRow(summaryPanel, "Subtotal:", String.format("%,d VND", totalNetPay.intValue()));
-            BigDecimal discountAmount = totalNetPay.multiply(BigDecimal.valueOf(discount / 100));
+        addInfoRow(summaryPanel, "Subtotal (before discount):", String.format("%,d VND", totalBeforeDiscount.intValue()));
+        
+        if (currentPromotion != null && discount > 0) {
             addInfoRow(summaryPanel, "Discount (" + String.format("%.1f%%", discount) + "):", "-" + String.format("%,d VND", discountAmount.intValue()));
-            totalNetPay = totalNetPay.subtract(discountAmount);
         }
-        addInfoRow(summaryPanel, "Subtotal (after discount):", String.format("%,d VND", totalNetPay.intValue()));
+        addInfoRow(summaryPanel, "Subtotal (after discount):", String.format("%,d VND", totalAfterDiscount.intValue()));
         
         // ===== 6. VAT Calculation =====
+        // VAT tính trên giá sau chiết khấu
         BigDecimal vatPercent = BigDecimal.valueOf(8.00); // VAT 8%
-        BigDecimal vatAmount = totalNetPay.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        BigDecimal totalWithVAT = totalNetPay.add(vatAmount);
+        BigDecimal vatAmount = totalAfterDiscount.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalWithVAT = totalAfterDiscount.add(vatAmount);
         
-        addInfoRow(summaryPanel, "VAT (" + vatPercent + "%):", String.format("%,d VND", vatAmount.intValue()));
+        addInfoRow(summaryPanel, "VAT (" + vatPercent + "% after discount):", String.format("%,d VND", vatAmount.intValue()));
         addInfoRow(summaryPanel, "Total Amount (incl. VAT):", String.format("%,d VND", totalWithVAT.intValue()));
         
         billBody.add(summaryPanel);
@@ -1000,6 +944,27 @@ public class Form_Export extends JPanel {
 
         if (orderItems.isEmpty()) {
             throw new Exception("No products to export!");
+        }
+        
+        // Đảm bảo promotion code được lấy lại từ order trước khi export
+        String orderNoToUse = orderItems.get(0)[0].toString();
+        if (currentPromotion == null || orderNo == null || !orderNo.equals(orderNoToUse)) {
+            // Lấy lại promotion code từ order
+            try {
+                if (busPromotion == null) {
+                    busPromotion = new BUSPromotion();
+                }
+                com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+                String promotionCode = busOrder.getPromotionCodeByOrderNo(orderNoToUse);
+                if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                    currentPromotion = busPromotion.findActivePromotion(promotionCode);
+                } else {
+                    currentPromotion = null;
+                }
+            } catch (Exception ex) {
+                System.err.println("Error loading promotion from order in confirmExport: " + ex.getMessage());
+                currentPromotion = null;
+            }
         }
 
         // 🔹 Tạo hộp thoại chờ nhưng KHÔNG hiển thị ngay lập tức
@@ -1090,34 +1055,64 @@ public class Form_Export extends JPanel {
 
 
     private void processExportData(List<Object[]> orderItems, List<String> imeis) throws Exception {
-        // Calculate total before VAT
-        BigDecimal totalNetPay = BigDecimal.ZERO;
+        // Tính tổng tiền TRƯỚC discount
+        BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
+        
+        // Always get Order_No from orderItems (from Orders table)
+        String orderNoToUse = orderItems.get(0)[0].toString();
+        
+        // Lấy promotion code TRỰC TIẾP từ order để đảm bảo không bị mất
+        String promotionCode = null;
         BigDecimal discountPercent = BigDecimal.valueOf(0.0);
-        if (currentPromotion != null) {
-            discountPercent = currentPromotion.getDiscountPercent();
+        
+        try {
+            com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+            promotionCode = busOrder.getPromotionCodeByOrderNo(orderNoToUse);
+            
+            // Nếu có promotion code, lấy thông tin promotion
+            if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                if (busPromotion == null) {
+                    busPromotion = new BUSPromotion();
+                }
+                currentPromotion = busPromotion.findActivePromotion(promotionCode);
+                if (currentPromotion != null) {
+                    discountPercent = currentPromotion.getDiscountPercent();
+                } else {
+                    // Nếu promotion không active, vẫn giữ promotion code nhưng discount = 0
+                    System.err.println("Warning: Promotion code " + promotionCode + " not found or expired, but keeping code in bill.");
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Error loading promotion from order in processExportData: " + ex.getMessage());
+            // Nếu có lỗi, vẫn tiếp tục với promotion code từ order (nếu có)
         }
         
-        // Calculate subtotal
+        // Calculate subtotal BEFORE discount
         for (Object[] item : orderItems) {
             BigDecimal unitPrice = (BigDecimal) item[3];
             int quantity = ((Number) item[4]).intValue();
-            BigDecimal discountAmount = unitPrice.multiply(discountPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            BigDecimal totalPrice = unitPrice.subtract(discountAmount).multiply(BigDecimal.valueOf(quantity));
-            totalNetPay = totalNetPay.add(totalPrice);
+            BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
+            totalBeforeDiscount = totalBeforeDiscount.add(itemTotal);
         }
         
-        // Calculate VAT
+        // Tính discount trên TỔNG tiền
+        BigDecimal totalAfterDiscount = totalBeforeDiscount;
+        if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discountAmount = totalBeforeDiscount.multiply(discountPercent)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            totalAfterDiscount = totalBeforeDiscount.subtract(discountAmount);
+        }
+        
+        // VAT tính trên tổng sau giảm giá
         BigDecimal vatPercent = BigDecimal.valueOf(8.00); // VAT 8%
-        BigDecimal vatAmount = totalNetPay.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        BigDecimal totalWithVAT = totalNetPay.add(vatAmount);
+        BigDecimal vatAmount = totalAfterDiscount.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalWithVAT = totalAfterDiscount.add(vatAmount);
         
         // 1. Insert Bill Exported with promotion code and VAT
         DTO_BillExported bill = new DTO_BillExported();
         bill.setInvoiceNo(invoiceNo);
         bill.setAdminId(txtAdminID.getText());
         bill.setCustomerId(customer.getCustomerID());
-        // Always get Order_No from orderItems (from Orders table)
-        String orderNoToUse = orderItems.get(0)[0].toString();
         bill.setOrderNo(orderNoToUse);
         // Calculate total quantity of all products, not just number of rows
         int totalQuantity = 0;
@@ -1128,12 +1123,20 @@ public class Form_Export extends JPanel {
         bill.setVatPercent(vatPercent);
         bill.setVatAmount(vatAmount);
         bill.setTotalAmount(totalWithVAT);
-        
-        String promotionCode = currentPromotion != null ? currentPromotion.getPromotionCode() : null;
+        // Set promotion code vào DTO để đảm bảo
+        bill.setPromotionCode(promotionCode);
 
+        // Debug: In ra để kiểm tra
+        System.out.println("=== DEBUG: Inserting Bill Exported ===");
+        System.out.println("Order No: " + orderNoToUse);
+        System.out.println("Promotion Code: " + promotionCode);
+        System.out.println("Discount Percent: " + discountPercent);
+        
         if (!busExportBill.insertBillExported(bill, promotionCode)) {
             throw new Exception("Failed to insert exported bill!");
         }
+        
+        System.out.println("=== Bill Exported inserted successfully ===");
 
         // Get the discount value from promotion (already calculated above)
 
@@ -1158,8 +1161,9 @@ public class Form_Export extends JPanel {
 
     private void processProductItem(Object[] item, BigDecimal discountPercent, 
                                    BigDecimal unitPrice, String productID, int quantity, String promotionCode) throws Exception {
-        // Calculate discount for total quantity
+        // Calculate total before discount (không áp dụng discount ở đây vì đã tính trên tổng)
         BigDecimal totalBefore = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        // Tính discount cho item này theo tỷ lệ (để hiển thị trong detail)
         BigDecimal discountAmount = totalBefore.multiply(discountPercent)
                                                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal totalAfter = totalBefore.subtract(discountAmount);

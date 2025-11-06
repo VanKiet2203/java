@@ -118,8 +118,11 @@ public class DAO_OrderDetails {
     
      public ArrayList<DTO_OrderDetails> getOrderDetails(String customerID, String orderNo) {
          ArrayList<DTO_OrderDetails> detailsList = new ArrayList<>();
+        // Chỉ SELECT các cột cần thiết từ Orders_Details, đảm bảo lấy đúng cột Status (không phải Record_Status)
         String sql = """
-            SELECT od.*, p.Product_Name, p.Color, p.Speed, p.Battery_Capacity,
+            SELECT od.Order_No, od.Customer_ID, od.Product_ID, od.Price, od.Sold_Quantity, 
+                   od.Date_Order, od.Time_Order, od.Status,
+                   p.Product_Name, p.Color, p.Speed, p.Battery_Capacity,
                    ISNULL(ps.Quantity_Stock, 0) AS Total_Imported,
                    p.Quantity AS Current_Stock,
                    ISNULL(ps.Quantity_Stock, 0) - p.Quantity AS Total_Sold
@@ -145,6 +148,7 @@ public class DAO_OrderDetails {
                     detail.setQuantity(rs.getInt("Sold_Quantity"));
                     detail.setDateOrder(rs.getDate("Date_Order").toLocalDate());
                     detail.setTimeOrder(rs.getTime("Time_Order").toLocalTime());
+                    // Lấy đúng cột Status từ Orders_Details (không phải Record_Status)
                     detail.setStatus(rs.getString("Status"));
                     
                     detailsList.add(detail);

@@ -16,6 +16,7 @@ import com.ComponentandDatabase.Components.MyButton;
 import com.ComponentandDatabase.Components.CustomDialog;
 import com.Admin.order.DTO.DTO_order;
 import com.Admin.order.BUS.BUS_order;
+import com.User.order.GUI.OrderUpdateNotifier;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JFileChooser;
@@ -406,6 +407,11 @@ public class Form_Order extends JPanel {
             // Update the table
             model.setValueAt(newStatus, selectedRow, 10);
             CustomDialog.showSuccess("Status updated successfully to " + newStatus + "!");
+            
+            // Lấy customerID từ selectedRow để notify user
+            String customerID = (String) model.getValueAt(selectedRow, 1);
+            OrderUpdateNotifier.notifyOrderUpdated(customerID, orderNo);
+            
             List<DTO_order> allOrders = busOrder.getAllOrdersSorted();
             loadOrderDataToTable(allOrders);
             expandTableColumns();

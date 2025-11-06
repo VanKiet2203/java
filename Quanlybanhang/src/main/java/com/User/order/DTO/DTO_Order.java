@@ -11,6 +11,8 @@ public class DTO_Order {
     private int totalQuantityProduct;
     private BigDecimal totalPrice;
     private String payment;
+    private String promotionCode;  // Mã giảm giá do user chọn khi đặt hàng
+    private String status; // Trạng thái đơn hàng
     private LocalDate dateOrder;
     private LocalTime timeOrder;
 
@@ -19,7 +21,7 @@ public class DTO_Order {
 
     // Constructor đầy đủ
     public DTO_Order(String orderNo, String customerID, String cartID, int totalQuantityProduct,
-                     BigDecimal totalPrice, String payment,
+                     BigDecimal totalPrice, String payment, String promotionCode,
                      LocalDate dateOrder, LocalTime timeOrder) {
         this.orderNo = orderNo;
         this.customerID = customerID;
@@ -27,6 +29,7 @@ public class DTO_Order {
         this.totalQuantityProduct = totalQuantityProduct;
         this.totalPrice = totalPrice;
         this.payment = payment;
+        this.promotionCode = promotionCode;
         this.dateOrder = dateOrder;
         this.timeOrder = timeOrder;
     }
@@ -80,6 +83,22 @@ public class DTO_Order {
         this.payment = payment;
     }
 
+    public String getPromotionCode() {
+        return promotionCode;
+    }
+
+    public void setPromotionCode(String promotionCode) {
+        this.promotionCode = promotionCode;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public LocalDate getDateOrder() {
         return dateOrder;
     }
@@ -106,6 +125,8 @@ public class DTO_Order {
                 ", totalQuantityProduct=" + totalQuantityProduct +
                 ", totalPrice=" + totalPrice +
                 ", payment='" + payment + '\'' +
+                ", promotionCode='" + promotionCode + '\'' +
+                ", status='" + status + '\'' +
                 ", dateOrder=" + dateOrder +
                 ", timeOrder=" + timeOrder +
                 '}';

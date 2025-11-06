@@ -1,5 +1,5 @@
-
 package com.User.order.GUI;
+
 import com.ComponentandDatabase.Components.MyPanel;
 import java.awt.Color;
 import java.awt.Font;
@@ -23,12 +23,16 @@ import javax.swing.SpinnerNumberModel;
 import java.util.ArrayList;
 import javax.swing.SwingConstants;
 import net.miginfocom.swing.MigLayout;
+import com.User.order.BUS.BUS_Order;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 public class Order_Details extends javax.swing.JFrame {
     public JLabel lblTitle;
     public MyPanel panelTitle;
      private String customerID;
     private String orderNo;
     private JPanel productsPanel;
+    private JPanel summaryPanel;
     private JScrollPane scrollPane;
     private BUS_OrderDetails orderDetailsBUS;
     private productBUS productBUS;
@@ -47,7 +51,7 @@ public class Order_Details extends javax.swing.JFrame {
     }
 
    private void initUI() {
-        bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][grow]"));
+        bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][grow][]"));
         
         // Panel tiêu đề
         panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
@@ -69,13 +73,20 @@ public class Order_Details extends javax.swing.JFrame {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         
-        bg.add(scrollPane, "grow, push");
+        bg.add(scrollPane, "grow, push, wrap");
+
+        // Summary panel for totals
+        summaryPanel = new JPanel(new GridLayout(0, 1, 3, 3));
+        summaryPanel.setBackground(Color.WHITE);
+        summaryPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+        bg.add(summaryPanel, "growx");
     }
    
    
    
     private void loadOrderProducts() {
         productsPanel.removeAll();
+        summaryPanel.removeAll();
         
         // Lấy danh sách sản phẩm trong đơn hàng từ BUS
         ArrayList<DTO_OrderDetails> orderDetails = orderDetailsBUS.getOrderDetails(customerID, orderNo);
@@ -83,6 +94,27 @@ public class Order_Details extends javax.swing.JFrame {
         if (orderDetails == null || orderDetails.isEmpty()) {
             showNoProductsMessage();
         } else {
+            // Tính toán subtotal, VAT (8% trên subtotal gốc), discount theo promotion của đơn hàng
+            BigDecimal subtotal = BigDecimal.ZERO;
+            for (DTO_OrderDetails detail : orderDetails) {
+                subtotal = subtotal.add(detail.getPrice().multiply(new BigDecimal(detail.getQuantity())));
+            }
+            BUS_Order busOrder = new BUS_Order();
+            String promotionCode = busOrder.getPromotionCodeByOrderNo(orderNo);
+            BigDecimal promoPercent = BigDecimal.ZERO;
+            if (promotionCode != null && !promotionCode.trim().isEmpty()) {
+                try {
+                    com.Admin.promotion.BUS.BUSPromotion pBus = new com.Admin.promotion.BUS.BUSPromotion();
+                    com.Admin.promotion.DTO.DTOPromotion p = pBus.findActivePromotion(promotionCode);
+                    if (p != null && p.getDiscountPercent()!=null) promoPercent = p.getDiscountPercent();
+                } catch (Exception ignore) {}
+            }
+
+            BigDecimal discount = subtotal.multiply(promoPercent).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+            BigDecimal afterDiscount = subtotal.subtract(discount);
+            BigDecimal vat = afterDiscount.multiply(new BigDecimal("8.00")).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+            BigDecimal total = afterDiscount.add(vat);
+
             for (DTO_OrderDetails detail : orderDetails) {
                 // Lấy thông tin đầy đủ sản phẩm
                 productDTO product = productBUS.getProductById(detail.getProductID());
@@ -90,10 +122,21 @@ public class Order_Details extends javax.swing.JFrame {
                     productsPanel.add(createProductCard(product, detail));
                 }
             }
+
+            // Hiển thị tổng hợp - đúng thứ tự: Subtotal -> Discount -> After Discount -> VAT -> Total
+            addSummaryLine("Promotion: ", (promotionCode == null || promotionCode.isBlank()) ? "None" : promotionCode +
+                    (promoPercent.compareTo(BigDecimal.ZERO)>0? String.format(" (%.1f%%)", promoPercent.doubleValue()): ""));
+            addSummaryLine("Subtotal: ", String.format("%,d VND", subtotal.intValue()));
+            addSummaryLine("Discount: ", "-" + String.format("%,d VND", discount.intValue()));
+            addSummaryLine("Subtotal (after discount): ", String.format("%,d VND", afterDiscount.intValue()));
+            addSummaryLine("VAT (8% after discount): ", String.format("%,d VND", vat.intValue()));
+            addSummaryLine("Total: ", String.format("%,d VND", total.intValue()));
         }
         
         productsPanel.revalidate();
         productsPanel.repaint();
+        summaryPanel.revalidate();
+        summaryPanel.repaint();
     }
 
     private void showNoProductsMessage() {
@@ -142,6 +185,13 @@ public class Order_Details extends javax.swing.JFrame {
         label.setFont(new Font("Times new roman", fontStyle, fontSize));
         label.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
         panel.add(label);
+    }
+
+    private void addSummaryLine(String label, String value) {
+        JLabel l = new JLabel(label + value);
+        l.setFont(new Font("Arial", Font.PLAIN, 14));
+        l.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+        summaryPanel.add(l);
     }
     
      

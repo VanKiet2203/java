@@ -25,4 +25,19 @@ public class OrderUpdateNotifier {
             listener.onOrderDeleted(customerID, orderNo);
         }
     }
+
+    public static void notifyOrderUpdated(String customerID, String orderNo) {
+        for (OrderUpdateListener listener : listeners) {
+            if (listener instanceof java.util.EventListener) {
+                // no-op
+            }
+            // Extend interface to support updated events
+            try {
+                listener.getClass().getMethod("onOrderUpdated", String.class, String.class)
+                        .invoke(listener, customerID, orderNo);
+            } catch (Exception ignore) {
+                // If not implemented, ignore
+            }
+        }
+    }
 }

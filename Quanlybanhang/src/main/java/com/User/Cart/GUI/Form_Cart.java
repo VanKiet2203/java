@@ -8,6 +8,9 @@ import com.User.order.BUS.BUS_OrderDetails;
 import com.User.order.DTO.DTO_Order;
 import com.User.order.BUS.BUS_Order;
 import com.User.home.DTO.productDTO;
+import com.Admin.promotion.BUS.BUSPromotion;
+import com.Admin.promotion.DTO.DTOPromotion;
+import com.ComponentandDatabase.Components.MyCombobox;
 import com.User.home.GUI.productDeteails;
 import com.User.home.GUI.CartUpdateListener;
 import com.User.order.GUI.OrderUpdateListener;
@@ -25,12 +28,15 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import java.awt.Dimension;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JTable;
 import javax.swing.Box;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.JFormattedTextField;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Form_Cart extends JPanel implements CartUpdateListener {
     private JPanel panelShow;
@@ -47,6 +53,9 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
     ArrayList<productDTO> productsInCart;
     private OrderUpdateListener orderUpdateListener;
     private ArrayList<JCheckBox> productCheckboxes; // Danh sách checkbox cho từng sản phẩm
+    private com.ComponentandDatabase.Components.MyTextField txtPromotionCode; // Input Promotion Code
+    private BUSPromotion busPromotion;
+    private DTOPromotion selectedPromotion; // Promotion được chọn
 
     public Form_Cart(String customerID) {
         this.currentCustomerID = customerID;
@@ -213,6 +222,29 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         paymentSection.add(momoPanel);
         paymentSection.add(cashPanel);
         
+        // Promotion Code section (user enters code and verify)
+        JPanel promotionSection = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        promotionSection.setOpaque(false);
+        
+        JLabel lblPromo = new JLabel("Promotion Code:");
+        lblPromo.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblPromo.setForeground(Color.decode("#2C3E50"));
+        
+        txtPromotionCode = new com.ComponentandDatabase.Components.MyTextField();
+        txtPromotionCode.setPreferredSize(new Dimension(200, 35));
+        txtPromotionCode.setTextFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtPromotionCode.setHint("Enter Promotion ID");
+
+        MyButton btnVerifyPromo = new MyButton("Verify", 14);
+        btnVerifyPromo.setBackgroundColor(Color.decode("#27AE60"));
+        btnVerifyPromo.setHoverColor(Color.decode("#2ECC71"));
+        btnVerifyPromo.setForeground(Color.WHITE);
+        btnVerifyPromo.addActionListener(e -> verifyPromotionCode());
+
+        promotionSection.add(lblPromo);
+        promotionSection.add(txtPromotionCode);
+        promotionSection.add(btnVerifyPromo);
+        
         // Order button
         bntOrder = new MyButton("Order", 20);
         bntOrder.setBackgroundColor(Color.decode("#E74C3C"));
@@ -228,10 +260,39 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
             Order();
         });
         
-        footerPanel.add(paymentSection, BorderLayout.WEST);
+        // Center panel chứa payment và promotion
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(paymentSection, BorderLayout.NORTH);
+        centerPanel.add(promotionSection, BorderLayout.SOUTH);
+        
+        footerPanel.add(centerPanel, BorderLayout.WEST);
         footerPanel.add(bntOrder, BorderLayout.EAST);
         
         add(footerPanel, BorderLayout.SOUTH);
+    }
+    
+    // Verify entered promotion code
+    private void verifyPromotionCode() {
+        String code = txtPromotionCode.getText() != null ? txtPromotionCode.getText().trim() : "";
+        if (code.isEmpty()) {
+            CustomDialog.showError("Please enter a promotion code.");
+            return;
+        }
+        try {
+            if (busPromotion == null) busPromotion = new BUSPromotion();
+            DTOPromotion p = busPromotion.findActivePromotion(code);
+            if (p != null) {
+                selectedPromotion = p;
+                CustomDialog.showSuccess(String.format("Valid code. Discount: %.1f%%", p.getDiscountPercent().doubleValue()));
+            } else {
+                selectedPromotion = null;
+                CustomDialog.showError("Invalid or expired promotion code.");
+            }
+        } catch (Exception ex) {
+            selectedPromotion = null;
+            CustomDialog.showError("Error verifying promotion: " + ex.getMessage());
+        }
     }
     
     
@@ -753,8 +814,44 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
               }
           }
 
-          // Tạo Order_No ngẫu nhiên 8 chữ số
-          String orderNo = String.format("%08d", new java.util.Random().nextInt(100000000));
+          // Hiển thị preview hoá đơn để người dùng xác nhận
+          if (!showOrderPreview(selectedProducts)) {
+              return; // Người dùng chưa xác nhận mua
+          }
+
+          // Tạo Order_No ngẫu nhiên 8 chữ số, đảm bảo không trùng với order hiện có của customer này
+          String orderNo;
+          int maxAttempts = 10; // Tối đa 10 lần thử
+          int attempts = 0;
+          do {
+              orderNo = String.format("%08d", new java.util.Random().nextInt(100000000));
+              attempts++;
+              // Kiểm tra Order_No đã tồn tại với Customer_ID này chưa
+              boolean exists = false;
+              try {
+                  busOrder = new BUS_Order();
+                  ArrayList<DTO_Order> existingOrders = busOrder.getOrdersByCustomer(currentCustomerID);
+                  if (existingOrders != null) {
+                      for (DTO_Order existingOrder : existingOrders) {
+                          if (existingOrder.getOrderNo().equals(orderNo)) {
+                              exists = true;
+                              break;
+                          }
+                      }
+                  }
+              } catch (Exception e) {
+                  // Nếu có lỗi khi kiểm tra, giả sử không trùng và tiếp tục
+                  System.err.println("Error checking existing orders: " + e.getMessage());
+              }
+              if (!exists) {
+                  break; // Tìm thấy Order_No không trùng
+              }
+          } while (attempts < maxAttempts);
+          
+          if (attempts >= maxAttempts) {
+              // Nếu không tìm được Order_No sau nhiều lần thử, thêm timestamp để đảm bảo unique
+              orderNo = String.format("%08d", System.currentTimeMillis() % 100000000);
+          }
 
           // Lấy thời gian hiện tại
           java.time.LocalDate currentDate = java.time.LocalDate.now();
@@ -782,6 +879,12 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
                   }
               }
               
+              // Lấy promotion code nếu có
+              String promotionCode = null;
+              if (selectedPromotion != null) {
+                  promotionCode = selectedPromotion.getPromotionCode();
+              }
+              
               // Tạo và thêm Order trước
               DTO_Order order = new DTO_Order();
               order.setOrderNo(orderNo);
@@ -790,14 +893,16 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
               order.setTotalQuantityProduct(totalQuantity);
               order.setTotalPrice(totalPrice);
               order.setPayment(paymentMethod);
+              order.setPromotionCode(promotionCode); // Set promotion code
               order.setDateOrder(currentDate);
               order.setTimeOrder(currentTime);
 
               busOrder = new BUS_Order();
-              boolean orderSuccess = busOrder.addOrderDetail(order);
+              String errorMessage = busOrder.addOrderDetail(order);
 
-              if (!orderSuccess) {
-                  CustomDialog.showError("Failed to create order!");
+              if (errorMessage != null) {
+                  // Hiển thị lỗi cụ thể
+                  CustomDialog.showError("Failed to create order!\n\n" + errorMessage);
                   return;
               }
 
@@ -851,6 +956,102 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
               CustomDialog.showError("An error occurred while processing your order!");
           }
       }
+
+      // Preview đơn hàng: VAT tính từ giá gốc, sau đó trừ khuyến mãi
+      private boolean showOrderPreview(ArrayList<productDTO> selectedProducts) {
+          final JDialog dlg = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Order Preview", true);
+          dlg.setSize(820, 560);
+          dlg.setLocationRelativeTo(this);
+          dlg.setLayout(new BorderLayout());
+          dlg.getContentPane().setBackground(Color.WHITE);
+
+          JPanel header = new JPanel(new BorderLayout());
+          header.setBackground(Color.WHITE);
+          JLabel title = new JLabel("Order Preview", SwingConstants.CENTER);
+          title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+          title.setForeground(Color.decode("#2C3E50"));
+          header.add(title, BorderLayout.CENTER);
+          dlg.add(header, BorderLayout.NORTH);
+
+          String[] cols = {"Product", "Qty", "Unit Price", "Subtotal"};
+          DefaultTableModel mdl = new DefaultTableModel(cols, 0) {
+              @Override public boolean isCellEditable(int r, int c) { return false; }
+          };
+          JTable tbl = new JTable(mdl);
+          tbl.setRowHeight(26);
+          JScrollPane sp = new JScrollPane(tbl);
+
+          // Tính toán
+          BigDecimal vatPercent = new BigDecimal("8.00");
+          BigDecimal promoPercent = (selectedPromotion != null && selectedPromotion.getDiscountPercent()!=null)
+                  ? selectedPromotion.getDiscountPercent() : BigDecimal.ZERO;
+
+          BigDecimal totalSubtotal = BigDecimal.ZERO;
+          BigDecimal grandTotal = BigDecimal.ZERO; // sum of subtotals only (per-row)
+
+          for (productDTO p : selectedProducts) {
+              int qty = p.getQuantity();
+              BigDecimal unit = p.getPrice();
+              BigDecimal subtotal = unit.multiply(new BigDecimal(qty));
+              BigDecimal total = subtotal;
+
+              totalSubtotal = totalSubtotal.add(subtotal);
+              grandTotal = grandTotal.add(total);
+
+              mdl.addRow(new Object[]{
+                  p.getProductName(),
+                  qty,
+                  String.format("%,d VND", unit.intValue()),
+                  String.format("%,d VND", subtotal.intValue())
+              });
+          }
+
+          JPanel center = new JPanel(new BorderLayout());
+          center.setBackground(Color.WHITE);
+          center.add(sp, BorderLayout.CENTER);
+
+          JPanel summary = new JPanel();
+          summary.setLayout(new BoxLayout(summary, BoxLayout.Y_AXIS));
+          summary.setBackground(Color.WHITE);
+          String promoCodeText = (selectedPromotion != null) ? selectedPromotion.getPromotionCode() +
+                  String.format(" (%.1f%%)", selectedPromotion.getDiscountPercent().doubleValue()) : "None";
+
+          BigDecimal totalDiscount = totalSubtotal.multiply(promoPercent).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+          BigDecimal afterDiscount = totalSubtotal.subtract(totalDiscount);
+          BigDecimal vatOnAfter = afterDiscount.multiply(vatPercent).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+          BigDecimal totalToPay = afterDiscount.add(vatOnAfter);
+          summary.add(new JLabel("Promotion: " + promoCodeText));
+          summary.add(new JLabel("Subtotal: " + String.format("%,d VND", totalSubtotal.intValue())));
+          summary.add(new JLabel("Discount: -" + String.format("%,d VND", totalDiscount.intValue())));
+          summary.add(new JLabel("Subtotal (after discount): " + String.format("%,d VND", afterDiscount.intValue())));
+          summary.add(new JLabel("VAT (8% after discount): " + String.format("%,d VND", vatOnAfter.intValue())));
+          summary.add(new JLabel("Total to pay: " + String.format("%,d VND", totalToPay.intValue())));
+
+          summary.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+          center.add(summary, BorderLayout.SOUTH);
+          dlg.add(center, BorderLayout.CENTER);
+
+          JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+          footer.setBackground(Color.WHITE);
+          MyButton cancel = new MyButton("Cancel", 14);
+          cancel.setBackgroundColor(Color.decode("#95A5A6"));
+          cancel.setHoverColor(Color.decode("#7F8C8D"));
+          cancel.setForeground(Color.WHITE);
+          MyButton confirm = new MyButton("Confirm", 14);
+          confirm.setBackgroundColor(Color.decode("#27AE60"));
+          confirm.setHoverColor(Color.decode("#2ECC71"));
+          confirm.setForeground(Color.WHITE);
+          footer.add(cancel);
+          footer.add(confirm);
+          dlg.add(footer, BorderLayout.SOUTH);
+
+          final boolean[] ok = {false};
+          cancel.addActionListener(e -> { ok[0] = false; dlg.dispose(); });
+          confirm.addActionListener(e -> { ok[0] = true; dlg.dispose(); });
+
+          dlg.setVisible(true);
+          return ok[0];
+      }
       
       // Xử lý thanh toán MoMo với dialog đơn giản
       private boolean processMoMoPayment(ArrayList<productDTO> selectedProducts) {
@@ -901,19 +1102,32 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           qrLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
           qrLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
           
-          // QR Code placeholder (có thể thay bằng ảnh QR thật)
-          JPanel qrPanel = new JPanel();
-          qrPanel.setPreferredSize(new Dimension(200, 200));
+          // QR Code image from Admin_icon/QR.jpg
+          JPanel qrPanel = new JPanel(new BorderLayout());
+          qrPanel.setPreferredSize(new Dimension(260, 260));
           qrPanel.setBackground(Color.WHITE);
           qrPanel.setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
               BorderFactory.createEmptyBorder(10, 10, 10, 10)
           ));
-          
-          JLabel qrPlaceholder = new JLabel("QR CODE", SwingConstants.CENTER);
-          qrPlaceholder.setFont(new Font("Segoe UI", Font.BOLD, 16));
-          qrPlaceholder.setForeground(Color.decode("#7F8C8D"));
-          qrPanel.add(qrPlaceholder);
+
+          try {
+              // Load QR code from resources
+              java.net.URL qrURL = getClass().getResource("/Icons/Admin_icon/QR.jpg");
+              if (qrURL != null) {
+                  ImageIcon qrIcon = new ImageIcon(qrURL);
+                  Image scaled = qrIcon.getImage().getScaledInstance(240, 240, Image.SCALE_SMOOTH);
+                  JLabel qrImage = new JLabel(new ImageIcon(scaled), SwingConstants.CENTER);
+                  qrPanel.add(qrImage, BorderLayout.CENTER);
+              } else {
+                  throw new Exception("QR.jpg not found in resources");
+              }
+          } catch (Exception ex) {
+              JLabel qrPlaceholder = new JLabel("QR CODE", SwingConstants.CENTER);
+              qrPlaceholder.setFont(new Font("Segoe UI", Font.BOLD, 16));
+              qrPlaceholder.setForeground(Color.decode("#7F8C8D"));
+              qrPanel.add(qrPlaceholder, BorderLayout.CENTER);
+          }
           
           contentPanel.add(amountLabel);
           contentPanel.add(amountValue);
