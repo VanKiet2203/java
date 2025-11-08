@@ -283,14 +283,14 @@ public class PDFExporter {
     section.setSpacingAfter(10f);
     document.add(section);
 
-        // Create table with 9 columns (added Start Date and End Date columns)
-        PdfPTable table = new PdfPTable(9);
+        // Create table with 8 columns (bỏ cột Discount, hiển thị ở Order Summary)
+        PdfPTable table = new PdfPTable(8);
         table.setWidthPercentage(110); // Mở rộng bảng hơn so với trang PDF
         table.setSpacingBefore(10f);
         table.setSpacingAfter(15f);
 
-        // Column widths
-        float[] columnWidths = {1.0f, 1.8f, 3.0f, 1.5f, 2.0f, 1.5f, 2.0f, 2.0f, 2.2f}; 
+        // Column widths (điều chỉnh sau khi bỏ cột Discount)
+        float[] columnWidths = {1.0f, 1.8f, 3.2f, 1.5f, 2.2f, 2.2f, 2.0f, 2.2f}; 
         table.setWidths(columnWidths);
 
 
@@ -303,14 +303,12 @@ public class PDFExporter {
         addTableHeader(table, "Product Name", headerFont, headerBgColor);
         addTableHeader(table, "Quantity", headerFont, headerBgColor);
         addTableHeader(table, "Unit Price", headerFont, headerBgColor);
-        addTableHeader(table, "Discount", headerFont, headerBgColor);
-        addTableHeader(table, "Total", headerFont, headerBgColor);
+        addTableHeader(table, "Total Price", headerFont, headerBgColor);
         addTableHeader(table, "Warranty Start", headerFont, headerBgColor);
         addTableHeader(table, "Warranty End", headerFont, headerBgColor);
         // Table data
         Font rowFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
         int rowNum = 1;
-        BigDecimal grandTotal = BigDecimal.ZERO;
         
         // Get current date for warranty calculation
         java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
@@ -331,10 +329,8 @@ public class PDFExporter {
             String warrantyStartStr = dateFormat.format(warrantyStartDate);
             String warrantyEndStr = dateFormat.format(warrantyEndDate);
             
-            // Calculate item total without discount first
-            BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
-            // Apply discount to the subtotal
-            BigDecimal itemTotal = itemSubtotal.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(discount / 100)));
+            // Calculate item total (giá trước discount - giống Form_Export.java)
+            BigDecimal itemTotalBeforeDiscount = unitPrice.multiply(BigDecimal.valueOf(quantity));
             
             // Alternate row color for better readability
             BaseColor rowColor = rowNum % 2 == 0 ? new BaseColor(248, 248, 248) : BaseColor.WHITE;
@@ -344,12 +340,12 @@ public class PDFExporter {
             table.addCell(createTableCell(busOrderDetail.getProductName(productId), rowFont, rowColor));
             table.addCell(createTableCell(String.valueOf(quantity), rowFont, rowColor));
             table.addCell(createTableCell(formatCurrency(unitPrice.toString()), rowFont, rowColor));
-            table.addCell(createTableCell(discount > 0 ? discount + "%" : "0%", rowFont, rowColor));
-            table.addCell(createTableCell(formatCurrency(itemTotal.toString()), rowFont, rowColor));
+            // Hiển thị Total Price (trước discount) - giống Form_Export.java
+            table.addCell(createTableCell(formatCurrency(itemTotalBeforeDiscount.toString()), rowFont, rowColor));
             table.addCell(createTableCell(warrantyStartStr, rowFont, rowColor));
             table.addCell(createTableCell(warrantyEndStr, rowFont, rowColor));
             
-            grandTotal = grandTotal.add(itemTotal);
+            // Không cần tính grandTotal ở đây vì sẽ tính trong addOrderSummary
         }
 
         document.add(table);
@@ -486,14 +482,15 @@ public class PDFExporter {
        summaryParagraph.setAlignment(Element.ALIGN_RIGHT);
        summaryParagraph.setSpacingBefore(10f);
 
-       summaryParagraph.add(new Phrase("Total Quantity: ", labelFont));
+       summaryParagraph.add(new Phrase("Total Products: ", labelFont));
        summaryParagraph.add(new Phrase(String.valueOf(totalQuantity) + "\n", valueFont));
 
        summaryParagraph.add(new Phrase("Subtotal (before discount): ", labelFont));
        summaryParagraph.add(new Phrase(formatCurrency(totalBeforeDiscount.toString()) + "\n", valueFont));
        
+       // Hiển thị discount với format giống Form_Export.java
        if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
-           summaryParagraph.add(new Phrase("Discount (" + discountPercent + "%): ", labelFont));
+           summaryParagraph.add(new Phrase("Discount (" + String.format("%.1f%%", discountPercent.doubleValue()) + "): ", labelFont));
            summaryParagraph.add(new Phrase("-" + formatCurrency(discountAmount.toString()) + "\n", valueFont));
        }
        

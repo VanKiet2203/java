@@ -772,7 +772,7 @@ public class Form_Export extends JPanel {
         String orderNoToUse = orderItems.get(0)[0].toString();
         addInfoRow(orderPanel, "Order No:", orderNoToUse);
 
-        String[] columns = {"No.", "Product ID", "Product Name", "Quantity", "Unit Price", "Discount", "Total Price", "Waranty Period"};
+        String[] columns = {"No.", "Product ID", "Product Name", "Quantity", "Unit Price", "Total Price", "Waranty Period"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -797,15 +797,14 @@ public class Form_Export extends JPanel {
             busExportBill= new BUS_ExportBill();
             String warranty= busExportBill.getWarranty(productID);
             
-            // Hiển thị giá gốc trong bảng (không discount ở đây)
+            // Hiển thị giá gốc trong bảng (không discount ở đây - discount hiển thị ở summary)
             model.addRow(new Object[]{
                 stt++,
                 productID,
                 busOrderDetail.getProductName(productID),
                 quantity,
-                String.format("%,d VND", unitPrice.intValue()),
-                discount + "%",
-                String.format("%,d VND", itemTotalBeforeDiscount.intValue()),
+                String.format("%,d VND", unitPrice.longValue()),
+                String.format("%,d VND", itemTotalBeforeDiscount.longValue()),
                 warranty
                      
             });
@@ -826,16 +825,15 @@ public class Form_Export extends JPanel {
         productTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         productTable.setFillsViewportHeight(true);
 
-        // Adjust column widths
+        // Adjust column widths (điều chỉnh sau khi bỏ cột Discount)
         TableColumnModel columnModel = productTable.getColumnModel();
         columnModel.getColumn(0).setPreferredWidth(50);   // No.
         columnModel.getColumn(1).setPreferredWidth(100);  // Product ID
-        columnModel.getColumn(2).setPreferredWidth(320);  // Product Name
+        columnModel.getColumn(2).setPreferredWidth(350);  // Product Name (tăng để bù cho cột Discount)
         columnModel.getColumn(3).setPreferredWidth(80);   // Quantity
-        columnModel.getColumn(4).setPreferredWidth(160);  // Unit Price
-        columnModel.getColumn(5).setPreferredWidth(80);   // Discount
-        columnModel.getColumn(6).setPreferredWidth(160);  // Total Price
-        columnModel.getColumn(7).setPreferredWidth(200);
+        columnModel.getColumn(4).setPreferredWidth(180);  // Unit Price (tăng)
+        columnModel.getColumn(5).setPreferredWidth(180);  // Total Price (tăng)
+        columnModel.getColumn(6).setPreferredWidth(200);  // Warranty Period
 
         JScrollPane tableScroll = new JScrollPane(productTable);
         tableScroll.setPreferredSize(new Dimension(710, Math.min(orderItems.size() * 30 + 50, 300)));
@@ -859,12 +857,12 @@ public class Form_Export extends JPanel {
         // ===== 5. Order Summary =====
         JPanel summaryPanel = createSectionPanel("ORDER SUMMARY");
         addInfoRow(summaryPanel, "Total Products:", String.valueOf(totalProducts));
-        addInfoRow(summaryPanel, "Subtotal (before discount):", String.format("%,d VND", totalBeforeDiscount.intValue()));
+        addInfoRow(summaryPanel, "Subtotal (before discount):", String.format("%,d VND", totalBeforeDiscount.longValue()));
         
         if (currentPromotion != null && discount > 0) {
-            addInfoRow(summaryPanel, "Discount (" + String.format("%.1f%%", discount) + "):", "-" + String.format("%,d VND", discountAmount.intValue()));
+            addInfoRow(summaryPanel, "Discount (" + String.format("%.1f%%", discount) + "):", "-" + String.format("%,d VND", discountAmount.longValue()));
         }
-        addInfoRow(summaryPanel, "Subtotal (after discount):", String.format("%,d VND", totalAfterDiscount.intValue()));
+        addInfoRow(summaryPanel, "Subtotal (after discount):", String.format("%,d VND", totalAfterDiscount.longValue()));
         
         // ===== 6. VAT Calculation =====
         // VAT tính trên giá sau chiết khấu
@@ -872,8 +870,8 @@ public class Form_Export extends JPanel {
         BigDecimal vatAmount = totalAfterDiscount.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal totalWithVAT = totalAfterDiscount.add(vatAmount);
         
-        addInfoRow(summaryPanel, "VAT (" + vatPercent + "% after discount):", String.format("%,d VND", vatAmount.intValue()));
-        addInfoRow(summaryPanel, "Total Amount (incl. VAT):", String.format("%,d VND", totalWithVAT.intValue()));
+        addInfoRow(summaryPanel, "VAT (" + vatPercent + "% after discount):", String.format("%,d VND", vatAmount.longValue()));
+        addInfoRow(summaryPanel, "Total Amount (incl. VAT):", String.format("%,d VND", totalWithVAT.longValue()));
         
         billBody.add(summaryPanel);
         billBody.add(createSeparator());
@@ -1331,9 +1329,13 @@ public class Form_Export extends JPanel {
         }
 
     private void cleanupAfterExport(List<String> imeis, String orderNo) {
-        // Xóa order
-        busOrderDetail.deleteOrder(orderNo);
+        // KHÔNG xóa order sau khi export
+        // Export chỉ là tạo bill exported, order vẫn giữ nguyên:
+        // - Record_Status = 'Available' (để vẫn hiển thị trong danh sách)
+        // - Status = 'Confirmed' (để hiển thị đúng status)
+        // Available/Unavailable chỉ dùng cho delete, không liên quan đến export
         
+        // REMOVED: Không gọi deleteOrder vì export không phải là delete
         // REMOVED: Không gọi fixQuantityIssues ở đây để tránh trùng lặp với trigger
         // Trigger trg_BED_AI_Stock đã tự động cập nhật số lượng
         

@@ -509,9 +509,9 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
         );
         JSpinner quantitySpinner = new JSpinner(quantityModel);
         quantitySpinner.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        quantitySpinner.setPreferredSize(new Dimension(55, 25));
-        quantitySpinner.setMinimumSize(new Dimension(50, 25));
-        quantitySpinner.setMaximumSize(new Dimension(60, 25));
+        quantitySpinner.setPreferredSize(new Dimension(70, 25));
+        quantitySpinner.setMinimumSize(new Dimension(60, 25));
+        quantitySpinner.setMaximumSize(new Dimension(75, 25));
         quantitySpinner.setAlignmentY(Component.CENTER_ALIGNMENT);
         
         // Customize spinner editor
@@ -1001,8 +1001,8 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
               mdl.addRow(new Object[]{
                   p.getProductName(),
                   qty,
-                  String.format("%,d VND", unit.intValue()),
-                  String.format("%,d VND", subtotal.intValue())
+                  String.format("%,d VND", unit.longValue()),
+                  String.format("%,d VND", subtotal.longValue())
               });
           }
 
@@ -1021,11 +1021,11 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           BigDecimal vatOnAfter = afterDiscount.multiply(vatPercent).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
           BigDecimal totalToPay = afterDiscount.add(vatOnAfter);
           summary.add(new JLabel("Promotion: " + promoCodeText));
-          summary.add(new JLabel("Subtotal: " + String.format("%,d VND", totalSubtotal.intValue())));
-          summary.add(new JLabel("Discount: -" + String.format("%,d VND", totalDiscount.intValue())));
-          summary.add(new JLabel("Subtotal (after discount): " + String.format("%,d VND", afterDiscount.intValue())));
-          summary.add(new JLabel("VAT (8% after discount): " + String.format("%,d VND", vatOnAfter.intValue())));
-          summary.add(new JLabel("Total to pay: " + String.format("%,d VND", totalToPay.intValue())));
+          summary.add(new JLabel("Subtotal: " + String.format("%,d VND", totalSubtotal.longValue())));
+          summary.add(new JLabel("Discount: -" + String.format("%,d VND", totalDiscount.longValue())));
+          summary.add(new JLabel("Subtotal (after discount): " + String.format("%,d VND", afterDiscount.longValue())));
+          summary.add(new JLabel("VAT (8% after discount): " + String.format("%,d VND", vatOnAfter.longValue())));
+          summary.add(new JLabel("Total to pay: " + String.format("%,d VND", totalToPay.longValue())));
 
           summary.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
           center.add(summary, BorderLayout.SOUTH);

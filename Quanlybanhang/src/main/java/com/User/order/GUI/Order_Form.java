@@ -241,7 +241,8 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         // Lấy status và normalize (trim, uppercase để so sánh)
         String status = (order.getStatus() == null || order.getStatus().trim().isEmpty()) ? "Unknown" : order.getStatus().trim();
         
-        // Debug: Kiểm tra status
+        // Chỉ hiển thị các status hợp lệ: Confirmed, Cancelled, Waiting
+        // Nếu status không hợp lệ (như "unavailable", "available" - đây là Record_Status), hiển thị "Unknown"
         if (status.equalsIgnoreCase("unavailable") || status.equalsIgnoreCase("available")) {
             System.err.println("WARNING: Order_Form hiển thị status = '" + status + "' cho Order_No: " + order.getOrderNo());
             System.err.println("Có thể đang lấy nhầm Record_Status thay vì Status!");
@@ -249,6 +250,25 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
             // Hiển thị "Unknown" thay vì giá trị sai
             status = "Unknown";
         }
+        
+        // Normalize status để so sánh (chỉ chấp nhận: Confirmed, Cancelled, Waiting)
+        String normalizedStatus = status;
+        if (!status.equalsIgnoreCase("Confirmed") && 
+            !status.equalsIgnoreCase("Cancelled") && 
+            !status.equalsIgnoreCase("Waiting")) {
+            // Nếu status không phải là một trong 3 giá trị hợp lệ, hiển thị "Unknown"
+            normalizedStatus = "Unknown";
+        } else {
+            // Chuẩn hóa format: Confirmed, Cancelled, Waiting (chữ cái đầu viết hoa)
+            if (status.equalsIgnoreCase("Confirmed")) {
+                normalizedStatus = "Confirmed";
+            } else if (status.equalsIgnoreCase("Cancelled")) {
+                normalizedStatus = "Cancelled";
+            } else if (status.equalsIgnoreCase("Waiting")) {
+                normalizedStatus = "Waiting";
+            }
+        }
+        status = normalizedStatus;
         JLabel statusBadge = new JLabel(status);
         statusBadge.setFont(new Font("Arial", Font.BOLD, 11));
         statusBadge.setHorizontalAlignment(SwingConstants.CENTER);
@@ -257,7 +277,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
             BorderFactory.createEmptyBorder(2, 6, 2, 6)
         ));
         
-        // Màu sắc theo status
+        // Màu sắc theo status - chỉ hiển thị cho các status hợp lệ
         if ("Waiting".equalsIgnoreCase(status)) {
             statusBadge.setBackground(Color.decode("#FFA726"));
             statusBadge.setForeground(Color.WHITE);
@@ -268,6 +288,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
             statusBadge.setBackground(Color.decode("#EF5350"));
             statusBadge.setForeground(Color.WHITE);
         } else {
+            // Unknown hoặc status không hợp lệ - màu xám
             statusBadge.setBackground(Color.decode("#78909C"));
             statusBadge.setForeground(Color.WHITE);
         }
@@ -341,7 +362,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         java.math.BigDecimal vat = afterDiscount.multiply(new java.math.BigDecimal("8.00")).divide(new java.math.BigDecimal(100), 2, RoundingMode.HALF_UP);
         java.math.BigDecimal totalToPay = afterDiscount.add(vat);
 
-        JLabel lblSubtotal = new JLabel("Subtotal: " + String.format("%,d VNĐ", subtotal.intValue()));
+        JLabel lblSubtotal = new JLabel("Subtotal: " + String.format("%,d VNĐ", subtotal.longValue()));
         lblSubtotal.setFont(new Font("Arial", Font.PLAIN, 10));
         lblSubtotal.setForeground(Color.decode("#555555"));
         lblSubtotal.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -350,7 +371,7 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
 
         // Luôn dành một vị trí cho Discount để đảm bảo spacing nhất quán
         if (discount.compareTo(BigDecimal.ZERO) > 0) {
-            JLabel lblDiscount = new JLabel("Discount: -" + String.format("%,d VNĐ", discount.intValue()) + (promotionCode!=null? " ("+promotionCode+")":""));
+            JLabel lblDiscount = new JLabel("Discount: -" + String.format("%,d VNĐ", discount.longValue()) + (promotionCode!=null? " ("+promotionCode+")":""));
             lblDiscount.setFont(new Font("Arial", Font.PLAIN, 10));
             lblDiscount.setForeground(Color.decode("#2E7D32"));
             lblDiscount.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -365,21 +386,21 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
             detailsPanel.add(discountSpacer);
         }
 
-        JLabel lblAfter = new JLabel("After discount: " + String.format("%,d VNĐ", afterDiscount.intValue()));
+        JLabel lblAfter = new JLabel("After discount: " + String.format("%,d VNĐ", afterDiscount.longValue()));
         lblAfter.setFont(new Font("Arial", Font.PLAIN, 10));
         lblAfter.setForeground(Color.decode("#555555"));
         lblAfter.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblAfter.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
         detailsPanel.add(lblAfter);
 
-        JLabel lblVat = new JLabel("VAT (8%): " + String.format("%,d VNĐ", vat.intValue()));
+        JLabel lblVat = new JLabel("VAT (8%): " + String.format("%,d VNĐ", vat.longValue()));
         lblVat.setFont(new Font("Arial", Font.PLAIN, 10));
         lblVat.setForeground(Color.decode("#555555"));
         lblVat.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblVat.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         detailsPanel.add(lblVat);
 
-        JLabel priceLabel = new JLabel("Total: " + String.format("%,d VNĐ", totalToPay.intValue()));
+        JLabel priceLabel = new JLabel("Total: " + String.format("%,d VNĐ", totalToPay.longValue()));
         priceLabel.setFont(new Font("Arial", Font.BOLD, 12));
         priceLabel.setForeground(Color.decode("#D32F2F"));
         priceLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -421,10 +442,10 @@ public class Order_Form extends JPanel implements OrderUpdateListener {
         if (currentStatus == null) {
             currentStatus = "";
         }
-        String normalizedStatus = currentStatus.trim();
+        String currentStatusNormalized = currentStatus.trim();
         
         // Chỉ hiển thị nút cancel khi status là "Waiting" (case-insensitive)
-        if (normalizedStatus.equalsIgnoreCase("Waiting")) {
+        if (currentStatusNormalized.equalsIgnoreCase("Waiting")) {
             MyButton cancelBtn = new MyButton("Cancel", 10);
             cancelBtn.setPreferredSize(new Dimension(100, 30));
             cancelBtn.setBackgroundColor(Color.decode("#E74C3C"));

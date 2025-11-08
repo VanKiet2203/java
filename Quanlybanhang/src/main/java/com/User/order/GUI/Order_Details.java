@@ -126,11 +126,11 @@ public class Order_Details extends javax.swing.JFrame {
             // Hiển thị tổng hợp - đúng thứ tự: Subtotal -> Discount -> After Discount -> VAT -> Total
             addSummaryLine("Promotion: ", (promotionCode == null || promotionCode.isBlank()) ? "None" : promotionCode +
                     (promoPercent.compareTo(BigDecimal.ZERO)>0? String.format(" (%.1f%%)", promoPercent.doubleValue()): ""));
-            addSummaryLine("Subtotal: ", String.format("%,d VND", subtotal.intValue()));
-            addSummaryLine("Discount: ", "-" + String.format("%,d VND", discount.intValue()));
-            addSummaryLine("Subtotal (after discount): ", String.format("%,d VND", afterDiscount.intValue()));
-            addSummaryLine("VAT (8% after discount): ", String.format("%,d VND", vat.intValue()));
-            addSummaryLine("Total: ", String.format("%,d VND", total.intValue()));
+            addSummaryLine("Subtotal: ", String.format("%,d VND", subtotal.longValue()));
+            addSummaryLine("Discount: ", "-" + String.format("%,d VND", discount.longValue()));
+            addSummaryLine("Subtotal (after discount): ", String.format("%,d VND", afterDiscount.longValue()));
+            addSummaryLine("VAT (8% after discount): ", String.format("%,d VND", vat.longValue()));
+            addSummaryLine("Total: ", String.format("%,d VND", total.longValue()));
         }
         
         productsPanel.revalidate();

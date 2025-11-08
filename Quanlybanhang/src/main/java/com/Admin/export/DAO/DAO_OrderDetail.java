@@ -135,7 +135,10 @@ public class DAO_OrderDetail {
      return productName;
  }
     public boolean deleteOrderByOrderNo(String orderNo) {
-        String sql = "UPDATE Orders SET Status = 'Unavailable' WHERE Order_No = ?";
+        // Chỉ cập nhật Record_Status để đánh dấu order đã được export (soft delete)
+        // Giữ nguyên Status (Confirmed) để không ảnh hưởng đến hiển thị
+        // Order sẽ không hiển thị trong danh sách vì query filter theo Record_Status = 'Available'
+        String sql = "UPDATE Orders SET Record_Status = 'Unavailable' WHERE Order_No = ?";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -143,7 +146,7 @@ public class DAO_OrderDetail {
             stmt.setString(1, orderNo);
             int affectedRows = stmt.executeUpdate();
 
-            return affectedRows > 0; // Trả về true nếu có ít nhất một dòng bị xóa
+            return affectedRows > 0; // Trả về true nếu có ít nhất một dòng bị cập nhật
 
         } catch (SQLException e) {
             System.err.println("Error orders deleted ! " + e.getMessage());
