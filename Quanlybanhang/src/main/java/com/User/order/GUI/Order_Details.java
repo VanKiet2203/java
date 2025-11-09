@@ -53,32 +53,40 @@ public class Order_Details extends javax.swing.JFrame {
    private void initUI() {
         bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][grow][]"));
         
-        // Panel tiêu đề
-        panelTitle = new MyPanel(new MigLayout("fill, insets 0"));
-        panelTitle.setGradientColors(Color.decode("#1CB5E0"), Color.decode("#4682B4"), MyPanel.VERTICAL_GRADIENT);
+        // Panel tiêu đề với design đẹp hơn
+        panelTitle = new MyPanel(new MigLayout("fill, insets 15"));
+        panelTitle.setGradientColors(Color.decode("#2196F3"), Color.decode("#1976D2"), MyPanel.VERTICAL_GRADIENT);
+        panelTitle.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#1976D2"), 2),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
 
-        lblTitle = new JLabel("Order " + orderNo, JLabel.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTitle = new JLabel("Order Details - " + orderNo, JLabel.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblTitle.setForeground(Color.WHITE);
         panelTitle.add(lblTitle, "grow, push, align center");
-        bg.add(panelTitle, "growx, h 40!, wrap");
+        bg.add(panelTitle, "growx, h 70!, wrap");
 
-        // Panel chứa sản phẩm
-        productsPanel = new JPanel(new GridLayout(0, 4, 10, 15));
-        productsPanel.setBackground(Color.WHITE);
-        productsPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        // Panel chứa sản phẩm với spacing tốt hơn
+        productsPanel = new JPanel(new GridLayout(0, 4, 20, 20));
+        productsPanel.setBackground(Color.decode("#F5F5F5"));
+        productsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         scrollPane = new JScrollPane(productsPanel);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBackground(Color.decode("#F5F5F5"));
         
         bg.add(scrollPane, "grow, push, wrap");
 
-        // Summary panel for totals
-        summaryPanel = new JPanel(new GridLayout(0, 1, 3, 3));
+        // Summary panel với design đẹp hơn
+        summaryPanel = new JPanel(new MigLayout("fillx, insets 20", "[grow]", "[]5[]5[]5[]5[]5[]"));
         summaryPanel.setBackground(Color.WHITE);
-        summaryPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+        summaryPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(2, 0, 0, 0, Color.decode("#E0E0E0")),
+            BorderFactory.createEmptyBorder(20, 30, 20, 30)
+        ));
         bg.add(summaryPanel, "growx");
     }
    
@@ -124,13 +132,25 @@ public class Order_Details extends javax.swing.JFrame {
             }
 
             // Hiển thị tổng hợp - đúng thứ tự: Subtotal -> Discount -> After Discount -> VAT -> Total
-            addSummaryLine("Promotion: ", (promotionCode == null || promotionCode.isBlank()) ? "None" : promotionCode +
+            addSummaryLine("Promotion:", (promotionCode == null || promotionCode.isBlank()) ? "None" : promotionCode +
                     (promoPercent.compareTo(BigDecimal.ZERO)>0? String.format(" (%.1f%%)", promoPercent.doubleValue()): ""));
-            addSummaryLine("Subtotal: ", String.format("%,d VND", subtotal.longValue()));
-            addSummaryLine("Discount: ", "-" + String.format("%,d VND", discount.longValue()));
-            addSummaryLine("Subtotal (after discount): ", String.format("%,d VND", afterDiscount.longValue()));
-            addSummaryLine("VAT (8% after discount): ", String.format("%,d VND", vat.longValue()));
-            addSummaryLine("Total: ", String.format("%,d VND", total.longValue()));
+            addSummaryLine("Subtotal (before discount):", String.format("%,d VND", subtotal.longValue()));
+            
+            // Chỉ hiển thị discount nếu có
+            if (promoPercent.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryLine("Discount:", "-" + String.format("%,d VND", discount.longValue()));
+            }
+            
+            addSummaryLine("Subtotal (after discount):", String.format("%,d VND", afterDiscount.longValue()));
+            addSummaryLine("VAT (8% after discount):", String.format("%,d VND", vat.longValue()));
+            
+            // Thêm separator trước Total
+            JPanel separator = new JPanel();
+            separator.setBackground(Color.decode("#E0E0E0"));
+            separator.setPreferredSize(new Dimension(0, 2));
+            summaryPanel.add(separator, "growx, h 2!, wrap");
+            
+            addSummaryLine("Total:", String.format("%,d VND", total.longValue()));
         }
         
         productsPanel.revalidate();
@@ -141,57 +161,141 @@ public class Order_Details extends javax.swing.JFrame {
 
     private void showNoProductsMessage() {
        productsPanel.setLayout(new BorderLayout());
+       productsPanel.setBackground(Color.WHITE);
         
         JLabel noProducts = new JLabel("No products in this order", SwingConstants.CENTER);
-        noProducts.setFont(new Font("Arial", Font.BOLD, 18));
-        noProducts.setForeground(Color.GRAY);
+        noProducts.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        noProducts.setForeground(Color.decode("#757575"));
         
         productsPanel.add(noProducts, BorderLayout.CENTER);
     }
 
     private JPanel createProductCard(productDTO product, DTO_OrderDetails orderDetail) {
-        JPanel card = new JPanel(new BorderLayout(5, 5));
-        card.setPreferredSize(new Dimension(280, 240));
+        JPanel card = new JPanel(new BorderLayout(8, 8));
+        card.setPreferredSize(new Dimension(300, 320));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
 
-        // Ảnh sản phẩm
+        // Ảnh sản phẩm với border đẹp
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.setBackground(Color.WHITE);
+        imagePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.decode("#2196F3"), 2),
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        ));
+        
         ImageIcon icon = new ImageIcon(product.getImage());
-        Image img = icon.getImage().getScaledInstance(150, 110, Image.SCALE_SMOOTH);
+        Image img = icon.getImage().getScaledInstance(180, 130, Image.SCALE_SMOOTH);
         JLabel imageLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
-        imageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        card.add(imageLabel, BorderLayout.NORTH);
+        imageLabel.setBackground(Color.WHITE);
+        imageLabel.setOpaque(true);
+        imagePanel.add(imageLabel, BorderLayout.CENTER);
+        card.add(imagePanel, BorderLayout.NORTH);
 
-        // Chi tiết sản phẩm
-        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 3, 3));
+        // Chi tiết sản phẩm với layout đẹp hơn
+        JPanel detailsPanel = new JPanel(new MigLayout("fillx, insets 5", "[grow]", "[]8[]8[]8[]8[]"));
         detailsPanel.setBackground(Color.WHITE);
         
-        addDetail(detailsPanel, "ID: " + product.getProductID(), Font.PLAIN, 13);
-        addDetail(detailsPanel, product.getProductName(), Font.BOLD, 14);
-        addDetail(detailsPanel, "Price: " + orderDetail.getPrice() + " VNĐ", Font.PLAIN, 13);
-        addDetail(detailsPanel, "Quantity: " + orderDetail.getQuantity(), Font.PLAIN, 13);
-        addDetail(detailsPanel, "Status: " + orderDetail.getStatus(), Font.PLAIN, 13);
+        // Product Name - nổi bật
+        JLabel nameLabel = new JLabel(product.getProductName());
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        nameLabel.setForeground(Color.decode("#1976D2"));
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+        detailsPanel.add(nameLabel, "growx, wrap");
+        
+        // Product ID
+        addDetailStyled(detailsPanel, "ID:", product.getProductID(), Color.decode("#757575"));
+        
+        // Price - màu cam nổi bật
+        String priceText = String.format("%,d VND", orderDetail.getPrice().longValue());
+        addDetailStyled(detailsPanel, "Price:", priceText, Color.decode("#F57C00"), Font.BOLD);
+        
+        // Quantity - màu xanh lá
+        addDetailStyled(detailsPanel, "Quantity:", String.valueOf(orderDetail.getQuantity()), Color.decode("#388E3C"));
+        
+        // Status với màu theo trạng thái
+        Color statusColor = getStatusColor(orderDetail.getStatus());
+        addDetailStyled(detailsPanel, "Status:", orderDetail.getStatus(), statusColor, Font.BOLD);
         
         card.add(detailsPanel, BorderLayout.CENTER);
         
         return card;
     }
+    
+    private Color getStatusColor(String status) {
+        if (status == null) return Color.GRAY;
+        switch (status.toLowerCase()) {
+            case "waiting":
+                return Color.decode("#FF9800");
+            case "processing":
+                return Color.decode("#2196F3");
+            case "completed":
+                return Color.decode("#4CAF50");
+            case "cancelled":
+                return Color.decode("#F44336");
+            default:
+                return Color.decode("#757575");
+        }
+    }
 
     private void addDetail(JPanel panel, String text, int fontStyle, int fontSize) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Times new roman", fontStyle, fontSize));
+        label.setFont(new Font("Segoe UI", fontStyle, fontSize));
         label.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
         panel.add(label);
     }
+    
+    private void addDetailStyled(JPanel panel, String label, String value, Color valueColor) {
+        addDetailStyled(panel, label, value, valueColor, Font.PLAIN);
+    }
+    
+    private void addDetailStyled(JPanel panel, String label, String value, Color valueColor, int valueStyle) {
+        JLabel labelLabel = new JLabel(label + " ");
+        labelLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        labelLabel.setForeground(Color.decode("#616161"));
+        
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Segoe UI", valueStyle, 13));
+        valueLabel.setForeground(valueColor);
+        
+        JPanel row = new JPanel(new MigLayout("insets 0", "[][]", "[]"));
+        row.setBackground(Color.WHITE);
+        row.add(labelLabel);
+        row.add(valueLabel);
+        
+        panel.add(row, "growx, wrap");
+    }
 
     private void addSummaryLine(String label, String value) {
-        JLabel l = new JLabel(label + value);
-        l.setFont(new Font("Arial", Font.PLAIN, 14));
-        l.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-        summaryPanel.add(l);
+        JPanel row = new JPanel(new MigLayout("fillx, insets 0", "[grow][]", "[]"));
+        row.setBackground(Color.WHITE);
+        
+        JLabel labelLabel = new JLabel(label);
+        labelLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        labelLabel.setForeground(Color.decode("#424242"));
+        
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        
+        // Màu sắc đặc biệt cho Total
+        if (label.trim().equals("Total:")) {
+            valueLabel.setForeground(Color.decode("#D32F2F"));
+            valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        } else if (label.contains("Discount")) {
+            valueLabel.setForeground(Color.decode("#388E3C"));
+        } else if (label.contains("VAT")) {
+            valueLabel.setForeground(Color.decode("#1976D2"));
+        } else {
+            valueLabel.setForeground(Color.decode("#212121"));
+        }
+        
+        row.add(labelLabel, "alignx left");
+        row.add(valueLabel, "alignx right");
+        
+        summaryPanel.add(row, "growx, wrap");
     }
     
      

@@ -807,16 +807,17 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
               return;
           }
 
-          // Xử lý thanh toán MoMo
-          if ("Momo".equals(paymentMethod)) {
-              if (!processMoMoPayment(selectedProducts)) {
-                  return; // Người dùng hủy thanh toán
-              }
+          // Hiển thị preview hoá đơn để người dùng xác nhận (cho cả Cash và MoMo)
+          BigDecimal finalAmount = showOrderPreview(selectedProducts);
+          if (finalAmount == null) {
+              return; // Người dùng chưa xác nhận mua
           }
 
-          // Hiển thị preview hoá đơn để người dùng xác nhận
-          if (!showOrderPreview(selectedProducts)) {
-              return; // Người dùng chưa xác nhận mua
+          // Nếu là MoMo, hiển thị cửa sổ thanh toán MoMo với giá tiền cuối cùng
+          if ("Momo".equals(paymentMethod)) {
+              if (!processMoMoPayment(finalAmount)) {
+                  return; // Người dùng hủy thanh toán
+              }
           }
 
           // Tạo Order_No ngẫu nhiên 8 chữ số, đảm bảo không trùng với order hiện có của customer này
@@ -857,14 +858,14 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           java.time.LocalDate currentDate = java.time.LocalDate.now();
           java.time.LocalTime currentTime = java.time.LocalTime.now().withNano(0);
 
-          // Tính tổng quantity và tổng price từ các sản phẩm được chọn
+          // Tính tổng quantity từ các sản phẩm được chọn
           int totalQuantity = 0;
-          BigDecimal totalPrice = BigDecimal.ZERO;
-
           for (productDTO product : selectedProducts) {
               totalQuantity += product.getQuantity();
-              totalPrice = totalPrice.add(product.getPrice().multiply(new BigDecimal(product.getQuantity())));
           }
+          
+          // Sử dụng giá tiền cuối cùng (đã tính VAT và discount) từ preview
+          BigDecimal totalPrice = finalAmount;
 
           try {
               // Tìm Cart_ID từ cartItems cho sản phẩm đầu tiên được chọn
@@ -958,7 +959,8 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
       }
 
       // Preview đơn hàng: VAT tính từ giá gốc, sau đó trừ khuyến mãi
-      private boolean showOrderPreview(ArrayList<productDTO> selectedProducts) {
+      // Trả về totalToPay nếu confirm, null nếu cancel
+      private BigDecimal showOrderPreview(ArrayList<productDTO> selectedProducts) {
           final JDialog dlg = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Order Preview", true);
           dlg.setSize(820, 560);
           dlg.setLocationRelativeTo(this);
@@ -1045,22 +1047,16 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           footer.add(confirm);
           dlg.add(footer, BorderLayout.SOUTH);
 
-          final boolean[] ok = {false};
-          cancel.addActionListener(e -> { ok[0] = false; dlg.dispose(); });
-          confirm.addActionListener(e -> { ok[0] = true; dlg.dispose(); });
+          final BigDecimal[] result = {null};
+          cancel.addActionListener(e -> { result[0] = null; dlg.dispose(); });
+          confirm.addActionListener(e -> { result[0] = totalToPay; dlg.dispose(); });
 
           dlg.setVisible(true);
-          return ok[0];
+          return result[0];
       }
       
-      // Xử lý thanh toán MoMo với dialog đơn giản
-      private boolean processMoMoPayment(ArrayList<productDTO> selectedProducts) {
-          // Tính tổng tiền
-          BigDecimal totalAmount = BigDecimal.ZERO;
-          for (productDTO product : selectedProducts) {
-              totalAmount = totalAmount.add(product.getPrice().multiply(new BigDecimal(product.getQuantity())));
-          }
-          
+      // Xử lý thanh toán MoMo với giá tiền cuối cùng (đã tính VAT và discount)
+      private boolean processMoMoPayment(BigDecimal finalAmount) {
           // Tạo dialog MoMo payment
           JDialog momoDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "MoMo Payment", true);
           momoDialog.setSize(450, 700);
@@ -1085,12 +1081,13 @@ public class Form_Cart extends JPanel implements CartUpdateListener {
           contentPanel.setBackground(Color.WHITE);
           contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 20, 30));
           
-          JLabel amountLabel = new JLabel("Total Amount:", SwingConstants.LEFT);
+          JLabel amountLabel = new JLabel("Total Amount to Pay:", SwingConstants.LEFT);
           amountLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
           amountLabel.setForeground(Color.decode("#2C3E50"));
           amountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
           
-          JLabel amountValue = new JLabel(totalAmount.toString() + " VNĐ", SwingConstants.LEFT);
+          // Hiển thị giá tiền cuối cùng đã được format
+          JLabel amountValue = new JLabel(String.format("%,d VNĐ", finalAmount.longValue()), SwingConstants.LEFT);
           amountValue.setFont(new Font("Segoe UI", Font.BOLD, 20));
           amountValue.setForeground(Color.decode("#E74C3C"));
           amountValue.setAlignmentX(Component.LEFT_ALIGNMENT);

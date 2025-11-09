@@ -152,8 +152,8 @@ public class PDFExporter {
     }
 
     private void addPdfHeader(Document document, String invoiceNo) throws DocumentException {
-      // Tiêu đề chính
-      Font titleFont = getVietnameseFont(18, Font.BOLD);
+      // Tiêu đề chính - giống Bill_ExportDetails.java (24pt)
+      Font titleFont = getVietnameseFont(24, Font.BOLD);
       titleFont.setColor(BaseColor.BLUE);
       Paragraph title = new Paragraph("SALES INVOICE", titleFont);
       title.setAlignment(Element.ALIGN_CENTER);
@@ -339,9 +339,10 @@ public class PDFExporter {
             table.addCell(createTableCell(productId, rowFont, rowColor));
             table.addCell(createTableCell(busOrderDetail.getProductName(productId), rowFont, rowColor));
             table.addCell(createTableCell(String.valueOf(quantity), rowFont, rowColor));
-            table.addCell(createTableCell(formatCurrency(unitPrice.toString()), rowFont, rowColor));
-            // Hiển thị Total Price (trước discount) - giống Form_Export.java
-            table.addCell(createTableCell(formatCurrency(itemTotalBeforeDiscount.toString()), rowFont, rowColor));
+            // Format currency giống Bill_ExportDetails.java
+            table.addCell(createTableCell(String.format("%,d VND", unitPrice.longValue()), rowFont, rowColor));
+            // Hiển thị Total Price (trước discount) - giống Bill_ExportDetails.java
+            table.addCell(createTableCell(String.format("%,d VND", itemTotalBeforeDiscount.longValue()), rowFont, rowColor));
             table.addCell(createTableCell(warrantyStartStr, rowFont, rowColor));
             table.addCell(createTableCell(warrantyEndStr, rowFont, rowColor));
             
@@ -398,8 +399,17 @@ public class PDFExporter {
     }
 }
 
+  // Format currency giống Bill_ExportDetails.java (%,d VND)
+  private String formatCurrencyVND(BigDecimal amount) {
+      try {
+          return String.format("%,d VND", amount.longValue());
+      } catch (Exception e) {
+          return amount.toString() + " VND";
+      }
+  }
+
     private void addOrderSummary(Document document) throws DocumentException {
-       // Tính tổng subtotal TRƯỚC discount (giống Order_Form)
+       // Tính tổng subtotal TRƯỚC discount (giống Bill_ExportDetails.java)
        BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
        int totalQuantity = 0;
 
@@ -408,17 +418,47 @@ public class PDFExporter {
            totalQuantity += ((Number) item[4]).intValue(); // Sum up quantities
        }
        
-       // Tính discount trên TỔNG subtotal (không tính trên từng item)
-       BigDecimal discountPercent = BigDecimal.valueOf(discount);
+       // Lấy promotion code - ưu tiên từ constructor, nếu không có thì lấy từ order
+       String promoCode = promotionCode;
+       if ((promoCode == null || promoCode.trim().isEmpty()) && !orderItems.isEmpty()) {
+           try {
+               String orderNo = orderItems.get(0)[0].toString();
+               com.User.order.BUS.BUS_Order busOrder = new com.User.order.BUS.BUS_Order();
+               promoCode = busOrder.getPromotionCodeByOrderNo(orderNo);
+           } catch (Exception e) {
+               System.err.println("Error getting promotion code from order: " + e.getMessage());
+           }
+       }
+       
+       // Tính discount từ promotion code (giống Bill_ExportDetails.java)
+       BigDecimal discountPercent = BigDecimal.ZERO;
        BigDecimal discountAmount = BigDecimal.ZERO;
        BigDecimal totalAfterDiscount = totalBeforeDiscount;
-       if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+       
+       if (promoCode != null && !promoCode.trim().isEmpty()) {
+           try {
+               com.Admin.promotion.BUS.BUSPromotion busPromotion = new com.Admin.promotion.BUS.BUSPromotion();
+               com.Admin.promotion.DTO.DTOPromotion promotion = busPromotion.findActivePromotion(promoCode);
+               if (promotion != null && promotion.getDiscountPercent() != null) {
+                   discountPercent = promotion.getDiscountPercent();
+                   discountAmount = totalBeforeDiscount.multiply(discountPercent)
+                       .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                   totalAfterDiscount = totalBeforeDiscount.subtract(discountAmount);
+               }
+           } catch (Exception e) {
+               System.err.println("Error calculating discount from promotion code: " + e.getMessage());
+           }
+       }
+       
+       // Nếu không có promotion code hoặc không tìm thấy promotion, thử dùng discount từ constructor
+       if (discountPercent.compareTo(BigDecimal.ZERO) == 0 && discount > 0) {
+           discountPercent = BigDecimal.valueOf(discount);
            discountAmount = totalBeforeDiscount.multiply(discountPercent)
                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
            totalAfterDiscount = totalBeforeDiscount.subtract(discountAmount);
        }
        
-       // VAT tính trên giá sau discount (giống Order_Form)
+       // VAT tính trên giá sau discount (giống Bill_ExportDetails.java)
        BigDecimal vatPercent = BigDecimal.valueOf(8.00);
        BigDecimal vatAmount = totalAfterDiscount.multiply(vatPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
        BigDecimal totalWithVAT = totalAfterDiscount.add(vatAmount);
@@ -450,16 +490,15 @@ public class PDFExporter {
                paymentMethod = "Cash"; // Default fallback
            }
 
-           Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
-           Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 12, BaseColor.DARK_GRAY);
+           Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
+           Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 13, BaseColor.DARK_GRAY);
 
            Paragraph paymentParagraph = new Paragraph();
            paymentParagraph.setAlignment(Element.ALIGN_LEFT); // căn lề trái
            paymentParagraph.setSpacingBefore(10f);
            paymentParagraph.setSpacingAfter(10f);
 
-           paymentParagraph.add(new Phrase("Payment Method: ", labelFont));
-           paymentParagraph.add(new Phrase(paymentMethod, valueFont));
+           paymentParagraph.add(new Phrase("Payment Method: " + paymentMethod, labelFont));
 
            paymentCell.addElement(paymentParagraph);
 
@@ -471,7 +510,7 @@ public class PDFExporter {
 
        containerTable.addCell(paymentCell);
 
-       // Cột phải - Order Summary (dạng label)
+       // Cột phải - Order Summary (dạng label) - giống Bill_ExportDetails.java
        PdfPCell summaryCell = new PdfPCell();
        summaryCell.setBorder(Rectangle.NO_BORDER);
 
@@ -482,26 +521,19 @@ public class PDFExporter {
        summaryParagraph.setAlignment(Element.ALIGN_RIGHT);
        summaryParagraph.setSpacingBefore(10f);
 
-       summaryParagraph.add(new Phrase("Total Products: ", labelFont));
-       summaryParagraph.add(new Phrase(String.valueOf(totalQuantity) + "\n", valueFont));
-
-       summaryParagraph.add(new Phrase("Subtotal (before discount): ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(totalBeforeDiscount.toString()) + "\n", valueFont));
+       // Format giống hệt Bill_ExportDetails.java
+       summaryParagraph.add(new Phrase("Total Products: " + totalQuantity + "\n", valueFont));
+       summaryParagraph.add(new Phrase("Subtotal (before discount): " + formatCurrencyVND(totalBeforeDiscount) + "\n", valueFont));
        
-       // Hiển thị discount với format giống Form_Export.java
+       // Hiển thị discount với format giống Bill_ExportDetails.java
        if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
-           summaryParagraph.add(new Phrase("Discount (" + String.format("%.1f%%", discountPercent.doubleValue()) + "): ", labelFont));
-           summaryParagraph.add(new Phrase("-" + formatCurrency(discountAmount.toString()) + "\n", valueFont));
+           summaryParagraph.add(new Phrase(String.format("Discount (%.1f%%): -%s\n", 
+               discountPercent.doubleValue(), formatCurrencyVND(discountAmount)), valueFont));
        }
        
-       summaryParagraph.add(new Phrase("Subtotal (after discount): ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(totalAfterDiscount.toString()) + "\n", valueFont));
-       
-       summaryParagraph.add(new Phrase("VAT (" + vatPercent + "% after discount): ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(vatAmount.toString()) + "\n", valueFont));
-
-       summaryParagraph.add(new Phrase("Total Amount (incl. VAT): ", labelFont));
-       summaryParagraph.add(new Phrase(formatCurrency(totalWithVAT.toString()), valueFont));
+       summaryParagraph.add(new Phrase("Subtotal (after discount): " + formatCurrencyVND(totalAfterDiscount) + "\n", valueFont));
+       summaryParagraph.add(new Phrase("VAT (8% after discount): " + formatCurrencyVND(vatAmount) + "\n", valueFont));
+       summaryParagraph.add(new Phrase("Total Amount (incl. VAT): " + formatCurrencyVND(totalWithVAT), valueFont));
 
        summaryCell.addElement(summaryParagraph);
        containerTable.addCell(summaryCell);

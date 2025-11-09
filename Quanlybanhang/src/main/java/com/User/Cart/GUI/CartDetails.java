@@ -36,10 +36,10 @@ import net.miginfocom.swing.MigLayout;
 
 public class CartDetails extends javax.swing.JFrame {
      public JLabel lblTitle, lblID, lblProductName, lblColor, lblBatteryCapacity, lblSpeed, lblWarranty, lblCateID
-             , lblBrand, lblQuantity;
+             , lblBrand, lblQuantity, lblPrice;
      public MyPanel panelTitle;
      public MyCombobox cmbGender;
-     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtWarranty, txtCateID, txtBrand, txtQuantity;
+     public static MyTextField txtID, txtProductName, txtColor, txtBatteryCapacity, txtSpeed, txtWarranty, txtCateID, txtBrand, txtQuantity, txtPrice;
      private JDateChooser dateOfBirth;
      private JTextArea txtAddress;
      public JPanel panelUpload;
@@ -52,7 +52,7 @@ public class CartDetails extends javax.swing.JFrame {
     
     public CartDetails() {
         initComponents();
-        setSize(800, 750); // Tăng kích thước để hiển thị đầy đủ các trường mới
+        setSize(1100, 850); // Tăng kích thước để hiển thị đầy đủ các trường
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE); 
 
         // Tính toán vị trí để căn giữa và trên cùng
@@ -64,188 +64,213 @@ public class CartDetails extends javax.swing.JFrame {
         init();
     }
     public void init() {
-     // Thiết lập layout chính
-     bg.setLayout(new MigLayout("fillx, insets 0", "[grow]", "[][][grow]"));
+     // Thiết lập layout chính với padding
+     bg.setLayout(new MigLayout("fillx, insets 20", "[grow]", "[][][grow]"));
 
      // 1. Panel tiêu đề với design đẹp
-     panelTitle = new MyPanel(new MigLayout("fill, insets 10"));
+     panelTitle = new MyPanel(new MigLayout("fill, insets 15"));
      panelTitle.setGradientColors(Color.decode("#2196F3"), Color.decode("#1976D2"), MyPanel.VERTICAL_GRADIENT);
      panelTitle.setBorder(BorderFactory.createCompoundBorder(
          BorderFactory.createLineBorder(Color.decode("#1976D2"), 2),
-         BorderFactory.createEmptyBorder(10, 15, 10, 15)
+         BorderFactory.createEmptyBorder(15, 20, 15, 20)
      ));
 
      lblTitle = new JLabel("Product Details", JLabel.CENTER);
-     lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
+     lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
      lblTitle.setForeground(Color.WHITE);
 
      panelTitle.add(lblTitle, "grow, push, align center");
-     bg.add(panelTitle, "growx, h 60!, wrap"); // Tăng chiều cao
+     bg.add(panelTitle, "growx, h 70!, wrap");
 
         // Panel upload ảnh với design đẹp
     panelUpload = new JPanel();
     panelUpload.setLayout(new MigLayout("fill, insets 10"));
     panelUpload.setBackground(Color.WHITE);
-    panelUpload.setPreferredSize(new Dimension(250, 250));
+    panelUpload.setPreferredSize(new Dimension(300, 300));
     panelUpload.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 2),
-        BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        BorderFactory.createLineBorder(Color.decode("#2196F3"), 2),
+        BorderFactory.createEmptyBorder(15, 15, 15, 15)
     ));
 
     // Thêm vào bg
-    bg.add(panelUpload, "w 250!, h 250!, gap 10, align center, wrap");
+    bg.add(panelUpload, "w 300!, h 300!, gap 20, align center, wrap");
 
-     // Labels với style đẹp - sắp xếp theo 2 cột, di chuyển xuống dưới hình
-     // Cột trái
-     lblID= new JLabel("Product ID:");
-     lblID.setFont(new Font("Arial", Font.BOLD, 14));
+     // Tạo panel chứa thông tin sản phẩm với layout 2 cột
+     JPanel infoPanel = new JPanel(new MigLayout("fillx, insets 20", "[180!][20][grow][20][180!][20][grow]", "[]15[]15[]15[]15[]15[]15[]15[]"));
+     infoPanel.setBackground(Color.WHITE);
+     infoPanel.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
+         BorderFactory.createEmptyBorder(20, 20, 20, 20)
+     ));
+     
+     // Cột trái - Labels và Text fields
+     lblID = new JLabel("Product ID:");
+     lblID.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblID.setForeground(Color.decode("#1976D2"));
-     bg.add(lblID, "pos 30 350, w 140!, h 30!");
+     infoPanel.add(lblID, "cell 0 0, alignx right");
   
-    lblProductName= new JLabel("Product Name:");
-    lblProductName.setFont(new Font("Arial", Font.BOLD, 14));
+    lblProductName = new JLabel("Product Name:");
+    lblProductName.setFont(new Font("Segoe UI", Font.BOLD, 15));
     lblProductName.setForeground(Color.decode("#1976D2"));
-    bg.add(lblProductName, "pos 30 390, w 140!, h 30!");
+    infoPanel.add(lblProductName, "cell 0 1, alignx right");
      
-     lblColor= new JLabel("Color:");
-     lblColor.setFont(new Font("Arial", Font.BOLD, 14));
+     lblColor = new JLabel("Color:");
+     lblColor.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblColor.setForeground(Color.decode("#1976D2"));
-     bg.add(lblColor, "pos 30 430, w 140!, h 30!");
+     infoPanel.add(lblColor, "cell 0 2, alignx right");
      
-     lblBatteryCapacity= new JLabel("Battery Capacity:");
-     lblBatteryCapacity.setFont(new Font("Arial", Font.BOLD, 14));
+     lblBatteryCapacity = new JLabel("Battery Capacity:");
+     lblBatteryCapacity.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblBatteryCapacity.setForeground(Color.decode("#1976D2"));
-     bg.add(lblBatteryCapacity, "pos 30 470, w 140!, h 30!");
+     infoPanel.add(lblBatteryCapacity, "cell 0 3, alignx right");
      
-     lblSpeed= new JLabel("Max Speed:");
-     lblSpeed.setFont(new Font("Arial", Font.BOLD, 14));
+     lblSpeed = new JLabel("Max Speed:");
+     lblSpeed.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblSpeed.setForeground(Color.decode("#1976D2"));
-     bg.add(lblSpeed, "pos 30 510, w 140!, h 30!");
+     infoPanel.add(lblSpeed, "cell 0 4, alignx right");
      
-     lblWarranty= new JLabel("Warranty (Months):");
-     lblWarranty.setFont(new Font("Arial", Font.BOLD, 14));
-     lblWarranty.setForeground(Color.decode("#1976D2"));
-     bg.add(lblWarranty, "pos 30 550, w 140!, h 30!");
      
-     // Cột phải
-     lblCateID= new JLabel("Category ID:");
-     lblCateID.setFont(new Font("Arial", Font.BOLD, 14));
+     // Cột phải - Labels và Text fields
+     lblCateID = new JLabel("Category ID:");
+     lblCateID.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblCateID.setForeground(Color.decode("#1976D2"));
-     bg.add(lblCateID, "pos 400 350, w 140!, h 30!");
+     infoPanel.add(lblCateID, "cell 4 0, alignx right");
      
-     lblBrand= new JLabel("Supplier:");
-     lblBrand.setFont(new Font("Arial", Font.BOLD, 14));
+     lblBrand = new JLabel("Supplier:");
+     lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblBrand.setForeground(Color.decode("#1976D2"));
-     bg.add(lblBrand, "pos 400 390, w 140!, h 30!");
+     infoPanel.add(lblBrand, "cell 4 1, alignx right");
      
-     lblQuantity= new JLabel("Quantity:");
-     lblQuantity.setFont(new Font("Arial", Font.BOLD, 14));
+     lblWarranty = new JLabel("Warranty (Months):");
+     lblWarranty.setFont(new Font("Segoe UI", Font.BOLD, 15));
+     lblWarranty.setForeground(Color.decode("#1976D2"));
+     infoPanel.add(lblWarranty, "cell 4 2, alignx right");
+
+     lblQuantity = new JLabel("Quantity:");
+     lblQuantity.setFont(new Font("Segoe UI", Font.BOLD, 15));
      lblQuantity.setForeground(Color.decode("#1976D2"));
-     bg.add(lblQuantity, "pos 400 430, w 140!, h 30!");
+     infoPanel.add(lblQuantity, "cell 4 3, alignx right");
      
+     lblPrice = new JLabel("Price:");
+     lblPrice.setFont(new Font("Segoe UI", Font.BOLD, 15));
+     lblPrice.setForeground(Color.decode("#1976D2"));
+     infoPanel.add(lblPrice, "cell 4 4, alignx right");
+     
+     // Cột trái - Text fields với kích thước lớn hơn
      txtID = new MyTextField();
      txtID.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtID.setTextColor(Color.decode("#333333"));
+     txtID.setTextColor(Color.decode("#212121"));
      txtID.setLocked(true);
-     txtID.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtID.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtID, "pos 180 350, w 150!, h 35!");
+     txtID.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtID.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtID, "cell 2 0, w 250!, h 40!, growx");
      
      txtProductName = new MyTextField();
      txtProductName.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtProductName.setTextColor(Color.decode("#333333"));
+     txtProductName.setTextColor(Color.decode("#212121"));
      txtProductName.setLocked(true);
-     txtProductName.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtProductName.setBackgroundColor(Color.WHITE);
-
-     bg.add(txtProductName, "pos 180 390, w 150!, h 35!");
+     txtProductName.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtProductName.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtProductName, "cell 2 1, w 250!, h 40!, growx");
      
-     
-     // Cột trái - Text fields
      txtColor = new MyTextField();
      txtColor.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtColor.setTextColor(Color.decode("#333333"));
+     txtColor.setTextColor(Color.decode("#212121"));
      txtColor.setLocked(true);
-     txtColor.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtColor.setBackgroundColor(Color.WHITE);
-     bg.add(txtColor, "pos 180 430, w 150!, h 35!");
+     txtColor.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtColor.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtColor, "cell 2 2, w 250!, h 40!, growx");
      
      txtBatteryCapacity = new MyTextField();
      txtBatteryCapacity.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtBatteryCapacity.setTextColor(Color.decode("#333333"));
+     txtBatteryCapacity.setTextColor(Color.decode("#212121"));
      txtBatteryCapacity.setLocked(true);
-     txtBatteryCapacity.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtBatteryCapacity.setBackgroundColor(Color.WHITE);
-     bg.add(txtBatteryCapacity, "pos 180 470, w 150!, h 35!");
+     txtBatteryCapacity.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtBatteryCapacity.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtBatteryCapacity, "cell 2 3, w 250!, h 40!, growx");
      
      txtSpeed = new MyTextField();
      txtSpeed.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtSpeed.setTextColor(Color.decode("#333333"));
+     txtSpeed.setTextColor(Color.decode("#212121"));
      txtSpeed.setLocked(true);
-     txtSpeed.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtSpeed.setBackgroundColor(Color.WHITE);
-     bg.add(txtSpeed, "pos 180 510, w 150!, h 35!");
-     
-     txtWarranty = new MyTextField();
-     txtWarranty.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
-     ));
-     txtWarranty.setTextColor(Color.decode("#333333"));
-     txtWarranty.setLocked(true);
-     txtWarranty.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtWarranty.setBackgroundColor(Color.WHITE);
-     bg.add(txtWarranty, "pos 180 550, w 150!, h 35!");
+     txtSpeed.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtSpeed.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtSpeed, "cell 2 4, w 250!, h 40!, growx");
      
      // Cột phải - Text fields
      txtCateID = new MyTextField();
      txtCateID.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtCateID.setTextColor(Color.decode("#333333"));
+     txtCateID.setTextColor(Color.decode("#212121"));
      txtCateID.setLocked(true);
-     txtCateID.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtCateID.setBackgroundColor(Color.WHITE);
-     bg.add(txtCateID, "pos 550 350, w 150!, h 35!");
+     txtCateID.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtCateID.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtCateID, "cell 6 0, w 250!, h 40!, growx");
      
      txtBrand = new MyTextField();
      txtBrand.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtBrand.setTextColor(Color.decode("#333333"));
+     txtBrand.setTextColor(Color.decode("#212121"));
      txtBrand.setLocked(true);
-     txtBrand.setTextFont(new Font("Arial", Font.PLAIN, 14));
-     txtBrand.setBackgroundColor(Color.WHITE);
-     bg.add(txtBrand, "pos 550 390, w 150!, h 35!");
+     txtBrand.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtBrand.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtBrand, "cell 6 1, w 250!, h 40!, growx");
+
+     txtWarranty = new MyTextField();
+     txtWarranty.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#BDBDBD"), 1),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
+     ));
+     txtWarranty.setTextColor(Color.decode("#212121"));
+     txtWarranty.setLocked(true);
+     txtWarranty.setTextFont(new Font("Segoe UI", Font.PLAIN, 14));
+     txtWarranty.setBackgroundColor(Color.decode("#FAFAFA"));
+     infoPanel.add(txtWarranty, "cell 6 2, w 250!, h 40!, growx");
      
      txtQuantity = new MyTextField();
      txtQuantity.setBorder(BorderFactory.createCompoundBorder(
-         BorderFactory.createLineBorder(Color.decode("#E0E0E0"), 1),
-         BorderFactory.createEmptyBorder(5, 10, 5, 10)
+         BorderFactory.createLineBorder(Color.decode("#D32F2F"), 2),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
      ));
-     txtQuantity.setTextColor(Color.decode("#D32F2F"));
+     txtQuantity.setTextColor(Color.decode("#C62828"));
      txtQuantity.setLocked(true);
-     txtQuantity.setTextFont(new Font("Arial", Font.BOLD, 14));
-     txtQuantity.setBackgroundColor(Color.WHITE);
-     bg.add(txtQuantity, "pos 550 430, w 150!, h 35!");
+     txtQuantity.setTextFont(new Font("Segoe UI", Font.BOLD, 15));
+     txtQuantity.setBackgroundColor(Color.decode("#FFEBEE"));
+     infoPanel.add(txtQuantity, "cell 6 3, w 250!, h 40!, growx");
+
+     txtPrice = new MyTextField();
+     txtPrice.setBorder(BorderFactory.createCompoundBorder(
+         BorderFactory.createLineBorder(Color.decode("#F57C00"), 2),
+         BorderFactory.createEmptyBorder(8, 12, 8, 12)
+     ));
+     txtPrice.setTextColor(Color.decode("#E65100"));
+     txtPrice.setLocked(true);
+     txtPrice.setTextFont(new Font("Segoe UI", Font.BOLD, 15));
+     txtPrice.setBackgroundColor(Color.decode("#FFF3E0"));
+     infoPanel.add(txtPrice, "cell 6 4, w 250!, h 40!, growx");
+     
+     
+     // Thêm infoPanel vào bg
+     bg.add(infoPanel, "growx, wrap");
     }
     
     // Hàm load ảnh và resize từ resources
@@ -311,14 +336,22 @@ public class CartDetails extends javax.swing.JFrame {
         }
 
         // Hiển thị thông tin sản phẩm
-        txtID.setText(product.getProductID());
-        txtProductName.setText(product.getProductName());
-        txtColor.setText(product.getColor());
-        txtBatteryCapacity.setText(product.getBatteryCapacity());
-        txtSpeed.setText(product.getSpeed());
+        txtID.setText(product.getProductID() != null ? product.getProductID() : "N/A");
+        txtProductName.setText(product.getProductName() != null ? product.getProductName() : "N/A");
+        txtColor.setText(product.getColor() != null ? product.getColor() : "N/A");
+        txtBatteryCapacity.setText(product.getBatteryCapacity() != null ? product.getBatteryCapacity() : "N/A");
+        txtSpeed.setText(product.getSpeed() != null ? product.getSpeed() : "N/A");
         txtWarranty.setText(String.valueOf(product.getWarrantyMonths()));
-        txtCateID.setText(product.getCategoryID());
+        txtCateID.setText(product.getCategoryID() != null ? product.getCategoryID() : "N/A");
         txtQuantity.setText(String.valueOf(product.getQuantity()));
+        
+        // Hiển thị giá với format đẹp
+        if (product.getPrice() != null) {
+            txtPrice.setText(String.format("%,d VND", product.getPrice().longValue()));
+        } else {
+            txtPrice.setText("N/A");
+        }
+        
         String brand = busProduct.getBrandByProductId(product.getProductID());
         txtBrand.setText(brand != null ? brand : "N/A");
        
