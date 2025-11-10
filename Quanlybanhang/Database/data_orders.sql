@@ -69,9 +69,17 @@ DECLARE @CurrentQuantity int;
 -- Tạo 5-8 orders cho tháng 9
 WHILE @Counter <= 8
 BEGIN
-    -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20240900 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20240900 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 9, ngày ngẫu nhiên từ 1-30
     SET @DateOrder = DATEFROMPARTS(2024, 9, 1 + (@Counter * 3) % 30);
@@ -81,14 +89,9 @@ BEGIN
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
-    -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20240900 + @Counter, '000');
-    
-    -- Lấy Customer ngẫu nhiên
-    SELECT TOP 1 @CustomerID = Customer_ID 
-    FROM dbo.Customer 
-    WHERE Record_Status = 'Available'
-    ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Số lượng sản phẩm (1-3)
     SET @TotalQuantity = 1 + (@Counter % 3);
@@ -197,9 +200,17 @@ SET @Counter = 1;
 -- Tạo 6-10 orders cho tháng 10
 WHILE @Counter <= 10
 BEGIN
-    -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20241000 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20241000 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 10, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2024, 10, 1 + (@Counter * 3) % 31);
@@ -209,14 +220,9 @@ BEGIN
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
-    -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20241000 + @Counter, '000');
-    
-    -- Lấy Customer ngẫu nhiên
-    SELECT TOP 1 @CustomerID = Customer_ID 
-    FROM dbo.Customer 
-    WHERE Record_Status = 'Available'
-    ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Số lượng sản phẩm (1-4)
     SET @TotalQuantity = 1 + (@Counter % 4);
@@ -338,9 +344,17 @@ SET @Counter = 1;
 -- Tạo 5-7 orders cho tháng 8
 WHILE @Counter <= 7
 BEGIN
-    -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20240800 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20240800 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 8, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2024, 8, 1 + (@Counter * 4) % 31);
@@ -350,14 +364,9 @@ BEGIN
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
-    -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20240800 + @Counter, '000');
-    
-    -- Lấy Customer ngẫu nhiên
-    SELECT TOP 1 @CustomerID = Customer_ID 
-    FROM dbo.Customer 
-    WHERE Record_Status = 'Available'
-    ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Số lượng sản phẩm (1-3)
     SET @TotalQuantity = 1 + (@Counter % 3);
@@ -466,9 +475,17 @@ SET @Counter = 1;
 -- Tạo 4-6 orders cho tháng 7
 WHILE @Counter <= 6
 BEGIN
-    -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20240700 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20240700 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 7, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2024, 7, 1 + (@Counter * 5) % 31);
@@ -478,14 +495,9 @@ BEGIN
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
-    -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20240700 + @Counter, '000');
-    
-    -- Lấy Customer ngẫu nhiên
-    SELECT TOP 1 @CustomerID = Customer_ID 
-    FROM dbo.Customer 
-    WHERE Record_Status = 'Available'
-    ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Số lượng sản phẩm (1-2)
     SET @TotalQuantity = 1 + (@Counter % 2);
@@ -638,8 +650,17 @@ SET @Counter = 1;
 WHILE @Counter <= 8
 BEGIN
     -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20250100 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250100 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 1, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2025, 1, 1 + (@Counter * 3) % 31);
@@ -650,7 +671,9 @@ BEGIN
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
     -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20250100 + @Counter, '000');
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Lấy Customer ngẫu nhiên
     SELECT TOP 1 @CustomerID = Customer_ID 
@@ -766,8 +789,17 @@ SET @Counter = 1;
 WHILE @Counter <= 7
 BEGIN
     -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20250200 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250200 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 2, ngày ngẫu nhiên từ 1-28
     SET @DateOrder = DATEFROMPARTS(2025, 2, 1 + (@Counter * 4) % 28);
@@ -778,7 +810,9 @@ BEGIN
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
     -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20250200 + @Counter, '000');
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Lấy Customer ngẫu nhiên
     SELECT TOP 1 @CustomerID = Customer_ID 
@@ -894,8 +928,17 @@ SET @Counter = 1;
 WHILE @Counter <= 9
 BEGIN
     -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20250300 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250300 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 3, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2025, 3, 1 + (@Counter * 3) % 31);
@@ -906,7 +949,9 @@ BEGIN
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
     -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20250300 + @Counter, '000');
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Lấy Customer ngẫu nhiên
     SELECT TOP 1 @CustomerID = Customer_ID 
@@ -1035,8 +1080,17 @@ SET @Counter = 1;
 WHILE @Counter <= 8
 BEGIN
     -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20250400 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250400 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 4, ngày ngẫu nhiên từ 1-30
     SET @DateOrder = DATEFROMPARTS(2025, 4, 1 + (@Counter * 3) % 30);
@@ -1047,7 +1101,9 @@ BEGIN
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
     -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20250400 + @Counter, '000');
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Lấy Customer ngẫu nhiên
     SELECT TOP 1 @CustomerID = Customer_ID 
@@ -1163,8 +1219,17 @@ SET @Counter = 1;
 WHILE @Counter <= 10
 BEGIN
     -- Tạo Order_No và Invoice_No
-    SET @OrderNo = 'ORD' + FORMAT(20250500 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250500 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     
     -- Ngày đặt hàng: tháng 5, ngày ngẫu nhiên từ 1-31
     SET @DateOrder = DATEFROMPARTS(2025, 5, 1 + (@Counter * 3) % 31);
@@ -1175,7 +1240,9 @@ BEGIN
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
     
     -- Tạo Cart_ID
-    SET @CartID = 'CART' + FORMAT(20250500 + @Counter, '000');
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     -- Lấy Customer ngẫu nhiên
     SELECT TOP 1 @CustomerID = Customer_ID 
@@ -1306,15 +1373,24 @@ SET @Counter = 1;
 -- Tạo 9 orders cho tháng 6
 WHILE @Counter <= 9
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20250600 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250600 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 6, 1 + (@Counter * 3) % 30);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20250600 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 3);
     
@@ -1390,15 +1466,24 @@ SET @Counter = 1;
 -- Tạo 8 orders cho tháng 7
 WHILE @Counter <= 8
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20250700 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250700 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 7, 1 + (@Counter * 4) % 31);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20250700 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 3);
     
@@ -1474,15 +1559,24 @@ SET @Counter = 1;
 -- Tạo 7 orders cho tháng 8
 WHILE @Counter <= 7
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20250800 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250800 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 8, 1 + (@Counter * 4) % 31);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20250800 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 3);
     
@@ -1558,15 +1652,24 @@ SET @Counter = 1;
 -- Tạo 8 orders cho tháng 9
 WHILE @Counter <= 8
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20250900 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20250900 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 9, 1 + (@Counter * 3) % 30);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20250900 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 3);
     
@@ -1642,15 +1745,24 @@ SET @Counter = 1;
 -- Tạo 10 orders cho tháng 10
 WHILE @Counter <= 10
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20251000 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20251000 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 10, 1 + (@Counter * 3) % 31);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20251000 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 4);
     
@@ -1726,15 +1838,24 @@ SET @Counter = 1;
 -- Tạo 9 orders cho tháng 11
 WHILE @Counter <= 9
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20251100 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20251100 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 11, 1 + (@Counter * 3) % 30);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20251100 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 3);
     
@@ -1810,15 +1931,24 @@ SET @Counter = 1;
 -- Tạo 12 orders cho tháng 12 (mùa cao điểm)
 WHILE @Counter <= 12
 BEGIN
-    SET @OrderNo = 'ORD' + FORMAT(20251200 + @Counter, '000');
-    SET @InvoiceNo = 'EX' + FORMAT(20251200 + @Counter, '000');
+    -- Lấy Customer ngẫu nhiên (cần lấy trước để tạo mã)
+    SELECT TOP 1 @CustomerID = Customer_ID 
+    FROM dbo.Customer 
+    WHERE Record_Status = 'Available'
+    ORDER BY NEWID();
+    
+    -- Tạo Order_No ngẫu nhiên 8 chữ số (giống code Java)
+    SET @OrderNo = FORMAT(ABS(CHECKSUM(NEWID())) % 100000000, '00000000');
+    
+    -- Tạo Invoice_No ngẫu nhiên 10 chữ số + "-" + Customer_ID (giống code Java)
+    SET @InvoiceNo = FORMAT(ABS(CHECKSUM(NEWID())) % 1000000000, '0000000000') + '-' + @CustomerID;
     SET @DateOrder = DATEFROMPARTS(2025, 12, 1 + (@Counter * 2) % 31);
     SET @TimeOrder = CAST(DATEADD(MINUTE, (@Counter * 47) % 1440, '00:00:00') AS time(7));
     SET @DateExported = DATEADD(DAY, (@Counter % 2), @DateOrder);
     SET @TimeExported = CAST(DATEADD(MINUTE, (@Counter * 37) % 1440, '08:00:00') AS time(7));
-    SET @CartID = 'CART' + FORMAT(20251200 + @Counter, '000');
-    
-    SELECT TOP 1 @CustomerID = Customer_ID FROM dbo.Customer WHERE Record_Status = 'Available' ORDER BY NEWID();
+    -- Tạo Cart_ID: CART- + timestamp + "-" + Customer_ID (giống code Java)
+    -- Sử dụng DATEDIFF_BIG để lấy milliseconds từ epoch (1970-01-01) + một số ngẫu nhiên để tránh trùng
+    SET @CartID = 'CART-' + CAST(DATEDIFF_BIG(MILLISECOND, '1970-01-01', GETDATE()) + ABS(CHECKSUM(NEWID())) % 1000 AS varchar) + '-' + @CustomerID;
     
     SET @TotalQuantity = 1 + (@Counter % 4);
     
