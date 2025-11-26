@@ -130,8 +130,8 @@ public class ControlLogin_cus {
 
    
     private boolean sendEmail(String toEmail, String otp) {
-            final String fromEmail = "vankietpro.nguyen@gmail.com";
-            final String password = "qyqv zazw iwex pinf";
+            final String fromEmail = "";
+            final String password = "";
 
             Properties props = new Properties();
             props.put("mail.smtp.auth", "true");

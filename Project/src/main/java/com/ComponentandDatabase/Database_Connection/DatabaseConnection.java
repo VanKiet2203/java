@@ -6,13 +6,13 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
     private static final String JDBC_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-    private static final String SERVER_NAME = "TE1K";
+    private static final String SERVER_NAME = "";
     private static final String DATABASE_NAME = "QuanLyKho";
     private static final String URL = String.format(
         "jdbc:sqlserver://%s:1433;databaseName=%s;encrypt=false;trustServerCertificate=true",
         SERVER_NAME, DATABASE_NAME);
     private static final String USER = "sa";
-    private static final String PASSWORD = "123123";
+    private static final String PASSWORD = "";
 
     private static Connection conn = null;
 
@@ -26,17 +26,6 @@ public class DatabaseConnection {
             throw new RuntimeException(error, e);
         }
     }
-
-    // Default connection settings. Update these values to match your environment if needed.
-    // private static final String SERVER_NAME = "TE1K";  // Use actual server name instead of "." 
-    // private static final String DATABASE_NAME = "QuanLyKho";
-    // private static final String URL = "jdbc:sqlserver://" + SERVER_NAME + ":1433"
-    //     + ";databaseName=" + DATABASE_NAME 
-    //     + ";encrypt=false"
-    //     + ";trustServerCertificate=true"
-    //     + ";integratedSecurity=false";
-    // private static final String USER = "sa";
-    // private static final String PASSWORD = "123123";
 
     // Kết nối CSDL với xử lý lỗi nâng cao - Tạo connection mới mỗi lần
     public static Connection connect() {
