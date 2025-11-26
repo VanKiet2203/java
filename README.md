@@ -49,24 +49,24 @@ The system supports product management, customer and employee management, invent
 
 ---
 
-## 📁 Project Structure (Simplified)
+## 📁 Project Structure
 
-src/
-└─ main/java/com/
-├─ Admin/ # Admin-side modules
-├─ User/ # Customer-facing modules
-├─ DTO/ # Data transfer objects
-├─ DAO/ # Database access layer
-├─ BUS/ # Business logic layer
-└─ ComponentandDatabase/ # Shared components + DB connection
-resources/
-├─ Icons/
-├─ Profile_Image/
-├─ Sound/
-└─ Bill_Exported/
-Database/
-├─ image-product/
-└─ excel-import/
+- src/
+- └─ main/java/com/
+- ├─ Admin/ # Admin-side modules
+- ├─ User/ # Customer-facing modules
+- ├─ DTO/ # Data transfer objects
+- ├─ DAO/ # Database access layer
+- ├─ BUS/ # Business logic layer
+- └─ ComponentandDatabase/ # Shared components + DB connection
+- resources/
+- ├─ Icons/
+- ├─ Profile_Image/
+- ├─ Sound/
+- └─ Bill_Exported/
+- Database/
+- ├─ image-product/
+- └─ excel-import/
 
 ## ▶️ How to Run
 
